@@ -34,8 +34,8 @@ export default function CrewSchedulePage() {
     <AppShell initialRole="crew">
       <div className="max-w-xl mx-auto px-4 py-5 w-full space-y-4">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">내 배정 일정</h1>
-          <p className="text-xs text-slate-500 mt-0.5">확정된 과업 및 예정된 행사 목록입니다.</p>
+          <h1 className="text-xl font-bold text-ink">내 일정</h1>
+          <p className="text-xs text-muted mt-0.5">앞으로 함께할 현장을 확인해요.</p>
         </div>
 
         <div className="space-y-3">
@@ -43,20 +43,20 @@ export default function CrewSchedulePage() {
             <Link
               key={item.id}
               href="/crew"
-              className="block p-4 bg-white border border-slate-200 rounded-xl hover:border-slate-300 transition-colors shadow-xs"
+              className="block p-4 bg-surface border border-border rounded-xl hover:border-border transition-colors shadow-xs"
             >
               <div className="flex items-start justify-between mb-2">
                 <StatusBadge status={item.status} size="sm" />
-                <span className="text-xs font-bold text-slate-800 tabular-nums">{item.pay}</span>
+                <span className="text-xs font-bold text-ink tabular-nums">{item.pay}</span>
               </div>
-              <h2 className="font-bold text-slate-900 text-sm">{item.title}</h2>
-              <div className="text-xs text-slate-500 mt-2 space-y-1">
+              <h2 className="font-bold text-ink text-sm">{item.title}</h2>
+              <div className="text-xs text-muted mt-2 space-y-1">
                 <div className="flex items-center gap-1.5">
-                  <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                  <Calendar className="w-3.5 h-3.5 text-muted" />
                   <span>{item.date} ({item.time})</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                  <MapPin className="w-3.5 h-3.5 text-muted" />
                   <span>{item.venue}</span>
                 </div>
               </div>

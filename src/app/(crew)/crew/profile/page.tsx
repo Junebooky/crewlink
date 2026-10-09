@@ -9,65 +9,65 @@ export default function CrewProfilePage() {
     <AppShell initialRole="crew">
       <div className="max-w-xl mx-auto px-4 py-5 w-full space-y-4">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">내 프로필 & 정보</h1>
-          <p className="text-xs text-slate-500 mt-0.5">민감 개인정보 및 정산 계좌 보호 상태</p>
+          <h1 className="text-xl font-bold text-ink">내 정보</h1>
+          <p className="text-xs text-muted mt-0.5">프로필과 지급 계좌를 확인해요.</p>
         </div>
 
         {/* Profile Card */}
-        <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-4">
+        <div className="bg-surface border border-border rounded-xl p-5 space-y-4">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-[#1E60F3] text-white flex items-center justify-center font-bold text-lg">
+            <div className="w-12 h-12 rounded-full bg-brand text-inverse flex items-center justify-center font-bold text-lg">
               김
             </div>
             <div>
-              <h2 className="font-bold text-base text-slate-900">김크루</h2>
-              <p className="text-xs text-slate-500">크루링크 공인 스태프 • 총 18회 과업 완료</p>
+              <h2 className="font-bold text-base text-ink">김크루</h2>
+              <p className="text-xs text-muted">함께한 현장 18회</p>
             </div>
           </div>
 
-          <div className="pt-3 border-t border-slate-100 grid grid-cols-2 gap-3 text-xs">
+          <div className="pt-3 border-t border-border-subtle grid grid-cols-2 gap-3 text-xs">
             <div>
-              <span className="text-slate-400 block">선호 유니폼 규격</span>
-              <span className="font-semibold text-slate-800">L (100)</span>
+              <span className="text-muted block">유니폼 사이즈</span>
+              <span className="font-semibold text-ink">L (100)</span>
             </div>
             <div>
-              <span className="text-slate-400 block">평점</span>
-              <span className="font-semibold text-slate-800">★ 4.95 / 5.0</span>
+              <span className="text-muted block">평점</span>
+              <span className="font-semibold text-ink">★ 4.95 / 5.0</span>
             </div>
           </div>
         </div>
 
-        {/* Privacy Separation Card (Rule #3 Non-negotiable) */}
-        <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-3">
-          <div className="flex items-center gap-2 font-bold text-sm text-slate-800">
-            <Lock className="w-4 h-4 text-[#1E60F3]" />
-            <span>개인정보 분리 보관 및 세무 테크 연동</span>
+        {/* Privacy Separation Card */}
+        <div className="bg-surface border border-border rounded-xl p-5 space-y-3">
+          <div className="flex items-center gap-2 font-bold text-sm text-ink">
+            <Lock className="w-4 h-4 text-brand" />
+            <span>개인정보와 지급 정보</span>
           </div>
 
           <div className="space-y-2 text-xs">
-            <div className="p-3 bg-slate-50 rounded-lg flex justify-between items-center">
+            <div className="p-3 bg-canvas rounded-lg flex justify-between items-center">
               <div>
-                <span className="text-slate-400 block">세무 테크 식별자</span>
-                <span className="font-mono font-medium text-slate-700">tax_key_****8920</span>
+                <span className="text-muted block">세무 정보</span>
+                <span className="font-mono font-medium text-muted">확인 필요</span>
               </div>
-              <span className="text-[11px] font-semibold text-[#08734E] bg-[#E7F5EE] px-2 py-0.5 rounded">
-                주민번호 미보관 안전
+              <span className="text-[11px] font-semibold text-muted bg-surface-muted px-2 py-0.5 rounded">
+                원문 미보관
               </span>
             </div>
 
-            <div className="p-3 bg-slate-50 rounded-lg flex justify-between items-center">
+            <div className="p-3 bg-canvas rounded-lg flex justify-between items-center">
               <div>
-                <span className="text-slate-400 block">정산 입금 계좌</span>
-                <span className="font-medium text-slate-700">국민은행 (312-****-****-01)</span>
+                <span className="text-muted block">지급 계좌</span>
+                <span className="font-medium text-muted">국민은행 · 312-****-****-01</span>
               </div>
-              <span className="text-[11px] font-semibold text-[#08734E] bg-[#E7F5EE] px-2 py-0.5 rounded">
-                토큰화 분리
+              <span className="text-[11px] font-semibold text-muted bg-surface-muted px-2 py-0.5 rounded">
+                일부 가림
               </span>
             </div>
           </div>
 
-          <p className="text-[11px] text-slate-500 leading-relaxed pt-1">
-            * 크루링크는 주민등록번호 원문을 데이터베이스에 일체 보관하지 않으며, 안전한 원천세 연동 식별자만을 활용합니다.
+          <p className="text-[11px] text-muted leading-relaxed pt-1">
+            주민등록번호 원문 대신 세무 서비스의 식별 정보를 사용해요. 자세한 내용은 개인정보 처리방침에서 확인해 주세요.
           </p>
         </div>
       </div>

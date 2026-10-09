@@ -52,7 +52,7 @@ export default function CrewContractPage() {
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.message || '전자서약 제출에 실패했습니다.');
+        throw new Error(data.message || '서명을 저장하지 못했어요. 연결 상태를 확인하고 다시 시도해 주세요.');
       }
 
       setSignedSuccess(true);
@@ -67,48 +67,48 @@ export default function CrewContractPage() {
     <AppShell initialRole="crew">
       <div className="max-w-xl mx-auto px-4 py-5 w-full space-y-5 pb-24">
         <div className="flex items-center justify-between">
-          <Link href="/crew" className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800">
+          <Link href="/crew" className="inline-flex items-center gap-1.5 text-xs text-muted hover:text-ink">
             <ArrowLeft className="w-4 h-4" />
-            <span>오늘 일정으로</span>
+            <span>오늘로</span>
           </Link>
-          <span className="text-xs font-semibold text-slate-500">C03 현장 전자서약</span>
+          <span className="text-xs font-semibold text-muted">계약 확인</span>
         </div>
 
         {signedSuccess ? (
-          <div className="bg-white border border-[#B6E6CE] rounded-2xl p-6 text-center space-y-4">
-            <div className="w-16 h-16 rounded-full bg-[#E7F5EE] text-[#08734E] mx-auto flex items-center justify-center">
+          <div className="bg-surface border border-brand-border rounded-2xl p-6 text-center space-y-4">
+            <div className="w-16 h-16 rounded-full bg-brand-soft text-brand-strong mx-auto flex items-center justify-center">
               <CheckCircle2 className="w-8 h-8" />
             </div>
             <div>
-              <span className="px-3 py-1 bg-[#E7F5EE] text-[#08734E] text-xs font-bold rounded-full">
-                서약 완료
+              <span className="px-3 py-1 bg-brand-soft text-brand-strong text-xs font-bold rounded-full">
+                서명 완료
               </span>
-              <h2 className="text-xl font-bold text-slate-900 mt-2">전자서약서가 체결되었습니다</h2>
-              <p className="text-xs text-slate-500 mt-1">
-                서명 벡터 데이터 및 타임스탬프가 무결성 해시와 함께 DB에 영구 보존되었습니다.
+              <h2 className="text-xl font-bold text-ink mt-2">서명을 마쳤어요</h2>
+              <p className="text-xs text-muted mt-1">
+                확인한 계약 내용과 서명을 저장했어요.
               </p>
             </div>
             <Link
               href="/crew"
-              className="flex items-center justify-center w-full min-h-[52px] bg-[#1E60F3] text-white rounded-xl font-bold text-sm hover:bg-[#164BC4] transition-colors"
+              className="flex items-center justify-center w-full min-h-[52px] bg-brand text-inverse rounded-xl font-bold text-sm hover:bg-brand-hover transition-colors"
             >
-              오늘 일정 화면으로 이동
+              오늘로 돌아가기
             </Link>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <h1 className="text-xl font-bold text-slate-900">현장 과업 도급 전자서약서</h1>
-              <p className="text-xs text-slate-500 mt-1">
-                공정 도급 구조 및 안전 준수를 위해 내용을 확인하고 자필 서명해 주세요.
+              <h1 className="text-xl font-bold text-ink">계약을 확인해 주세요</h1>
+              <p className="text-xs text-muted mt-1">
+                업무 범위와 보수, 안전 안내를 읽고 서명해 주세요.
               </p>
             </div>
 
             {/* Terms Summary Box */}
-            <div className="bg-white border border-slate-200 rounded-xl p-4 text-xs space-y-3 leading-relaxed text-slate-700 max-h-56 overflow-y-auto">
-              <div className="font-bold text-sm text-slate-900 flex items-center gap-1.5">
-                <FileText className="w-4 h-4 text-[#1E60F3]" />
-                과업지시서(SOW) 주요 조항 요약
+            <div className="bg-surface border border-border rounded-xl p-4 text-xs space-y-3 leading-relaxed text-muted max-h-56 overflow-y-auto">
+              <div className="font-bold text-sm text-ink flex items-center gap-1.5">
+                <FileText className="w-4 h-4 text-brand" />
+                업무와 보수 안내
               </div>
               <p>
                 <strong>제1조 (과업의 목적 및 범위):</strong> 본 계약은 행사장의 원활한 안내 및 현장 지원을
@@ -130,32 +130,32 @@ export default function CrewContractPage() {
             </div>
 
             {/* Checkboxes with min 44px tap targets */}
-            <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2.5">
-              <label className="flex items-start gap-2.5 cursor-pointer text-xs font-semibold text-slate-800 p-1">
+            <div className="p-4 bg-canvas border border-border rounded-xl space-y-2.5">
+              <label className="flex items-start gap-2.5 cursor-pointer text-xs font-semibold text-ink p-1">
                 <input
                   type="checkbox"
                   checked={agreeTerms}
                   onChange={(e) => setAgreeTerms(e.target.checked)}
-                  className="mt-0.5 w-4 h-4 rounded text-[#1E60F3] border-slate-300 focus:ring-[#1E60F3]"
+                  className="mt-0.5 w-4 h-4 rounded text-brand border-border focus:ring-brand"
                 />
-                <span>[필수] 과업지시서(SOW)에 명시된 업무 범위 및 안전 수칙을 준수함에 동의합니다.</span>
+                <span>업무 범위와 안전 수칙을 확인하고 동의해요. (필수)</span>
               </label>
 
-              <label className="flex items-start gap-2.5 cursor-pointer text-xs font-semibold text-slate-800 p-1">
+              <label className="flex items-start gap-2.5 cursor-pointer text-xs font-semibold text-ink p-1">
                 <input
                   type="checkbox"
                   checked={agreePrivacy}
                   onChange={(e) => setAgreePrivacy(e.target.checked)}
-                  className="mt-0.5 w-4 h-4 rounded text-[#1E60F3] border-slate-300 focus:ring-[#1E60F3]"
+                  className="mt-0.5 w-4 h-4 rounded text-brand border-border focus:ring-brand"
                 />
                 <span>
-                  [필수] 개인정보 처리방침 및 원천징수 세무 신고 관련 개인 식별자 처리에 동의합니다.
+                  개인정보 처리방침과 세무 신고를 위한 개인정보 처리에 동의해요. (필수)
                 </span>
               </label>
             </div>
 
             {/* Signature Capture Canvas */}
-            <div className="bg-white border border-slate-200 rounded-xl p-4">
+            <div className="bg-surface border border-border rounded-xl p-4">
               <SignatureCapture
                 value={strokes}
                 onChange={setStrokes}
@@ -164,7 +164,7 @@ export default function CrewContractPage() {
             </div>
 
             {errorMsg && (
-              <div className="p-3 bg-[#FFF0F3] border border-[#FDC4D0] rounded-xl text-[#BB2449] text-xs flex items-center gap-2">
+              <div className="p-3 bg-error-bg border border-error-border rounded-xl text-error text-xs flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 <span>{errorMsg}</span>
               </div>
@@ -175,13 +175,13 @@ export default function CrewContractPage() {
               type="submit"
               disabled={!canSubmit || isSubmitting}
               className={cn(
-                'w-full min-h-[52px] rounded-xl bg-[#1E60F3] hover:bg-[#164BC4] text-white font-bold text-sm',
-                'flex items-center justify-center gap-2 shadow-sm transition-colors',
+                'w-full min-h-[52px] rounded-xl bg-brand hover:bg-brand-hover text-inverse font-bold text-sm',
+                'flex items-center justify-center gap-2 shadow-xs transition-colors',
                 'disabled:opacity-50 disabled:cursor-not-allowed'
               )}
             >
               <ShieldCheck className="w-5 h-5" />
-              <span>{isSubmitting ? '서약서 등록 중...' : '동의하고 서명하기'}</span>
+              <span>{isSubmitting ? '서명 저장 중…' : '동의하고 서명하기'}</span>
             </button>
           </form>
         )}
