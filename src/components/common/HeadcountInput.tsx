@@ -61,14 +61,14 @@ export function HeadcountInput({
           {label}
         </label>
       )}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
         <button
           type="button"
           onClick={handleDecrement}
           disabled={disabled || value <= min}
           aria-label={`${label || '인원'} ${step}명 줄이기`}
           className={cn(
-            'w-11 h-11 flex items-center justify-center rounded-lg border border-border bg-surface text-muted',
+            'w-11 h-11 shrink-0 flex items-center justify-center rounded-lg border border-border bg-surface text-muted',
             'hover:bg-canvas active:bg-surface-muted transition-colors focus:outline-none focus:ring-2 focus:ring-brand',
             'disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-surface'
           )}
@@ -76,7 +76,7 @@ export function HeadcountInput({
           <Minus className="w-5 h-5" />
         </button>
 
-        <div className="relative flex-1 max-w-[140px]">
+        <div className="relative w-19 sm:w-22 shrink-0">
           <input
             id={id}
             type="text"
@@ -86,14 +86,14 @@ export function HeadcountInput({
             onChange={handleInputChange}
             disabled={disabled}
             className={cn(
-              'w-full h-11 px-3 py-2 text-center text-lg font-bold text-ink bg-surface border border-border rounded-lg',
+              'w-full h-11 pl-2 pr-6 text-center text-base sm:text-lg font-bold text-ink bg-surface border border-border rounded-lg',
               'focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand tabular-nums',
               'disabled:bg-surface-muted disabled:text-disabled'
             )}
             aria-label={`${label || '인원'} 직접 입력`}
           />
           {unit && (
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-medium text-muted pointer-events-none">
+            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted pointer-events-none">
               {unit}
             </span>
           )}
@@ -105,7 +105,7 @@ export function HeadcountInput({
           disabled={disabled || (max !== undefined && value >= max)}
           aria-label={`${label || '인원'} ${step}명 늘리기`}
           className={cn(
-            'w-11 h-11 flex items-center justify-center rounded-lg border border-border bg-surface text-muted',
+            'w-11 h-11 shrink-0 flex items-center justify-center rounded-lg border border-border bg-surface text-muted',
             'hover:bg-canvas active:bg-surface-muted transition-colors focus:outline-none focus:ring-2 focus:ring-brand',
             'disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-surface'
           )}

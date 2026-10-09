@@ -46,10 +46,6 @@ export default function Home() {
 
       {/* Hero Section */}
       <section className="max-w-5xl mx-auto px-6 pt-12 pb-8 text-center space-y-4">
-        <div className="inline-flex items-center gap-2 px-3 py-1 bg-brand-subtle border border-brand-border text-brand rounded-full text-xs font-bold">
-          <ShieldCheck className="w-4 h-4" />
-          행사 준비부터 현장 확인까지
-        </div>
         <h1 className="text-3xl sm:text-5xl font-black text-ink tracking-tight leading-tight">
           행사는 가볍게, <br className="hidden sm:inline" />
           운영은 <span className="text-brand">크루링크</span>
