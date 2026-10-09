@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { getAuthenticatedContext } from '@/lib/auth/serverAuth';
 
 export async function POST(request: Request) {
@@ -33,6 +33,14 @@ export async function POST(request: Request) {
       );
     }
 
+    const count = Number(headcount);
+    if (!count || count <= 0) {
+      return NextResponse.json(
+        { message: '필요한 크루 인원을 1명 이상 지정해 주세요.' },
+        { status: 400 }
+      );
+    }
+
     // 1. Calculate pure working hours reflecting break time
     const startDateTime = new Date(`${eventDate}T${startTime}:00`);
     const endDateTime = new Date(`${eventDate}T${endTime}:00`);
@@ -48,7 +56,7 @@ export async function POST(request: Request) {
     const netWorkMinutes = Math.max(60, totalMinutes - Number(breakMinutes));
     const netWorkHours = Number((netWorkMinutes / 60).toFixed(1));
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // 2. Resolve client organization
     let organizationId = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
@@ -84,8 +92,9 @@ export async function POST(request: Request) {
       .select('id')
       .single();
 
-    if (projError) {
-      throw new Error('행사를 저장하지 못했어요. 잠시 후 다시 시도해 주세요.');
+    if (projError || !project) {
+      console.error('[POST /api/client/projects] projError:', projError);
+      throw new Error(projError?.message || '행사를 저장하지 못했어요. 잠시 후 다시 시도해 주세요.');
     }
 
     // 4. Insert Shift
@@ -97,7 +106,7 @@ export async function POST(request: Request) {
       .insert({
         project_id: project.id,
         shift_name: `${title} · 근무 일정`,
-        required_headcount: Number(headcount),
+        required_headcount: count,
         start_time: startDateTime.toISOString(),
         end_time: endDateTime.toISOString(),
         checkin_opens_at: checkinOpensAt,
@@ -107,22 +116,26 @@ export async function POST(request: Request) {
       .select('id')
       .single();
 
-    if (shiftError) {
-      throw new Error('근무 일정을 저장하지 못했어요. 입력한 시간을 확인해 주세요.');
+    if (shiftError || !shift) {
+      console.error('[POST /api/client/projects] shiftError:', shiftError);
+      throw new Error(shiftError?.message || '근무 일정을 저장하지 못했어요. 입력한 시간을 확인해 주세요.');
     }
 
     // 5. Create Shift Slots
-    const slotsToInsert = Array.from({ length: Number(headcount) }, (_, i) => ({
+    const slotsToInsert = Array.from({ length: count }, (_, i) => ({
       shift_id: shift.id,
       slot_number: i + 1,
       position_code: `POS-${String(i + 1).padStart(2, '0')}`,
       status: 'open',
     }));
 
-    await supabase.from('shift_slots').insert(slotsToInsert);
+    const { error: slotsError } = await supabase.from('shift_slots').insert(slotsToInsert);
+    if (slotsError) {
+      console.error('[POST /api/client/projects] slotsError:', slotsError);
+    }
 
     // 6. Calculate Quote and insert into quotes table
-    const staffRemunerationWon = Math.floor(Number(headcount) * netWorkHours * Number(hourlyRateWon));
+    const staffRemunerationWon = Math.floor(count * netWorkHours * Number(hourlyRateWon));
     const platformFeeWon = Math.floor(staffRemunerationWon * 0.15); // 15% platform fee
     const subtotalWon = staffRemunerationWon + platformFeeWon;
     const vatWon = Math.floor(subtotalWon * 0.10); // 10% VAT
@@ -144,16 +157,17 @@ export async function POST(request: Request) {
       .select('id, quote_number')
       .single();
 
-    if (quoteError) {
-      throw new Error('견적을 저장하지 못했어요. 잠시 후 다시 시도해 주세요.');
+    if (quoteError || !quote) {
+      console.error('[POST /api/client/projects] quoteError:', quoteError);
+      throw new Error(quoteError?.message || '견적을 저장하지 못했어요. 잠시 후 다시 시도해 주세요.');
     }
 
     // 7. Insert Quote Items
-    await supabase.from('quote_items').insert([
+    const { error: quoteItemsError } = await supabase.from('quote_items').insert([
       {
         quote_id: quote.id,
-        item_name: `크루 보수 (${headcount}명 × ${netWorkHours}시간)`,
-        quantity: Number(headcount),
+        item_name: `크루 보수 (${count}명 × ${netWorkHours}시간)`,
+        quantity: count,
         unit_price_won: Math.floor(netWorkHours * Number(hourlyRateWon)),
         amount_won: staffRemunerationWon,
       },
@@ -166,6 +180,10 @@ export async function POST(request: Request) {
       },
     ]);
 
+    if (quoteItemsError) {
+      console.error('[POST /api/client/projects] quoteItemsError:', quoteItemsError);
+    }
+
     return NextResponse.json({
       success: true,
       projectId: project.id,
@@ -177,6 +195,7 @@ export async function POST(request: Request) {
       message: '운영 요청을 보냈어요.',
     });
   } catch (err: unknown) {
+    console.error('[POST /api/client/projects] Error caught:', err);
     return NextResponse.json({ message: (err as Error).message }, { status: 400 });
   }
 }

@@ -217,8 +217,8 @@ export default function ClientRequestWizard() {
                     isActive
                       ? 'text-brand font-bold'
                       : isPast
-                      ? 'text-brand-strong font-medium'
-                      : 'text-muted'
+                        ? 'text-brand-strong font-medium'
+                        : 'text-muted'
                   )}
                 >
                   <span className="text-[10px] uppercase tracking-wider block">
@@ -430,7 +430,7 @@ export default function ClientRequestWizard() {
                   ].map((role) => (
                     <div
                       key={role.id}
-                      className="p-4 bg-canvas border border-border rounded-xl flex items-center justify-between gap-3 shadow-2xs hover:border-brand-border transition-colors"
+                      className="p-4 bg-white border border-border rounded-xl flex items-center justify-between gap-3 shadow-2xs hover:border-brand-border transition-colors"
                     >
                       <div className="min-w-0 flex-1 pr-2">
                         <div className="text-sm font-bold text-ink leading-snug break-keep">

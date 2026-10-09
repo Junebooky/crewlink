@@ -195,14 +195,6 @@ export default function CrewTodayPage() {
             )}
           </div>
         </div>
-
-        {/* Safety & Compliance Card */}
-        <div className="p-4 bg-surface border border-border rounded-xl flex items-start gap-3 text-xs text-muted">
-          <ShieldCheck className="w-5 h-5 text-brand shrink-0 mt-0.5" />
-          <div className="leading-relaxed">
-            <strong className="text-ink">보수 안내:</strong> 지각·노쇼를 이유로 사전에 정한 벌금이나 위약금을 보수에서 일괄 공제하지 않아요. 계약 내용은 계약 확인 화면에서 확인해 주세요.
-          </div>
-        </div>
       </div>
     </AppShell>
   );
