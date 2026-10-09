@@ -17,131 +17,13 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-// 현재 기준 시각: 2026-10-09 KST
-const CURRENT_DATE_STR = '2026-10-09';
-
-export type EventCategory = 'popup' | 'expo' | 'brand' | 'festival';
-export type RecruitmentStatus = 'OPEN' | 'CLOSING_SOON' | 'CLOSED';
-
-export interface EventListItem {
-  id: string;
-  title: string;
-  displayTitle: string;
-  hostName: string;
-  category: EventCategory;
-  categoryLabel: string;
-  regionId: string;
-  regionLabel: string;
-  stationInfo?: string;
-  startDate: string;
-  endDate: string;
-  dateRangeLabel: string;
-  workHoursLabel: string;
-  isMultiDayRequired: boolean;
-  dailyWageWon: number;
-  requiredCount: number;
-  confirmedCount: number;
-  deadlineDate: string;
-  recruitmentStatus: RecruitmentStatus;
-  primaryRoles: string[];
-  createdAt: string;
-}
-
-// 검증된 샘플 피드 데이터 (실제 서비스에서는 백엔드 Public DTO와 연동)
-const EVENT_FEED_DATA: EventListItem[] = [
-  {
-    id: 'evt-2026-001',
-    title: '2026 성수 럭셔리 뷰티 브랜드 팝업스토어 현장 운영 크루',
-    displayTitle: '성수 뷰티 팝업 운영 크루',
-    hostName: '(주)글로우랩스 코리아',
-    category: 'popup',
-    categoryLabel: '팝업스토어',
-    regionId: 'seongsu',
-    regionLabel: '서울 성동구',
-    stationInfo: '성수역 도보 5분',
-    startDate: '2026-10-16',
-    endDate: '2026-10-18',
-    dateRangeLabel: '10.16–10.18 · 3일간',
-    workHoursLabel: '11:00–20:00',
-    isMultiDayRequired: true,
-    dailyWageWon: 120000,
-    requiredCount: 6,
-    confirmedCount: 2,
-    deadlineDate: '2026-10-14',
-    recruitmentStatus: 'CLOSING_SOON',
-    primaryRoles: ['관람객 안내', 'POS 결제', '사은품 배부'],
-    createdAt: '2026-10-08T09:00:00Z',
-  },
-  {
-    id: 'evt-2026-002',
-    title: '2026 서울 모빌리티 엑스포 VIP 리셉션 및 등록 안내 스태프',
-    displayTitle: '모빌리티 엑스포 VIP 리셉션',
-    hostName: '모빌리티혁신협회',
-    category: 'expo',
-    categoryLabel: '전시·박람회',
-    regionId: 'gangnam',
-    regionLabel: '서울 강남구',
-    stationInfo: '삼성역 코엑스',
-    startDate: '2026-10-22',
-    endDate: '2026-10-25',
-    dateRangeLabel: '10.22–10.25 · 4일간',
-    workHoursLabel: '09:00–18:00',
-    isMultiDayRequired: true,
-    dailyWageWon: 135000,
-    requiredCount: 8,
-    confirmedCount: 3,
-    deadlineDate: '2026-10-18',
-    recruitmentStatus: 'OPEN',
-    primaryRoles: ['VIP 라운지', '외국어 응대', '등록 데스크'],
-    createdAt: '2026-10-09T03:00:00Z',
-  },
-  {
-    id: 'evt-2026-003',
-    title: '영캐주얼 스트릿 브랜드 런칭 기념 팝업 이벤트 진행 보조',
-    displayTitle: '여의도 영캐주얼 런칭 팝업',
-    hostName: '스튜디오 바이브',
-    category: 'popup',
-    categoryLabel: '팝업스토어',
-    regionId: 'yeouido',
-    regionLabel: '서울 영등포구',
-    stationInfo: '여의도 더현대',
-    startDate: '2026-10-19',
-    endDate: '2026-10-25',
-    dateRangeLabel: '10.19–10.25 · 7일간',
-    workHoursLabel: '10:00–20:00',
-    isMultiDayRequired: false,
-    dailyWageWon: 130000,
-    requiredCount: 4,
-    confirmedCount: 1,
-    deadlineDate: '2026-10-15',
-    recruitmentStatus: 'OPEN',
-    primaryRoles: ['대기열 안내', '이벤트 진행', 'SNS 인증 확인'],
-    createdAt: '2026-10-07T12:00:00Z',
-  },
-  {
-    id: 'evt-2026-004',
-    title: '2026 대한민국 스마트 안전산업 박람회 종합 안내소 운영',
-    displayTitle: '킨텍스 안전산업 박람회 안내',
-    hostName: '(주)세이프티엔지니어링',
-    category: 'expo',
-    categoryLabel: '전시·박람회',
-    regionId: 'kintex',
-    regionLabel: '경기 고양시',
-    stationInfo: '킨텍스 제1전시장',
-    startDate: '2026-10-28',
-    endDate: '2026-10-30',
-    dateRangeLabel: '10.28–10.30 · 3일간',
-    workHoursLabel: '09:30–17:30',
-    isMultiDayRequired: true,
-    dailyWageWon: 105000,
-    requiredCount: 3,
-    confirmedCount: 0,
-    deadlineDate: '2026-10-24',
-    recruitmentStatus: 'OPEN',
-    primaryRoles: ['명찰 배부', '동선 안내'],
-    createdAt: '2026-10-06T15:00:00Z',
-  },
-];
+import {
+  EVENT_FEED_DATA,
+  EventCategory,
+  EventListItem,
+  RecruitmentStatus,
+  formatRecruitmentDeadline,
+} from '@/lib/data/events';
 
 const CATEGORY_OPTIONS: { id: 'all' | EventCategory; label: string }[] = [
   { id: 'all', label: '전체 행사' },
@@ -166,15 +48,6 @@ const SORT_OPTIONS: { id: SortOrder; label: string }[] = [
   { id: 'deadline', label: '마감 임박순' },
   { id: 'wage_desc', label: '보수 높은순' },
 ];
-
-// 모집 마감일 표시 함수 (예: '10.15까지 모집')
-function formatRecruitmentDeadline(deadlineStr: string): string {
-  const parts = deadlineStr.split('-');
-  if (parts.length === 3) {
-    return `${parts[1]}.${parts[2]}까지 모집`;
-  }
-  return `${deadlineStr.slice(5).replace('-', '.')}까지 모집`;
-}
 
 export default function HomePage() {
   const [selectedCategory, setSelectedCategory] = useState<'all' | EventCategory>('all');
