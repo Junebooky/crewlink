@@ -167,15 +167,13 @@ const SORT_OPTIONS: { id: SortOrder; label: string }[] = [
   { id: 'wage_desc', label: '보수 높은순' },
 ];
 
-// 마감일까지 남은 일수 계산 함수 (기준일: 2026-10-09)
-function calculateDeadlineDDay(deadlineStr: string): string {
-  const current = new Date(`${CURRENT_DATE_STR}T00:00:00Z`);
-  const deadline = new Date(`${deadlineStr}T00:00:00Z`);
-  const diffDays = Math.ceil((deadline.getTime() - current.getTime()) / (1000 * 60 * 60 * 24));
-
-  if (diffDays <= 0) return '오늘 마감';
-  if (diffDays <= 3) return `마감 D-${diffDays}`;
-  return `지원 마감 ${deadlineStr.slice(5).replace('-', '.')}`;
+// 모집 마감일 표시 함수 (예: '10.15까지 모집')
+function formatRecruitmentDeadline(deadlineStr: string): string {
+  const parts = deadlineStr.split('-');
+  if (parts.length === 3) {
+    return `${parts[1]}.${parts[2]}까지 모집`;
+  }
+  return `${deadlineStr.slice(5).replace('-', '.')}까지 모집`;
 }
 
 export default function HomePage() {
@@ -439,7 +437,7 @@ export default function HomePage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {filteredAndSortedEvents.map((item) => {
-              const deadlineLabel = calculateDeadlineDDay(item.deadlineDate);
+              const deadlineLabel = formatRecruitmentDeadline(item.deadlineDate);
 
               return (
                 <Link
@@ -448,21 +446,13 @@ export default function HomePage() {
                   className="group bg-surface rounded-3xl border border-border hover:border-brand-border transition-all duration-180 p-5 flex flex-col justify-between cursor-pointer shadow-2xs hover:shadow-xs"
                 >
                   <div>
-                    {/* 카드 상단: 카테고리/지역 & 마감 기한 */}
+                    {/* 카드 상단: 카테고리 & 마감 기한 */}
                     <div className="flex items-center justify-between gap-2 mb-2.5">
-                      <div className="flex items-center gap-1.5 text-xs text-muted font-medium truncate">
-                        <span>{item.categoryLabel}</span>
-                        <span className="text-border-subtle">·</span>
-                        <span className="text-ink font-semibold">{item.regionLabel}</span>
-                        {item.stationInfo && (
-                          <>
-                            <span className="text-border-subtle">·</span>
-                            <span className="truncate">{item.stationInfo}</span>
-                          </>
-                        )}
-                      </div>
+                      <span className="text-xs text-muted font-medium">
+                        {item.categoryLabel}
+                      </span>
 
-                      <span className="px-2 py-0.5 rounded-md bg-brand-soft text-brand-strong text-xs font-bold border border-brand-border shrink-0">
+                      <span className="text-xs font-bold text-brand shrink-0">
                         {deadlineLabel}
                       </span>
                     </div>
@@ -472,8 +462,15 @@ export default function HomePage() {
                       {item.displayTitle}
                     </h2>
 
-                    {/* 일시 및 시간 */}
+                    {/* 장소 - 날짜 - 시간 순서 */}
                     <div className="space-y-1.5 text-xs text-muted mb-3.5">
+                      <div className="flex items-center gap-1.5">
+                        <MapPin className="w-3.5 h-3.5 text-muted shrink-0" />
+                        <span className="font-medium text-ink">
+                          {item.regionLabel}
+                          {item.stationInfo ? ` · ${item.stationInfo}` : ''}
+                        </span>
+                      </div>
                       <div className="flex items-center gap-1.5">
                         <Calendar className="w-3.5 h-3.5 text-muted shrink-0" />
                         <span className="font-medium text-ink">{item.dateRangeLabel}</span>
