@@ -42,37 +42,37 @@ export default function OpsDashboardPage() {
     {
       id: 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee',
       type: 'MANUAL_FACE_TO_FACE',
-      title: '현장 카메라 인식 불가 - 대면 출근 확인 요청',
+      title: 'QR 확인이 어려워요 · 도착 확인 요청',
       crewName: '김*루',
-      shiftName: '2026 서울 모빌리티 엑스포 (리셉션)',
+      shiftName: '2026 서울 모빌리티 엑스포 · 리셉션',
       venueName: '코엑스 3층 D홀',
-      reportedAt: '12:35 (5분 전)',
+      reportedAt: '12:35 · 5분 전',
       version: 1,
-      details: '조명 반사로 QR 스캔 실패. 현장 데스크 3층 D홀 입구 대기 중.',
+      details: '조명 반사로 QR을 읽지 못했어요. 코엑스 3층 D홀 입구에서 확인을 기다려요.',
       urgency: 'high',
     },
     {
       id: '99999999-9999-9999-9999-999999999999',
       type: 'T30_VACANCY_ALERT',
-      title: 'T-30 결원 주의 경보: 출발 미확인',
+      title: '시작 30분 전 · 출발 확인 필요',
       crewName: '한*진',
-      shiftName: '2026 서울 모빌리티 엑스포 (무대 대기열 통제)',
+      shiftName: '2026 서울 모빌리티 엑스포 · 무대 대기열 관리',
       venueName: '코엑스 3층 D홀',
-      reportedAt: '12:30 (10분 전)',
+      reportedAt: '12:30 · 10분 전',
       version: 1,
-      details: '행사 시작 30분 전까지 [출발했어요] 미입력 상태. 긴급 대타 파견 후보 조회 필요.',
+      details: '시작 30분 전까지 출발 여부가 확인되지 않았어요. 먼저 참여 여부를 확인하고, 필요하면 대타를 제안해 주세요.',
       urgency: 'high',
     },
     {
       id: 'task-03',
       type: 'UNCONFIRMED_DEPARTURE',
-      title: '집합 시각 15분 경과 미도착 알림',
+      title: '집합 15분 경과 · 도착 확인 필요',
       crewName: '윤*영',
-      shiftName: '체험 부스 인솔 가이드',
+      shiftName: '체험 부스 · 인솔',
       venueName: '코엑스 3층 D홀',
       reportedAt: '12:45',
       version: 2,
-      details: '12:10 출발 기록 후 현장 도착 QR 스캔 미완료 상태.',
+      details: '12:10에 출발했지만 도착 확인이 아직 없어요.',
       urgency: 'medium',
     },
   ]);
@@ -98,7 +98,7 @@ export default function OpsDashboardPage() {
   const handleApprove = async () => {
     if (!selectedTask) return;
     if (!resolutionReason.trim()) {
-      setErrorMessage('예외 승인 처리 시 [처리 사유] 입력은 필수입니다.');
+      setErrorMessage('확인한 내용과 처리 이유를 적어주세요.');
       return;
     }
 
@@ -119,14 +119,14 @@ export default function OpsDashboardPage() {
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.message || '처리 중 오류가 발생했습니다.');
+        throw new Error(data.message || '처리를 마치지 못했어요. 잠시 후 다시 시도해 주세요.');
       }
 
       // Remove resolved task from inbox queue
       setTasks((prev) => prev.filter((t) => t.id !== selectedTask.id));
       setSelectedTask(null);
       setResolutionReason('');
-      setSuccessToast(`[${selectedTask.crewName}] 건이 정상 승인 완료되었습니다.`);
+      setSuccessToast(`${selectedTask.crewName} 님의 요청을 승인했어요.`);
       setTimeout(() => setSuccessToast(null), 3500);
     } catch (err: unknown) {
       setErrorMessage((err as Error).message);
@@ -152,13 +152,13 @@ export default function OpsDashboardPage() {
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.message || '대타 제안 실패');
+        throw new Error(data.message || '제안을 보내지 못했어요. 잠시 후 다시 시도해 주세요.');
       }
 
       setShowReplacementModal(false);
       setTasks((prev) => prev.filter((t) => t.type !== 'T30_VACANCY_ALERT'));
       const matchedName = candidateList.find((c) => c.id === selectedCandidate)?.name || '후보 크루';
-      setSuccessToast(`긴급 대타 [${matchedName}] 님에게 대타 제안이 안전하게 전송되었습니다.`);
+      setSuccessToast(`${matchedName} 님에게 제안을 보냈어요. 수락 여부를 확인해 주세요.`);
       setTimeout(() => setSuccessToast(null), 3500);
     } catch (err: unknown) {
       setErrorMessage((err as Error).message);
@@ -180,14 +180,14 @@ export default function OpsDashboardPage() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-red-600 bg-red-50 px-2.5 py-0.5 rounded-full uppercase">
-                O01 작업함 (INBOX)
+              <span className="text-xs font-bold text-brand-strong bg-brand-subtle px-2.5 py-0.5 rounded-full uppercase">
+                작업함
               </span>
-              <span className="text-xs text-slate-500">실시간 예외 큐 관제</span>
+              <span className="text-xs text-muted">확인이 필요한 현장 소식</span>
             </div>
-            <h1 className="text-2xl font-bold text-slate-900 mt-1">현장 운영 관제 작업함</h1>
-            <p className="text-xs text-slate-500 mt-0.5">
-              미확인 출근, T-30 결원 경보 및 대면 수동 확인 요청을 안전하게 심사·승인합니다.
+            <h1 className="text-2xl font-bold text-ink mt-1">지금 확인할 일</h1>
+            <p className="text-xs text-muted mt-0.5">
+              도착 확인과 인원 변동을 확인하고, 필요한 조치를 이어가세요.
             </p>
           </div>
 
@@ -195,28 +195,28 @@ export default function OpsDashboardPage() {
             <button
               type="button"
               onClick={() => setShowReplacementModal(true)}
-              className="inline-flex items-center justify-center gap-2 px-4 min-h-[52px] bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors"
+              className="inline-flex items-center justify-center gap-2 px-4 min-h-[52px] bg-brand hover:bg-brand-hover text-inverse text-xs font-bold rounded-xl shadow-xs transition-colors"
             >
               <AlertTriangle className="w-4 h-4" />
-              <span>O03 긴급 대타 파견 모듈</span>
+              <span>대타 찾기</span>
             </button>
           </div>
         </div>
 
         {/* Success Toast */}
         {successToast && (
-          <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-bold flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+          <div className="p-4 bg-brand-subtle border border-brand-border text-brand-strong rounded-xl text-xs font-bold flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-brand-strong" />
             <span>{successToast}</span>
           </div>
         )}
 
         {/* Queue Filter Tabs */}
-        <div className="flex items-center gap-2 border-b border-slate-200 pb-2 text-xs">
+        <div className="flex items-center gap-2 border-b border-border pb-2 text-xs">
           {[
-            { key: 'ALL', label: `전체 작업 (${tasks.length})` },
-            { key: 'MANUAL', label: `수동 대면 확인 요청 (${tasks.filter((t) => t.type === 'MANUAL_FACE_TO_FACE').length})` },
-            { key: 'T30', label: `T-30 결원 경보 (${tasks.filter((t) => t.type === 'T30_VACANCY_ALERT').length})` },
+            { key: 'ALL', label: `전체 ${tasks.length}` },
+            { key: 'MANUAL', label: `도착 확인 ${tasks.filter((t) => t.type === 'MANUAL_FACE_TO_FACE').length}` },
+            { key: 'T30', label: `인원 확인 ${tasks.filter((t) => t.type === 'T30_VACANCY_ALERT').length}` },
           ].map((tab) => (
             <button
               key={tab.key}
@@ -225,8 +225,8 @@ export default function OpsDashboardPage() {
               className={cn(
                 'px-3.5 py-2 rounded-lg font-medium transition-colors',
                 activeQueue === tab.key
-                  ? 'bg-slate-900 text-white font-bold'
-                  : 'text-slate-600 hover:bg-slate-100'
+                  ? 'bg-brand-soft text-brand-strong font-bold'
+                  : 'text-muted hover:bg-surface-muted'
               )}
             >
               {tab.label}
@@ -236,10 +236,10 @@ export default function OpsDashboardPage() {
 
         {/* Task List (O01) */}
         {filteredTasks.length === 0 ? (
-          <div className="p-12 bg-white border border-slate-200 rounded-2xl text-center text-slate-400 text-sm">
-            <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto mb-2 opacity-80" />
-            <div className="font-bold text-slate-700">모든 예외 작업이 처리되었습니다</div>
-            <div className="text-xs text-slate-400 mt-1">대기 중인 긴급 큐가 없습니다.</div>
+          <div className="p-12 bg-surface border border-border rounded-2xl text-center text-muted text-sm">
+            <CheckCircle2 className="w-10 h-10 text-brand-strong mx-auto mb-2 opacity-80" />
+            <div className="font-bold text-muted">확인할 일을 모두 마쳤어요</div>
+            <div className="text-xs text-muted mt-1">새 요청이 오면 이곳에 보여드려요.</div>
           </div>
         ) : (
           <div className="space-y-3">
@@ -252,8 +252,8 @@ export default function OpsDashboardPage() {
                   setResolutionReason('');
                 }}
                 className={cn(
-                  'p-4 bg-white border rounded-xl hover:shadow-sm cursor-pointer transition-all flex flex-col md:flex-row md:items-center justify-between gap-4',
-                  task.urgency === 'high' ? 'border-amber-300 bg-amber-50/20' : 'border-slate-200'
+                  'p-4 bg-surface border rounded-xl hover:shadow-xs cursor-pointer transition-all flex flex-col md:flex-row md:items-center justify-between gap-4',
+                  task.urgency === 'high' ? 'border-brand bg-brand-subtle' : 'border-border'
                 )}
               >
                 <div className="space-y-1.5 flex-1">
@@ -262,37 +262,34 @@ export default function OpsDashboardPage() {
                       className={cn(
                         'text-[11px] font-bold px-2 py-0.5 rounded-md',
                         task.type === 'MANUAL_FACE_TO_FACE'
-                          ? 'bg-blue-100 text-blue-700'
+                          ? 'bg-brand-soft text-brand-strong'
                           : task.type === 'T30_VACANCY_ALERT'
-                          ? 'bg-red-100 text-red-700'
-                          : 'bg-amber-100 text-amber-700'
+                          ? 'bg-brand-soft text-brand-strong'
+                          : 'bg-surface-muted text-muted'
                       )}
                     >
                       {task.type === 'MANUAL_FACE_TO_FACE'
-                        ? '대면 확인 요청'
+                        ? '도착 확인'
                         : task.type === 'T30_VACANCY_ALERT'
-                        ? 'T-30 결원 경보'
-                        : '미도착 알림'}
+                        ? '인원 확인'
+                        : '도착 미확인'}
                     </span>
-                    <span className="text-xs text-slate-400">{task.reportedAt}</span>
-                    <span className="text-[10px] font-mono text-slate-400 border px-1.5 rounded">
-                      Lock v{task.version}
-                    </span>
+                    <span className="text-xs text-muted">{task.reportedAt}</span>
                   </div>
 
-                  <h3 className="font-bold text-slate-900 text-sm">{task.title}</h3>
-                  <p className="text-xs text-slate-600 line-clamp-1">{task.details}</p>
+                  <h3 className="font-bold text-ink text-sm">{task.title}</h3>
+                  <p className="text-xs text-muted line-clamp-1">{task.details}</p>
 
-                  <div className="text-xs text-slate-500 flex items-center gap-3 pt-1">
-                    <span>크루: <strong className="text-slate-800">{task.crewName}</strong></span>
+                  <div className="text-xs text-muted flex items-center gap-3 pt-1">
+                    <span>크루 <strong className="text-ink">{task.crewName}</strong></span>
                     <span>• {task.shiftName}</span>
                     <span>• {task.venueName}</span>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-xs font-bold text-[#1E60F3] hover:underline flex items-center gap-1">
-                    <span>심사하기</span>
+                  <span className="text-xs font-bold text-brand hover:underline flex items-center gap-1">
+                    <span>확인하기</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </span>
                 </div>
@@ -311,8 +308,8 @@ export default function OpsDashboardPage() {
               setResolutionReason('');
             }
           }}
-          title={selectedTask?.title || '예외 심사'}
-          description="현장 예외 요청을 심사하고 승인 또는 반려합니다."
+          title={selectedTask?.title || '요청 확인'}
+          description="요청 내용과 확인 근거를 살펴보고 처리해 주세요."
           side="right"
         >
           {selectedTask && (
@@ -320,50 +317,47 @@ export default function OpsDashboardPage() {
               {/* Sheet Body */}
               <div className="p-5 space-y-4 flex-1 overflow-y-auto text-xs">
                 {/* Concurrency Lock indicator */}
-                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
+                <div className="p-3 bg-canvas border border-border rounded-xl flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Lock className="w-4 h-4 text-slate-500" />
-                    <span className="font-semibold text-slate-700">다른 운영자의 처리 여부를 확인해요</span>
+                    <Lock className="w-4 h-4 text-muted" />
+                    <span className="font-semibold text-muted">다른 운영자가 먼저 처리했는지 확인해요</span>
                   </div>
-                  <span className="font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded font-bold">
-                    Target Lock v{selectedTask.version}
-                  </span>
                 </div>
 
                 {/* Target info */}
-                <div className="space-y-2 p-3 bg-slate-50 rounded-xl text-slate-700">
+                <div className="space-y-2 p-3 bg-canvas rounded-xl text-muted">
                   <div className="flex justify-between">
-                    <span className="text-slate-400">대상 크루</span>
-                    <span className="font-bold text-slate-900">{selectedTask.crewName}</span>
+                    <span className="text-muted">크루</span>
+                    <span className="font-bold text-ink">{selectedTask.crewName}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-400">배정 행사</span>
+                    <span className="text-muted">행사</span>
                     <span>{selectedTask.shiftName}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-400">요청 사유</span>
-                    <span className="font-medium text-slate-900">{selectedTask.details}</span>
+                    <span className="text-muted">요청 내용</span>
+                    <span className="font-medium text-ink">{selectedTask.details}</span>
                   </div>
                 </div>
 
                 {/* Mandatory Resolution Reason Input */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-800 block">
-                    처리 사유 및 근거 기록 <span className="text-red-500">*필수</span>
+                  <label className="text-xs font-bold text-ink block">
+                    확인 내용과 처리 이유 <span className="text-brand">필수</span>
                   </label>
                   <textarea
                     value={resolutionReason}
                     onChange={(e) => setResolutionReason(e.target.value)}
-                    placeholder="예: 현장 안내데스크에서 신분증 및 본인 일치 확인 완료 후 수동 승인함."
-                    className="w-full h-24 p-3 border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-[#1E60F3] focus:outline-none"
+                    placeholder="예: 현장 데스크에서 본인과 도착 여부를 확인했어요"
+                    className="w-full h-24 p-3 border border-border rounded-xl text-xs text-ink bg-surface focus:ring-2 focus:ring-brand focus:outline-none"
                   />
-                  <p className="text-[11px] text-slate-400">
-                    * 처리 사유는 공정 감사 로그(`audit_events`)에 영구 기록됩니다.
+                  <p className="text-[11px] text-muted">
+                    처리 이유는 변경 이력에 남아요.
                   </p>
                 </div>
 
                 {errorMessage && (
-                  <div className="p-3 bg-[#FFF0F3] border border-[#FDC4D0] rounded-xl text-[#BB2449] text-xs flex items-center gap-2">
+                  <div className="p-3 bg-error-bg border border-error-border rounded-xl text-error text-xs flex items-center gap-2">
                     <AlertTriangle className="w-4 h-4 shrink-0" />
                     <span>{errorMessage}</span>
                   </div>
@@ -371,22 +365,22 @@ export default function OpsDashboardPage() {
               </div>
 
               {/* Sheet Actions */}
-              <div className="p-5 border-t border-slate-100 bg-slate-50 flex gap-2">
+              <div className="p-5 border-t border-border-subtle bg-canvas flex gap-2">
                 <button
                   type="button"
                   onClick={() => setSelectedTask(null)}
-                  className="flex-1 min-h-[52px] border border-slate-300 bg-white text-slate-700 font-bold text-xs rounded-xl hover:bg-slate-50"
+                  className="flex-1 min-h-[52px] border border-border bg-surface text-muted font-bold text-xs rounded-xl hover:bg-canvas"
                 >
-                  취소
+                  닫기
                 </button>
                 <button
                   type="button"
                   onClick={handleApprove}
                   disabled={isProcessing || !resolutionReason.trim()}
-                  className="flex-1 min-h-[52px] bg-[#1E60F3] hover:bg-[#164BC4] text-white font-bold text-xs rounded-xl disabled:opacity-50 flex items-center justify-center gap-1.5 transition-colors"
+                  className="flex-1 min-h-[52px] bg-brand hover:bg-brand-hover text-inverse font-bold text-xs rounded-xl disabled:opacity-50 flex items-center justify-center gap-1.5 transition-colors"
                 >
                   <UserCheck className="w-4 h-4" />
-                  <span>{isProcessing ? '처리 중...' : '예외 승인 완료'}</span>
+                  <span>{isProcessing ? '승인하는 중…' : '승인하기'}</span>
                 </button>
               </div>
             </div>
@@ -397,8 +391,8 @@ export default function OpsDashboardPage() {
         <AccessibleSheet
           open={showReplacementModal}
           onOpenChange={setShowReplacementModal}
-          title="인근 활동 크루 배정"
-          description="행사 시작 30분 전 결원 슬롯에 대해 인근 크루 1인을 대타 제안합니다."
+          title="대타를 제안해 주세요"
+          description="함께할 수 있는 크루를 골라 제안을 보내세요. 수락 후 배정 여부를 확인해 주세요."
           side="center"
         >
           <div className="p-6 space-y-5">
@@ -411,32 +405,31 @@ export default function OpsDashboardPage() {
                   className={cn(
                     'p-3.5 rounded-xl border flex items-center justify-between cursor-pointer transition-colors',
                     selectedCandidate === cand.id
-                      ? 'border-[#1E60F3] bg-blue-50/60 font-bold'
-                      : 'border-slate-200 hover:border-slate-300'
+                      ? 'border-brand bg-brand-subtle font-bold'
+                      : 'border-border hover:border-border'
                   )}
                 >
                   <div>
-                    <div className="text-sm font-bold text-slate-900">{cand.name}</div>
-                    <div className="text-slate-500 mt-0.5">
-                      거리 {cand.distance} • 평점 {cand.rating} • 수행 {cand.total}회
+                    <div className="text-sm font-bold text-ink">{cand.name}</div>
+                    <div className="text-muted mt-0.5">
+                      거리 {cand.distance} · 평점 {cand.rating} · 함께한 현장 {cand.total}회
                     </div>
                   </div>
                   <div className="text-right">
-                    <span className="text-[11px] text-[#1E60F3] font-semibold bg-blue-50 px-2 py-1 rounded">
-                      출발 가능
+                    <span className="text-[11px] text-brand font-semibold bg-brand-subtle px-2 py-1 rounded">
+                      후보 크루
                     </span>
                   </div>
                 </div>
               ))}
             </div>
 
-            <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-[11px] text-amber-800 leading-relaxed">
-              * 배정 확정 시 `work_reservations` 중복 배정 배제 제약에 의해 동시 배정이 차단되며,
-              알림톡으로 즉시 출발 지시가 전송됩니다.
+            <div className="p-3 bg-surface-muted border border-neutral-border rounded-xl text-[11px] text-muted leading-relaxed">
+              제안을 보낸 뒤 수락 여부를 확인해 주세요. 배정 결과와 알림 발송 상태는 각각 확인해요.
             </div>
 
             {errorMessage && (
-              <div className="p-3 bg-[#FFF0F3] border border-[#FDC4D0] rounded-xl text-[#BB2449] text-xs flex items-center gap-2">
+              <div className="p-3 bg-error-bg border border-error-border rounded-xl text-error text-xs flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 shrink-0" />
                 <span>{errorMessage}</span>
               </div>
@@ -446,7 +439,7 @@ export default function OpsDashboardPage() {
               <button
                 type="button"
                 onClick={() => setShowReplacementModal(false)}
-                className="flex-1 min-h-[52px] border border-slate-300 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-50"
+                className="flex-1 min-h-[52px] border border-border rounded-xl text-xs font-bold text-muted hover:bg-canvas"
               >
                 닫기
               </button>
@@ -454,10 +447,10 @@ export default function OpsDashboardPage() {
                 type="button"
                 onClick={handleDispatchReplacement}
                 disabled={!selectedCandidate || isDispatching}
-                className="flex-1 min-h-[52px] bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold disabled:opacity-50 flex items-center justify-center gap-1.5 transition-colors"
+                className="flex-1 min-h-[52px] bg-brand hover:bg-brand-hover text-inverse rounded-xl text-xs font-bold disabled:opacity-50 flex items-center justify-center gap-1.5 transition-colors"
               >
                 <Send className="w-4 h-4" />
-                <span>{isDispatching ? '제안 전송 중...' : '대타 제안 보내기'}</span>
+                <span>{isDispatching ? '제안 보내는 중…' : '대타 제안 보내기'}</span>
               </button>
             </div>
           </div>

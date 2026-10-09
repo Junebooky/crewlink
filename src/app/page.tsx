@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import Link from 'next/link';
 import {
@@ -19,171 +21,169 @@ import {
 } from 'lucide-react';
 
 export default function Home() {
+  const [year, setYear] = React.useState(2026);
+
+  React.useEffect(() => {
+    setYear(new Date().getFullYear());
+  }, []);
+
   return (
-    <div className="min-h-screen bg-[#F5F7FB] text-slate-900">
+    <div className="min-h-screen bg-canvas text-ink">
       {/* Top Navigation */}
-      <header className="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between sticky top-0 z-20">
+      <header className="h-16 bg-surface border-b border-border px-6 flex items-center justify-between sticky top-0 z-20">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-[#1E60F3] text-white flex items-center justify-center font-black text-xl shadow-xs">
+          <div className="w-9 h-9 rounded-xl bg-brand text-inverse flex items-center justify-center font-black text-xl shadow-xs">
             C
           </div>
           <div>
-            <div className="font-extrabold text-lg text-slate-900 tracking-tight leading-none">
-              CrewLink <span className="text-xs text-[#1E60F3] font-bold">v2.0</span>
+            <div className="font-extrabold text-lg text-ink tracking-tight leading-none">
+              CrewLink
             </div>
-            <div className="text-[10px] text-slate-400 font-medium">B2B 디지털 행사 도급 플랫폼</div>
+            <div className="text-[10px] text-muted font-medium">행사와 크루를 잇다</div>
           </div>
-        </div>
-
-        <div className="flex items-center gap-2 text-xs font-semibold">
-          <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            PostgreSQL 16 & Next.js 15
-          </span>
         </div>
       </header>
 
       {/* Hero Section */}
       <section className="max-w-5xl mx-auto px-6 pt-12 pb-8 text-center space-y-4">
-        <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 border border-blue-200 text-[#1E60F3] rounded-full text-xs font-bold">
+        <div className="inline-flex items-center gap-2 px-3 py-1 bg-brand-subtle border border-brand-border text-brand rounded-full text-xs font-bold">
           <ShieldCheck className="w-4 h-4" />
-          노무 실질 준수 • 3.3% 정밀 원천세 엔진 • 동시성 배제 제약
+          행사 준비부터 현장 확인까지
         </div>
-        <h1 className="text-3xl sm:text-5xl font-black text-slate-900 tracking-tight leading-tight">
-          행사 현장 인력 도급의 <br className="hidden sm:inline" />
-          새로운 표준, <span className="text-[#1E60F3]">크루링크(CrewLink)</span>
+        <h1 className="text-3xl sm:text-5xl font-black text-ink tracking-tight leading-tight">
+          행사는 가볍게, <br className="hidden sm:inline" />
+          운영은 <span className="text-brand">크루링크</span>
         </h1>
-        <p className="max-w-2xl mx-auto text-sm sm:text-base text-slate-600 leading-relaxed">
-          과업지시서(SOW) 기반의 공정 도급 체계, 10원 미만 절사 세무 산출,
-          60초 가변 QR 출결 챌린지 및 실시간 라이브 관제를 경험해 보세요.
+        <p className="max-w-2xl mx-auto text-sm sm:text-base text-muted leading-relaxed">
+          함께할 크루를 찾고, 현장 소식과 정산을 한곳에서 확인해요.
         </p>
       </section>
 
       {/* 3 Core Roles Gateway Cards */}
       <section className="max-w-5xl mx-auto px-6 py-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* 1. Crew Portal (C01~C06) */}
-          <div className="bg-white border border-slate-200 hover:border-[#1E60F3] rounded-2xl p-6 flex flex-col justify-between shadow-xs transition-all hover:shadow-md group">
+          {/* 1. Crew Portal */}
+          <div className="bg-surface border border-border hover:border-brand rounded-2xl p-6 flex flex-col justify-between shadow-xs transition-all hover:shadow-md group">
             <div className="space-y-4">
-              <div className="w-12 h-12 rounded-xl bg-blue-50 text-[#1E60F3] flex items-center justify-center">
+              <div className="w-12 h-12 rounded-xl bg-brand-subtle text-brand flex items-center justify-center">
                 <Smartphone className="w-6 h-6" />
               </div>
 
               <div>
-                <span className="text-[11px] font-bold text-[#1E60F3] uppercase tracking-wider">
-                  Role: 현장 스태프
+                <span className="text-[11px] font-bold text-brand uppercase tracking-wider">
+                  크루
                 </span>
-                <h2 className="text-xl font-bold text-slate-900 mt-1">크루 모바일 PWA</h2>
-                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                  모바일 최적화 화면에서 배정 확인, 출발 상태 전송, 현장 QR 출근 인증 및 전자서약을 수행합니다.
+                <h2 className="text-xl font-bold text-ink mt-1">오늘 함께할 현장</h2>
+                <p className="text-xs text-muted mt-1 leading-relaxed">
+                  시간과 장소를 확인하고, 출발과 도착을 알려주세요.
                 </p>
               </div>
 
-              <div className="pt-2 border-t border-slate-100 space-y-2 text-xs text-slate-600">
+              <div className="pt-2 border-t border-border-subtle space-y-2 text-xs text-muted">
                 <div className="flex items-center gap-2">
-                  <QrCode className="w-3.5 h-3.5 text-slate-400" />
-                  <span>C04 60초 가변 QR 인증 & 대면 확인 대기 뷰</span>
+                  <QrCode className="w-3.5 h-3.5 text-muted" />
+                  <span>QR로 도착 확인</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <FileCheck2 className="w-3.5 h-3.5 text-slate-400" />
-                  <span>C03 벡터 스트로크 보존 전자서약서</span>
+                  <FileCheck2 className="w-3.5 h-3.5 text-muted" />
+                  <span>모바일로 계약 확인</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Receipt className="w-3.5 h-3.5 text-slate-400" />
-                  <span>C06 3.3% 원천세 공제 정산 명세서 영수증</span>
+                  <Receipt className="w-3.5 h-3.5 text-muted" />
+                  <span>한눈에 보는 정산 내역</span>
                 </div>
               </div>
             </div>
 
             <Link
               href="/crew"
-              className="mt-6 w-full h-11 bg-[#1E60F3] group-hover:bg-[#164BC4] text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-colors shadow-xs"
+              className="mt-6 w-full h-11 bg-brand group-hover:bg-brand-hover text-inverse font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-colors shadow-xs"
             >
-              <span>크루 PWA 체험하기</span>
+              <span>크루 화면 보기</span>
               <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
 
-          {/* 2. Client Web Portal (B01~B04) */}
-          <div className="bg-white border border-slate-200 hover:border-[#1E60F3] rounded-2xl p-6 flex flex-col justify-between shadow-xs transition-all hover:shadow-md group">
+          {/* 2. Client Web Portal */}
+          <div className="bg-surface border border-border hover:border-brand rounded-2xl p-6 flex flex-col justify-between shadow-xs transition-all hover:shadow-md group">
             <div className="space-y-4">
-              <div className="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+              <div className="w-12 h-12 rounded-xl bg-brand-subtle text-brand-strong flex items-center justify-center">
                 <Building2 className="w-6 h-6" />
               </div>
 
               <div>
-                <span className="text-[11px] font-bold text-indigo-600 uppercase tracking-wider">
-                  Role: 발주 고객사
+                <span className="text-[11px] font-bold text-brand-strong uppercase tracking-wider">
+                  행사 담당자
                 </span>
-                <h2 className="text-xl font-bold text-slate-900 mt-1">광고주(고객) 웹 포털</h2>
-                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                  4단계 위저드로 과업을 발주하고, 크루 개인정보가 마스킹된 현장 관제 보드로 도착 현황을 확인합니다.
+                <h2 className="text-xl font-bold text-ink mt-1">행사 준비를 한곳에서</h2>
+                <p className="text-xs text-muted mt-1 leading-relaxed">
+                  필요한 역할과 인원을 정하고, 현장 준비와 비용을 확인해요.
                 </p>
               </div>
 
-              <div className="pt-2 border-t border-slate-100 space-y-2 text-xs text-slate-600">
+              <div className="pt-2 border-t border-border-subtle space-y-2 text-xs text-muted">
                 <div className="flex items-center gap-2">
-                  <Layers className="w-3.5 h-3.5 text-slate-400" />
-                  <span>B02 4-Step SOW 운영 요청 위저드</span>
+                  <Layers className="w-3.5 h-3.5 text-muted" />
+                  <span>역할·인원으로 운영 요청</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Users className="w-3.5 h-3.5 text-slate-400" />
-                  <span>인원 Stepper(min=1) & 15% 투명 견적서</span>
+                  <Users className="w-3.5 h-3.5 text-muted" />
+                  <span>항목별 예상 비용</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Lock className="w-3.5 h-3.5 text-slate-400" />
-                  <span>B01 마스킹 프로필 실시간 배치 보드</span>
+                  <Lock className="w-3.5 h-3.5 text-muted" />
+                  <span>크루 배치와 현장 현황</span>
                 </div>
               </div>
             </div>
 
             <Link
               href="/client"
-              className="mt-6 w-full h-11 bg-slate-900 group-hover:bg-slate-800 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-colors shadow-xs"
+              className="mt-6 w-full h-11 bg-brand group-hover:bg-brand-hover text-inverse font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-colors shadow-xs"
             >
-              <span>고객 포털 체험하기</span>
+              <span>행사 화면 보기</span>
               <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
 
-          {/* 3. Ops Dashboard (O01~O03) */}
-          <div className="bg-white border border-slate-200 hover:border-[#1E60F3] rounded-2xl p-6 flex flex-col justify-between shadow-xs transition-all hover:shadow-md group">
+          {/* 3. Ops Dashboard */}
+          <div className="bg-surface border border-border hover:border-brand rounded-2xl p-6 flex flex-col justify-between shadow-xs transition-all hover:shadow-md group">
             <div className="space-y-4">
-              <div className="w-12 h-12 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
+              <div className="w-12 h-12 rounded-xl bg-brand-subtle text-brand-strong flex items-center justify-center">
                 <Inbox className="w-6 h-6" />
               </div>
 
               <div>
-                <span className="text-[11px] font-bold text-rose-600 uppercase tracking-wider">
-                  Role: 플랫폼 총괄 운영자
+                <span className="text-[11px] font-bold text-brand-strong uppercase tracking-wider">
+                  운영팀
                 </span>
-                <h2 className="text-xl font-bold text-slate-900 mt-1">슈퍼 어드민 관제함</h2>
-                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                  미확인 출근, T-30 결원 경보를 실시간 큐에서 처리하고, 동시성 락 기반 예외 승인 및 긴급 대타를 파견합니다.
+                <h2 className="text-xl font-bold text-ink mt-1">지금 필요한 확인부터</h2>
+                <p className="text-xs text-muted mt-1 leading-relaxed">
+                  도착 확인 요청과 인원 변동을 살펴보고, 필요한 조치를 이어가세요.
                 </p>
               </div>
 
-              <div className="pt-2 border-t border-slate-100 space-y-2 text-xs text-slate-600">
+              <div className="pt-2 border-t border-border-subtle space-y-2 text-xs text-muted">
                 <div className="flex items-center gap-2">
-                  <Inbox className="w-3.5 h-3.5 text-slate-400" />
-                  <span>O01 수동 대면 확인 & T-30 결원 작업함 큐</span>
+                  <Inbox className="w-3.5 h-3.5 text-muted" />
+                  <span>확인이 필요한 요청 모아보기</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Lock className="w-3.5 h-3.5 text-slate-400" />
-                  <span>O02 버전 선점 락 & 사유 필수 예외 Sheet</span>
+                  <Lock className="w-3.5 h-3.5 text-muted" />
+                  <span>처리 이유와 변경 이력</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <AlertTriangle className="w-3.5 h-3.5 text-slate-400" />
-                  <span>O03 인근 크루 1인 선착순 원자적 대타 배정</span>
+                  <AlertTriangle className="w-3.5 h-3.5 text-muted" />
+                  <span>대타 후보에게 제안 보내기</span>
                 </div>
               </div>
             </div>
 
             <Link
               href="/ops"
-              className="mt-6 w-full h-11 bg-rose-600 group-hover:bg-rose-700 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-colors shadow-xs"
+              className="mt-6 w-full h-11 bg-brand group-hover:bg-brand-hover text-inverse font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-colors shadow-xs"
             >
-              <span>운영 관제 대시보드</span>
+              <span>작업함 보기</span>
               <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
@@ -192,72 +192,72 @@ export default function Home() {
 
       {/* Engineering Non-Negotiables Grid */}
       <section className="max-w-5xl mx-auto px-6 py-8">
-        <div className="bg-slate-900 text-white rounded-2xl p-8 space-y-6">
+        <div className="bg-ink text-inverse rounded-2xl p-8 space-y-6">
           <div className="text-center max-w-xl mx-auto space-y-2">
-            <span className="text-xs font-bold text-blue-400 tracking-wider uppercase">
-              Core Engineering Architecture
+            <span className="text-xs font-bold text-brand-inverse tracking-wider uppercase">
+              함께하는 방식
             </span>
-            <h3 className="text-xl sm:text-2xl font-bold">5대 엔지니어링 절대 원칙 구현</h3>
+            <h3 className="text-xl sm:text-2xl font-bold">행사 운영에 필요한 여섯 가지</h3>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs text-slate-300">
-            <div className="p-4 bg-slate-800/80 rounded-xl border border-slate-700 space-y-1.5">
-              <div className="font-bold text-white flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                <span>1. 노무 실질 준수</span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs text-inverse-muted">
+            <div className="p-4 bg-ink/80 rounded-xl border border-border-strong space-y-1.5">
+              <div className="font-bold text-inverse flex items-center gap-1.5">
+                <ShieldCheck className="w-4 h-4 text-brand-inverse" />
+                <span>명확한 업무 안내</span>
               </div>
-              <p className="text-slate-400 leading-relaxed">
-                일률 3.3% 프리랜서 간주 배제. SOW 과업지시서 기반 도급 및 근로기준법 제20조 위약금/벌금 차감 금지.
+              <p className="text-inverse-muted leading-relaxed">
+                맡을 일과 보수, 준비 사항을 계약에서 확인해요.
               </p>
             </div>
 
-            <div className="p-4 bg-slate-800/80 rounded-xl border border-slate-700 space-y-1.5">
-              <div className="font-bold text-white flex items-center gap-1.5">
-                <Calculator className="w-4 h-4 text-blue-400" />
-                <span>2. 세무 계산 정밀성</span>
+            <div className="p-4 bg-ink/80 rounded-xl border border-border-strong space-y-1.5">
+              <div className="font-bold text-inverse flex items-center gap-1.5">
+                <Calculator className="w-4 h-4 text-brand-inverse" />
+                <span>한눈에 보는 정산</span>
               </div>
-              <p className="text-slate-400 leading-relaxed">
-                2024년 7월 1일 이후 소액부징수 면제 배제. 국고금관리법/지방회계법 10원 미만 절사 BigInt 40개 테스트 통과.
+              <p className="text-inverse-muted leading-relaxed">
+                보수와 비용, 공제 금액을 나눠 확인해요.
               </p>
             </div>
 
-            <div className="p-4 bg-slate-800/80 rounded-xl border border-slate-700 space-y-1.5">
-              <div className="font-bold text-white flex items-center gap-1.5">
-                <Lock className="w-4 h-4 text-amber-400" />
-                <span>3. 개인정보 완전 격리</span>
+            <div className="p-4 bg-ink/80 rounded-xl border border-border-strong space-y-1.5">
+              <div className="font-bold text-inverse flex items-center gap-1.5">
+                <Lock className="w-4 h-4 text-brand-inverse" />
+                <span>필요한 정보만 공유</span>
               </div>
-              <p className="text-slate-400 leading-relaxed">
-                주민등록번호 원문 미보관. 세무 테크 식별자(`tax_provider_user_key`) 및 토큰화 계좌 분리 보관.
+              <p className="text-inverse-muted leading-relaxed">
+                현장 운영에 필요한 정보는 보여주고, 개인 정보는 접근 범위를 구분해요.
               </p>
             </div>
 
-            <div className="p-4 bg-slate-800/80 rounded-xl border border-slate-700 space-y-1.5">
-              <div className="font-bold text-white flex items-center gap-1.5">
-                <Database className="w-4 h-4 text-purple-400" />
-                <span>4. 동시성 배제 제약</span>
+            <div className="p-4 bg-ink/80 rounded-xl border border-border-strong space-y-1.5">
+              <div className="font-bold text-inverse flex items-center gap-1.5">
+                <Database className="w-4 h-4 text-brand-inverse" />
+                <span>배정 일정 확인</span>
               </div>
-              <p className="text-slate-400 leading-relaxed">
-                PostgreSQL `work_reservations`에 `EXCLUDE USING gist` 제약 및 행 잠금(`FOR UPDATE`) 적용.
+              <p className="text-inverse-muted leading-relaxed">
+                함께할 현장과 시간, 인원 변동을 확인해요.
               </p>
             </div>
 
-            <div className="p-4 bg-slate-800/80 rounded-xl border border-slate-700 space-y-1.5">
-              <div className="font-bold text-white flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 text-cyan-400" />
-                <span>5. 허위 낙관적 UI 금지</span>
+            <div className="p-4 bg-ink/80 rounded-xl border border-border-strong space-y-1.5">
+              <div className="font-bold text-inverse flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4 text-brand-inverse" />
+                <span>처리 결과를 분명하게</span>
               </div>
-              <p className="text-slate-400 leading-relaxed">
-                출근/서명/결제는 서버의 성공 응답 확정 후에만 UI 전이. 카운트업/카드점멸/쉐이크 배제.
+              <p className="text-inverse-muted leading-relaxed">
+                출발·도착·서명 요청의 처리 상태를 확인해요.
               </p>
             </div>
 
-            <div className="p-4 bg-slate-800/80 rounded-xl border border-slate-700 space-y-1.5">
-              <div className="font-bold text-white flex items-center gap-1.5">
-                <Users className="w-4 h-4 text-rose-400" />
-                <span>6. WCAG 2.2 AA 접근성</span>
+            <div className="p-4 bg-ink/80 rounded-xl border border-border-strong space-y-1.5">
+              <div className="font-bold text-inverse flex items-center gap-1.5">
+                <Users className="w-4 h-4 text-brand-inverse" />
+                <span>현장에서 편하게</span>
               </div>
-              <p className="text-slate-400 leading-relaxed">
-                모든 상태 배지 및 본문 명도 대비 4.5:1 이상 검증. 텍스트 병기 및 가상 뷰포트 키보드 회피.
+              <p className="text-inverse-muted leading-relaxed">
+                모바일에 맞는 화면과 알아보기 쉬운 상태 안내를 준비해요.
               </p>
             </div>
           </div>
@@ -265,8 +265,8 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="max-w-5xl mx-auto px-6 py-8 text-center text-xs text-slate-400 border-t border-slate-200 mt-8">
-        © 2026 CrewLink Inc. All rights reserved. • B2B Event Workforce Management Platform
+      <footer className="max-w-5xl mx-auto px-6 py-8 text-center text-xs text-muted border-t border-border mt-8">
+        © {year} CrewLink. 행사와 크루를 잇다.
       </footer>
     </div>
   );

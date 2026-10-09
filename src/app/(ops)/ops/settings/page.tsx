@@ -9,34 +9,34 @@ export default function OpsSettingsPage() {
     <AppShell initialRole="ops">
       <div className="max-w-3xl mx-auto px-4 py-6 w-full space-y-5">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">운영 시스템 설정</h1>
-          <p className="text-xs text-slate-500 mt-0.5">인프라 및 자동화 규칙 제어</p>
+          <h1 className="text-2xl font-bold text-ink">운영 설정</h1>
+          <p className="text-xs text-muted mt-0.5">계산 기준과 배정 규칙을 확인해요.</p>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-4">
-          <h2 className="font-bold text-sm text-slate-800 flex items-center gap-2">
-            <Server className="w-4 h-4 text-[#1E60F3]" />
-            <span>노무 & 세무 정책 엔진 상태</span>
+        <div className="bg-surface border border-border rounded-xl p-5 space-y-4">
+          <h2 className="font-bold text-sm text-ink flex items-center gap-2">
+            <Server className="w-4 h-4 text-brand" />
+            <span>운영 기준</span>
           </h2>
 
           <div className="space-y-2 text-xs">
-            <div className="p-3 bg-slate-50 rounded-lg flex justify-between items-center">
+            <div className="p-3 bg-canvas rounded-lg flex justify-between items-center">
               <div>
-                <span className="font-semibold text-slate-800">원천세 세무 엔진</span>
-                <span className="text-slate-400 block">KR_RESIDENT_PERSONAL_SERVICE_REVIEW_2026-10-09</span>
+                <span className="font-semibold text-ink">정산 계산 기준</span>
+                <span className="text-muted block">KR_RESIDENT_PERSONAL_SERVICE_REVIEW_2026-10-09</span>
               </div>
-              <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">
-                정상 가동 (소액부징수 면제 미적용)
+              <span className="text-[11px] font-bold text-brand-strong bg-brand-subtle px-2 py-0.5 rounded">
+                적용 상태 확인
               </span>
             </div>
 
-            <div className="p-3 bg-slate-50 rounded-lg flex justify-between items-center">
+            <div className="p-3 bg-canvas rounded-lg flex justify-between items-center">
               <div>
-                <span className="font-semibold text-slate-800">PostgreSQL Exclusion Lock 제약</span>
-                <span className="text-slate-400 block">`work_reservations` 중복 배정 배제</span>
+                <span className="font-semibold text-ink">중복 배정 방지</span>
+                <span className="text-muted block">같은 시간에 여러 현장이 배정되지 않도록 확인해요.</span>
               </div>
-              <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">
-                활성화 (EXCLUDE USING gist)
+              <span className="text-[11px] font-bold text-brand-strong bg-brand-subtle px-2 py-0.5 rounded">
+                적용 상태 확인
               </span>
             </div>
           </div>
