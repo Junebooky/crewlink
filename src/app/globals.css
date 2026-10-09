@@ -1,0 +1,51 @@
+@import "tailwindcss";
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
+
+:root {
+  --primary: #1E60F3;
+  --primary-hover: #164BC4;
+  --canvas: #F5F7FB;
+  --surface: #FFFFFF;
+
+  --info-text: #194DA8;
+  --info-bg: #EDF3FF;
+  --success-text: #08734E;
+  --success-bg: #E7F5EE;
+  --attention-text: #895400;
+  --attention-bg: #FFF3D9;
+  --critical-text: #BB2449;
+  --critical-bg: #FFF0F3;
+  --neutral-text: #526174;
+  --neutral-bg: #EDF1F6;
+
+  --ease-settle: cubic-bezier(0.22, 1, 0.36, 1);
+  --duration-fast: 140ms;
+  --duration-standard: 220ms;
+  --duration-sheet: 320ms;
+}
+
+body {
+  font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+  background-color: var(--canvas);
+  color: #0F172A;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Numeric alignment utility */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Accessibility: respect reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
