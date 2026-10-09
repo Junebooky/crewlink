@@ -36,11 +36,17 @@ export default function CrewContractPage() {
     try {
       const res = await fetch('/api/crew/sign-contract', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-actor-person-id': '11111111-1111-1111-1111-111111111111',
+        },
         body: JSON.stringify({
-          projectId: 'proj-001',
-          assignmentId: 'asgn-001',
+          projectId: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+          assignmentId: 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee',
+          contractId: 'ffffffff-ffff-ffff-ffff-ffffffffffff',
           signatureStrokes: strokes,
+          termsContent:
+            '표준 SOW 도급 약관 요약: 독립 도급 구조, 근로기준법 제20조 임의 벌금 차감 금지, 3.3% 원천징수.',
         }),
       });
 
@@ -59,7 +65,7 @@ export default function CrewContractPage() {
 
   return (
     <AppShell initialRole="crew">
-      <div className="max-w-xl mx-auto px-4 py-5 w-full space-y-5">
+      <div className="max-w-xl mx-auto px-4 py-5 w-full space-y-5 pb-24">
         <div className="flex items-center justify-between">
           <Link href="/crew" className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800">
             <ArrowLeft className="w-4 h-4" />
@@ -79,12 +85,12 @@ export default function CrewContractPage() {
               </span>
               <h2 className="text-xl font-bold text-slate-900 mt-2">전자서약서가 체결되었습니다</h2>
               <p className="text-xs text-slate-500 mt-1">
-                서명 벡터 데이터 및 타임스탬프가 무결성 해시와 함께 저장되었습니다.
+                서명 벡터 데이터 및 타임스탬프가 무결성 해시와 함께 DB에 영구 보존되었습니다.
               </p>
             </div>
             <Link
               href="/crew"
-              className="block w-full py-3 bg-[#1E60F3] text-white rounded-xl font-bold text-sm hover:bg-[#164BC4] transition-colors"
+              className="flex items-center justify-center w-full min-h-[52px] bg-[#1E60F3] text-white rounded-xl font-bold text-sm hover:bg-[#164BC4] transition-colors"
             >
               오늘 일정 화면으로 이동
             </Link>
@@ -123,9 +129,9 @@ export default function CrewContractPage() {
               </p>
             </div>
 
-            {/* Checkboxes */}
+            {/* Checkboxes with min 44px tap targets */}
             <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2.5">
-              <label className="flex items-start gap-2.5 cursor-pointer text-xs font-semibold text-slate-800">
+              <label className="flex items-start gap-2.5 cursor-pointer text-xs font-semibold text-slate-800 p-1">
                 <input
                   type="checkbox"
                   checked={agreeTerms}
@@ -135,7 +141,7 @@ export default function CrewContractPage() {
                 <span>[필수] 과업지시서(SOW)에 명시된 업무 범위 및 안전 수칙을 준수함에 동의합니다.</span>
               </label>
 
-              <label className="flex items-start gap-2.5 cursor-pointer text-xs font-semibold text-slate-800">
+              <label className="flex items-start gap-2.5 cursor-pointer text-xs font-semibold text-slate-800 p-1">
                 <input
                   type="checkbox"
                   checked={agreePrivacy}
@@ -164,17 +170,18 @@ export default function CrewContractPage() {
               </div>
             )}
 
+            {/* Polished Button: "동의하고 서명하기", min-h-[52px] */}
             <button
               type="submit"
               disabled={!canSubmit || isSubmitting}
               className={cn(
-                'w-full h-12 rounded-xl bg-[#1E60F3] hover:bg-[#164BC4] text-white font-bold text-sm',
+                'w-full min-h-[52px] rounded-xl bg-[#1E60F3] hover:bg-[#164BC4] text-white font-bold text-sm',
                 'flex items-center justify-center gap-2 shadow-sm transition-colors',
                 'disabled:opacity-50 disabled:cursor-not-allowed'
               )}
             >
               <ShieldCheck className="w-5 h-5" />
-              <span>{isSubmitting ? '서약서 등록 중...' : '전자서약 완료 및 제출'}</span>
+              <span>{isSubmitting ? '서약서 등록 중...' : '동의하고 서명하기'}</span>
             </button>
           </form>
         )}

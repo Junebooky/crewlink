@@ -170,13 +170,17 @@ CREATE TABLE IF NOT EXISTS public.assignments (
     shift_id UUID NOT NULL REFERENCES public.shifts(id) ON DELETE CASCADE,
     shift_slot_id UUID REFERENCES public.shift_slots(id) ON DELETE SET NULL,
     crew_person_id UUID NOT NULL REFERENCES public.people(id) ON DELETE RESTRICT,
-    status TEXT NOT NULL DEFAULT 'assigned' CHECK (status IN ('assigned', 'departed', 'checked_in', 'completed', 'no_show', 'cancelled')),
+    status TEXT NOT NULL DEFAULT 'assigned' CHECK (status IN ('assigned', 'departed', 'waiting_ops', 'checked_in', 'completed', 'no_show', 'cancelled', 'released')),
     assigned_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     departed_at TIMESTAMPTZ,
     checked_in_at TIMESTAMPTZ,
-    version INT NOT NULL DEFAULT 1,
-    CONSTRAINT uq_assignment_slot UNIQUE (shift_slot_id)
+    version INT NOT NULL DEFAULT 1
 );
+
+-- Partial Unique Index (Excludes cancelled/released assignments)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_active_slot_assignment 
+ON public.assignments (shift_slot_id) 
+WHERE status NOT IN ('cancelled', 'released');
 
 CREATE TABLE IF NOT EXISTS public.work_reservations (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -202,6 +206,7 @@ CREATE TABLE IF NOT EXISTS public.contracts (
     sow_title TEXT NOT NULL,
     terms_content TEXT NOT NULL,
     pdf_hash TEXT,
+    version TEXT NOT NULL DEFAULT 'v1.0',
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -209,19 +214,21 @@ CREATE TABLE IF NOT EXISTS public.contract_signatures (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     contract_id UUID NOT NULL REFERENCES public.contracts(id) ON DELETE CASCADE,
     signer_person_id UUID NOT NULL REFERENCES public.people(id) ON DELETE RESTRICT,
-    signature_vector_json JSONB NOT NULL, -- Preserves raw vector strokes for lossless rendering
+    signature_vector_json JSONB NOT NULL,
+    terms_sha256 TEXT,
+    contract_version TEXT DEFAULT 'v1.0',
     signed_ip TEXT,
     signed_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     CONSTRAINT uq_contract_signature UNIQUE (contract_id, signer_person_id)
 );
 
--- 8. Attendance & QR Challenges
+-- 8. Attendance & QR Challenges (Multi-scan capable with revoked_at)
 CREATE TABLE IF NOT EXISTS public.checkin_challenges (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     shift_id UUID NOT NULL REFERENCES public.shifts(id) ON DELETE CASCADE,
-    token_hash CHAR(64) NOT NULL, -- 60s TTL SHA-256 hash
+    token_hash VARCHAR(64) NOT NULL,
     expires_at TIMESTAMPTZ NOT NULL,
-    is_used BOOLEAN NOT NULL DEFAULT FALSE,
+    revoked_at TIMESTAMPTZ DEFAULT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -234,7 +241,8 @@ CREATE TABLE IF NOT EXISTS public.attendance_logs (
     recorded_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     latitude NUMERIC(10, 7),
     longitude NUMERIC(10, 7),
-    raw_metadata JSONB DEFAULT '{}'::jsonb
+    raw_metadata JSONB DEFAULT '{}'::jsonb,
+    CONSTRAINT uq_attendance_assignment_method UNIQUE (assignment_id, checkin_method)
 );
 
 CREATE TABLE IF NOT EXISTS public.work_sessions (
@@ -256,6 +264,8 @@ CREATE TABLE IF NOT EXISTS public.replacement_requests (
     reason TEXT NOT NULL,
     urgency_level TEXT NOT NULL DEFAULT 'standard' CHECK (urgency_level IN ('standard', 'urgent_t30')),
     status TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'matched', 'closed')),
+    matched_crew_person_id UUID REFERENCES public.people(id) ON DELETE SET NULL,
+    version INT NOT NULL DEFAULT 1,
     requested_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -319,7 +329,7 @@ CREATE TABLE IF NOT EXISTS public.payout_accounts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     person_id UUID NOT NULL UNIQUE REFERENCES public.people(id) ON DELETE CASCADE,
     bank_code TEXT NOT NULL,
-    account_number_token TEXT NOT NULL, -- Tokenized bank account, separated from public view
+    account_number_token TEXT NOT NULL,
     account_holder_name TEXT NOT NULL,
     is_verified BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()

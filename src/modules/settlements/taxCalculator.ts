@@ -25,6 +25,10 @@ export function calculateBusinessIncomePay(input: BusinessIncomeInput): Settleme
   if (!/^\d{4}-\d{2}-\d{2}$/.test(paidOn)) {
     throw new Error('INVALID_PAYMENT_DATE');
   }
+  const d = new Date(paidOn + 'T00:00:00Z');
+  if (isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== paidOn) {
+    throw new Error('INVALID_CALENDAR_DATE');
+  }
   if (paidOn < '2024-07-01' || paidOn > '2026-10-09') {
     throw new Error('TAX_POLICY_REVIEW_REQUIRED');
   }

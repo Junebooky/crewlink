@@ -1,10 +1,15 @@
 import { NextResponse } from 'next/server';
 import { replacementService } from '@/modules/replacements/replacement.service';
+import { getAuthenticatedContext } from '@/lib/auth/serverAuth';
 
 export async function POST(request: Request) {
   try {
+    // 1. RBAC Guard: Requires OPS or ADMIN role
+    const { authContext, errorResponse } = await getAuthenticatedContext(request, 'ops');
+    if (errorResponse) return errorResponse;
+
     const body = await request.json();
-    const { requestId, candidatePersonId, expectedVersion } = body;
+    const { requestId, candidatePersonId, expectedVersion = 1 } = body;
 
     if (!requestId || !candidatePersonId) {
       return NextResponse.json(
@@ -13,10 +18,11 @@ export async function POST(request: Request) {
       );
     }
 
+    // 2. Perform atomic claim backed by PostgreSQL work_reservations exclusion constraint
     const result = await replacementService.atomicClaimReservation(
       requestId,
       candidatePersonId,
-      expectedVersion ?? 1
+      expectedVersion
     );
 
     return NextResponse.json(result);

@@ -17,7 +17,8 @@ import {
   Users,
   Calculator,
   ShieldCheck,
-  Check
+  Check,
+  AlertTriangle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -40,8 +41,8 @@ export default function ClientRequestWizard() {
   const [detailAddress, setDetailAddress] = useState('3층 D홀 전관');
   const [eventDate, setEventDate] = useState('2026-10-15');
   const [startTime, setStartTime] = useState('09:00');
-  const [endTime, setEndTime] = useState('18:00'); // 9 hours (8 hours work + 1 hour break)
-  const hours = 8; // Pure working hours
+  const [endTime, setEndTime] = useState('18:00');
+  const [breakMinutes, setBreakMinutes] = useState(60);
 
   // Step 2: Scope
   const [selectedScopes, setSelectedScopes] = useState<string[]>([
@@ -56,9 +57,22 @@ export default function ClientRequestWizard() {
   const [headcountDesk, setHeadcountDesk] = useState(2);
   const [uniformSpec, setUniformSpec] = useState<'PROVIDED_BY_CLIENT' | 'ALL_BLACK_FORMAL'>('ALL_BLACK_FORMAL');
 
+  // API Submission State
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  // Calculate pure working hours reflecting break time
+  const startParts = startTime.split(':').map(Number);
+  const endParts = endTime.split(':').map(Number);
+  const startTotalMins = (startParts[0] || 0) * 60 + (startParts[1] || 0);
+  const endTotalMins = (endParts[0] || 0) * 60 + (endParts[1] || 0);
+  const rawDurationMins = Math.max(0, endTotalMins - startTotalMins);
+  const netWorkMinutes = Math.max(60, rawDurationMins - breakMinutes);
+  const hours = Number((netWorkMinutes / 60).toFixed(1));
+
   const hourlyRateWon = 15000;
   const totalHeadcount = headcountGuide + headcountVIP + headcountDesk;
-  const staffRemunerationWon = totalHeadcount * hours * hourlyRateWon;
+  const staffRemunerationWon = Math.floor(totalHeadcount * hours * hourlyRateWon);
   // B2B Pricing structure: Remuneration + Platform fee 15% + VAT 10%
   const platformFeeWon = Math.floor(staffRemunerationWon * 0.15);
   const supplyPriceWon = staffRemunerationWon + platformFeeWon;
@@ -80,8 +94,43 @@ export default function ClientRequestWizard() {
   };
 
   const handleSubmitOrder = async () => {
-    // Submit order to API
-    router.push('/client');
+    setIsSubmitting(true);
+    setSubmitError(null);
+    try {
+      const res = await fetch('/api/client/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title,
+          roadAddress,
+          detailAddress,
+          venueName: roadAddress,
+          eventDate,
+          startTime,
+          endTime,
+          breakMinutes,
+          headcount: totalHeadcount,
+          hourlyRateWon,
+          selectedScopes,
+          positionSpecs: [
+            { role: '동선 통제 & 일반 안내', count: headcountGuide },
+            { role: 'VIP 라운지 리셉션', count: headcountVIP },
+            { role: '등록 데스크 운영', count: headcountDesk },
+          ],
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || '발주 등록에 실패했습니다.');
+      }
+
+      router.push('/client');
+    } catch (err: unknown) {
+      setSubmitError((err as Error).message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -173,6 +222,21 @@ export default function ClientRequestWizard() {
             </div>
 
             <div>
+              <label className="text-xs font-bold text-slate-700 block mb-1">휴게 시간 (분)</label>
+              <input
+                type="number"
+                min={0}
+                step={30}
+                value={breakMinutes}
+                onChange={(e) => setBreakMinutes(Number(e.target.value))}
+                className="w-full h-11 px-3 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#1E60F3] focus:outline-none"
+              />
+              <p className="text-[11px] text-slate-400 mt-1">
+                * 실근무 시간: {hours}시간 (총 {rawDurationMins}분 중 {breakMinutes}분 휴게 제외)
+              </p>
+            </div>
+
+            <div>
               <label className="text-xs font-bold text-slate-700 block mb-1">도로명 주소</label>
               <input
                 type="text"
@@ -214,7 +278,7 @@ export default function ClientRequestWizard() {
                     type="button"
                     onClick={() => toggleScope(scope)}
                     className={cn(
-                      'p-3 rounded-xl border text-left text-xs font-medium flex items-center justify-between transition-all',
+                      'p-3.5 min-h-[52px] rounded-xl border text-left text-xs font-medium flex items-center justify-between transition-all',
                       isSelected
                         ? 'border-[#1E60F3] bg-blue-50/70 text-[#1E60F3] font-bold shadow-xs'
                         : 'border-slate-200 text-slate-700 hover:border-slate-300 bg-white'
@@ -237,7 +301,7 @@ export default function ClientRequestWizard() {
               Step 3: 포지션별 필요 인원 및 복장 규격
             </h2>
 
-            {/* Stepper Inputs without slider (Rule non-negotiable) */}
+            {/* Stepper Inputs without slider */}
             <div className="space-y-4 divide-y divide-slate-100">
               <div className="pt-2 flex items-center justify-between">
                 <div>
@@ -272,7 +336,7 @@ export default function ClientRequestWizard() {
                   type="button"
                   onClick={() => setUniformSpec('ALL_BLACK_FORMAL')}
                   className={cn(
-                    'p-3 border rounded-xl text-left font-medium transition-colors',
+                    'p-3.5 min-h-[52px] border rounded-xl text-left font-medium transition-colors',
                     uniformSpec === 'ALL_BLACK_FORMAL'
                       ? 'border-[#1E60F3] bg-blue-50 text-[#1E60F3] font-bold'
                       : 'border-slate-200 text-slate-600'
@@ -285,7 +349,7 @@ export default function ClientRequestWizard() {
                   type="button"
                   onClick={() => setUniformSpec('PROVIDED_BY_CLIENT')}
                   className={cn(
-                    'p-3 border rounded-xl text-left font-medium transition-colors',
+                    'p-3.5 min-h-[52px] border rounded-xl text-left font-medium transition-colors',
                     uniformSpec === 'PROVIDED_BY_CLIENT'
                       ? 'border-[#1E60F3] bg-blue-50 text-[#1E60F3] font-bold'
                       : 'border-slate-200 text-slate-600'
@@ -315,7 +379,7 @@ export default function ClientRequestWizard() {
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-400">일시 및 시간</span>
-                <span>{eventDate} ({hours}시간 활동)</span>
+                <span>{eventDate} (실근무 {hours}시간)</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-400">총 발주 인원</span>
@@ -352,6 +416,13 @@ export default function ClientRequestWizard() {
                 <span className="tabular-nums">{totalOrderAmountWon.toLocaleString()}원</span>
               </div>
             </div>
+
+            {submitError && (
+              <div className="p-3 bg-[#FFF0F3] border border-[#FDC4D0] rounded-xl text-[#BB2449] text-xs flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                <span>{submitError}</span>
+              </div>
+            )}
           </div>
         )}
 
@@ -361,7 +432,7 @@ export default function ClientRequestWizard() {
             <button
               type="button"
               onClick={handleBack}
-              className="flex-1 h-12 border border-slate-300 bg-white text-slate-700 font-bold text-sm rounded-xl hover:bg-slate-50 transition-colors flex items-center justify-center gap-1.5"
+              className="flex-1 min-h-[52px] border border-slate-300 bg-white text-slate-700 font-bold text-sm rounded-xl hover:bg-slate-50 transition-colors flex items-center justify-center gap-1.5"
             >
               <ArrowLeft className="w-4 h-4" />
               <span>이전 단계</span>
@@ -372,7 +443,7 @@ export default function ClientRequestWizard() {
             <button
               type="button"
               onClick={handleNext}
-              className="flex-1 h-12 bg-[#1E60F3] hover:bg-[#164BC4] text-white font-bold text-sm rounded-xl transition-colors flex items-center justify-center gap-1.5 shadow-sm"
+              className="flex-1 min-h-[52px] bg-[#1E60F3] hover:bg-[#164BC4] text-white font-bold text-sm rounded-xl transition-colors flex items-center justify-center gap-1.5 shadow-sm"
             >
               <span>다음 단계</span>
               <ArrowRight className="w-4 h-4" />
@@ -381,10 +452,11 @@ export default function ClientRequestWizard() {
             <button
               type="button"
               onClick={handleSubmitOrder}
-              className="flex-1 h-12 bg-[#08734E] hover:bg-[#065F40] text-white font-bold text-sm rounded-xl transition-colors flex items-center justify-center gap-1.5 shadow-sm"
+              disabled={isSubmitting}
+              className="flex-1 min-h-[52px] bg-[#08734E] hover:bg-[#065F40] text-white font-bold text-sm rounded-xl transition-colors flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-50"
             >
               <CheckCircle className="w-5 h-5" />
-              <span>SOW 운영 발주 승인 및 등록</span>
+              <span>{isSubmitting ? '발주 등록 중...' : 'SOW 운영 발주 승인 및 등록'}</span>
             </button>
           )}
         </div>

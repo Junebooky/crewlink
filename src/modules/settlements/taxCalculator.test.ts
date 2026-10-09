@@ -257,6 +257,24 @@ describe('calculateBusinessIncomePay (원천징수 세무 엔진)', () => {
         })
       ).toThrow('INVALID_PAYMENT_DATE');
     });
+
+    it('34-1. 달력상 존재하지 않는 날짜(예: 2025-02-29, 2025-04-31)는 INVALID_CALENDAR_DATE 예외', () => {
+      expect(() =>
+        calculateBusinessIncomePay({
+          taxableGrossWon: 100000,
+          paidOn: '2025-02-29',
+          incomeType: 'RESIDENT_PERSONAL_SERVICE',
+        })
+      ).toThrow('INVALID_CALENDAR_DATE');
+
+      expect(() =>
+        calculateBusinessIncomePay({
+          taxableGrossWon: 100000,
+          paidOn: '2025-04-31',
+          incomeType: 'RESIDENT_PERSONAL_SERVICE',
+        })
+      ).toThrow('INVALID_CALENDAR_DATE');
+    });
   });
 
   // 5. Input Validation & Edge Error handling (tests 35~40)

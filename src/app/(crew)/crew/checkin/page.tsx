@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/common/AppShell';
+import { Html5Qrcode } from 'html5-qrcode';
 import {
   QrCode,
   Camera,
@@ -13,7 +14,8 @@ import {
   HelpCircle,
   ArrowLeft,
   ShieldAlert,
-  Send
+  Send,
+  RefreshCw
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -22,27 +24,98 @@ export default function CrewCheckinPage() {
   const [viewMode, setViewMode] = useState<'SCANNER' | 'MANUAL_REQUEST' | 'WAITING_OPS' | 'SUCCESS'>('SCANNER');
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCameraActive, setIsCameraActive] = useState(false);
   const [manualReason, setManualReason] = useState<'CAMERA_PERMISSION_DENIED' | 'QR_SCAN_FAILED'>('QR_SCAN_FAILED');
   const [manualNote, setManualNote] = useState('');
   const [checkinData, setCheckinData] = useState<{ checkedInAt: string; alreadyRecorded: boolean } | null>(null);
 
-  // Simulate scanning a dynamic 60s TTL QR code
-  const handleSimulateScan = async (sampleHash: string) => {
+  const qrScannerRef = useRef<Html5Qrcode | null>(null);
+
+  // Initialize and run real html5-qrcode video scanner
+  useEffect(() => {
+    if (viewMode !== 'SCANNER') return;
+
+    let isMounted = true;
+    const scannerId = 'html5-qr-reader';
+
+    const startScanner = async () => {
+      try {
+        setCameraError(null);
+        const scanner = new Html5Qrcode(scannerId);
+        qrScannerRef.current = scanner;
+
+        await scanner.start(
+          { facingMode: 'environment' },
+          {
+            fps: 10,
+            qrbox: { width: 260, height: 260 },
+            aspectRatio: 1.0,
+          },
+          async (decodedText) => {
+            if (!isMounted) return;
+            // Successfully decoded real QR code from video stream
+            try {
+              if (scanner.isScanning) {
+                await scanner.stop();
+              }
+            } catch {
+              // ignore stop errors
+            }
+            handleCheckinWithToken(decodedText);
+          },
+          () => {
+            // Frame scanned without QR: ignore
+          }
+        );
+
+        if (isMounted) {
+          setIsCameraActive(true);
+        }
+      } catch (err: unknown) {
+        if (isMounted) {
+          setIsCameraActive(false);
+          setCameraError(
+            '카메라를 실행할 수 없습니다 (권한 허용 필요 또는 환경 미지원). 아래 [대면 확인 요청]을 이용하실 수 있습니다.'
+          );
+        }
+      }
+    };
+
+    // Small delay to ensure DOM element is rendered
+    const timer = setTimeout(() => {
+      startScanner();
+    }, 200);
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+      if (qrScannerRef.current && qrScannerRef.current.isScanning) {
+        qrScannerRef.current.stop().catch(() => {});
+      }
+    };
+  }, [viewMode]);
+
+  const handleCheckinWithToken = async (tokenHash: string) => {
     setIsSubmitting(true);
     setCameraError(null);
     try {
       const res = await fetch('/api/crew/checkin', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-actor-person-id': '11111111-1111-1111-1111-111111111111',
+        },
         body: JSON.stringify({
-          assignmentId: 'asgn-001',
-          tokenHash: sampleHash,
+          assignmentId: 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee',
+          tokenHash: tokenHash.trim(),
         }),
       });
+
       const data = await res.json();
       if (!res.ok) {
         throw new Error(data.message || '출근 인증에 실패했습니다.');
       }
+
       setCheckinData({
         checkedInAt: data.checkedInAt,
         alreadyRecorded: data.alreadyRecorded,
@@ -61,9 +134,12 @@ export default function CrewCheckinPage() {
     try {
       const res = await fetch('/api/crew/face-to-face', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-actor-person-id': '11111111-1111-1111-1111-111111111111',
+        },
         body: JSON.stringify({
-          assignmentId: 'asgn-001',
+          assignmentId: 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee',
           reason: manualReason,
           note: manualNote,
         }),
@@ -72,7 +148,6 @@ export default function CrewCheckinPage() {
       if (!res.ok) {
         throw new Error(data.message || '요청 제출에 실패했습니다.');
       }
-      // Switch directly to "운영자 확인을 기다려요" standby view
       setViewMode('WAITING_OPS');
     } catch (err: unknown) {
       setCameraError((err as Error).message);
@@ -83,7 +158,7 @@ export default function CrewCheckinPage() {
 
   return (
     <AppShell initialRole="crew">
-      <div className="max-w-md mx-auto px-4 py-5 w-full space-y-5">
+      <div className="max-w-md mx-auto px-4 py-5 w-full space-y-5 pb-24">
         {/* Top Navigation */}
         <div className="flex items-center justify-between">
           <Link href="/crew" className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800">
@@ -93,38 +168,24 @@ export default function CrewCheckinPage() {
           <span className="text-xs font-semibold text-slate-500">C04 현장 출근 인증</span>
         </div>
 
-        {/* 1. SCANNER VIEW */}
+        {/* 1. REAL QR SCANNER VIEW */}
         {viewMode === 'SCANNER' && (
           <div className="space-y-4">
             <div className="text-center">
               <h1 className="text-xl font-bold text-slate-900">현장 QR 코드 스캔</h1>
-              <p className="text-xs text-slate-500 mt-1">현장 운영 데스크의 60초 가변 QR 코드를 카메라로 인식하세요.</p>
+              <p className="text-xs text-slate-500 mt-1">현장 운영 데스크의 유효 QR 코드를 카메라로 인식하세요.</p>
             </div>
 
-            {/* Camera Viewfinder Box */}
+            {/* html5-qrcode Container Box */}
             <div className="relative aspect-square w-full bg-slate-900 rounded-2xl overflow-hidden flex flex-col items-center justify-center border-4 border-slate-800 shadow-inner">
-              <div className="absolute inset-8 border-2 border-white/60 rounded-xl pointer-events-none flex items-center justify-center">
-                <div className="w-full h-0.5 bg-[#1E60F3]/80 animate-pulse" />
-              </div>
+              <div id="html5-qr-reader" className="w-full h-full" />
 
-              <Camera className="w-12 h-12 text-white/40 mb-3" />
-              <div className="text-xs text-white/80 font-medium px-4 text-center">
-                카메라 렌즈를 QR 코드 중앙에 맞춰주세요.
-              </div>
-
-              {/* Simulation Trigger button for quick test in browser */}
-              <div className="absolute bottom-4 left-4 right-4 flex gap-2">
-                <button
-                  type="button"
-                  onClick={() =>
-                    handleSimulateScan('valid-hash-sample-64-chars-000000000000000000000000000000000000000000')
-                  }
-                  disabled={isSubmitting}
-                  className="flex-1 py-2.5 px-3 bg-[#1E60F3] hover:bg-[#164BC4] text-white text-xs font-bold rounded-lg shadow-sm transition-colors"
-                >
-                  {isSubmitting ? '인증 처리 중...' : '유효 QR 인식 (테스트)'}
-                </button>
-              </div>
+              {!isCameraActive && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4 bg-slate-900/90 text-white z-10">
+                  <Camera className="w-12 h-12 text-white/50 mb-3 animate-pulse" />
+                  <div className="text-xs font-medium text-slate-300">카메라 스트림을 준비 중입니다...</div>
+                </div>
+              )}
             </div>
 
             {cameraError && (
@@ -133,6 +194,27 @@ export default function CrewCheckinPage() {
                 <span>{cameraError}</span>
               </div>
             )}
+
+            {/* Quick Test / Demo Trigger using seeded valid SHA-256 token */}
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl space-y-1.5">
+              <div className="text-[11px] font-bold text-[#1E60F3] flex items-center gap-1">
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>테스트용 공용 QR 스캔 시뮬레이션</span>
+              </div>
+              <button
+                type="button"
+                onClick={() =>
+                  handleCheckinWithToken(
+                    'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
+                  )
+                }
+                disabled={isSubmitting}
+                className="w-full min-h-[52px] bg-[#1E60F3] hover:bg-[#164BC4] text-white text-xs font-bold rounded-xl transition-colors shadow-xs flex items-center justify-center gap-2"
+              >
+                <QrCode className="w-4 h-4" />
+                <span>{isSubmitting ? '출근 처리 중...' : '유효 QR 즉시 스캔 (테스트)'}</span>
+              </button>
+            </div>
 
             {/* Fallback Branch: [대면 확인 요청] */}
             <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
@@ -146,7 +228,7 @@ export default function CrewCheckinPage() {
               <button
                 type="button"
                 onClick={() => setViewMode('MANUAL_REQUEST')}
-                className="w-full mt-1 py-2.5 border border-slate-300 bg-white hover:bg-slate-100 text-slate-800 text-xs font-semibold rounded-lg transition-colors"
+                className="w-full min-h-[52px] border border-slate-300 bg-white hover:bg-slate-100 text-slate-800 text-xs font-semibold rounded-xl transition-colors"
               >
                 [대면 확인 요청] 신청하기
               </button>
@@ -168,7 +250,7 @@ export default function CrewCheckinPage() {
                 <select
                   value={manualReason}
                   onChange={(e) => setManualReason(e.target.value as 'CAMERA_PERMISSION_DENIED' | 'QR_SCAN_FAILED')}
-                  className="w-full h-10 px-3 border border-slate-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#1E60F3]"
+                  className="w-full h-11 px-3 border border-slate-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#1E60F3]"
                 >
                   <option value="QR_SCAN_FAILED">QR 코드 스캔 실패 / 초점 인식 불가</option>
                   <option value="CAMERA_PERMISSION_DENIED">카메라 권한 차단됨 / 브라우저 미지원</option>
@@ -181,7 +263,7 @@ export default function CrewCheckinPage() {
                   value={manualNote}
                   onChange={(e) => setManualNote(e.target.value)}
                   placeholder="현장 데스크 위치나 현재 상황을 적어주세요 (예: 3층 D홀 안내데스크 앞 도착)"
-                  className="w-full h-20 p-3 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1E60F3]"
+                  className="w-full h-24 p-3 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1E60F3]"
                 />
               </div>
             </div>
@@ -190,14 +272,14 @@ export default function CrewCheckinPage() {
               <button
                 type="button"
                 onClick={() => setViewMode('SCANNER')}
-                className="flex-1 h-11 border border-slate-300 bg-white text-slate-700 font-bold text-sm rounded-xl hover:bg-slate-50 transition-colors"
+                className="flex-1 min-h-[52px] border border-slate-300 bg-white text-slate-700 font-bold text-sm rounded-xl hover:bg-slate-50 transition-colors"
               >
                 돌아가기
               </button>
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="flex-1 h-11 bg-[#1E60F3] text-white font-bold text-sm rounded-xl hover:bg-[#164BC4] transition-colors flex items-center justify-center gap-1.5"
+                className="flex-1 min-h-[52px] bg-[#1E60F3] text-white font-bold text-sm rounded-xl hover:bg-[#164BC4] transition-colors flex items-center justify-center gap-1.5"
               >
                 <Send className="w-4 h-4" />
                 <span>{isSubmitting ? '접수 중...' : '확인 요청 접수'}</span>
@@ -233,7 +315,7 @@ export default function CrewCheckinPage() {
 
             <Link
               href="/crew"
-              className="block w-full py-3 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-slate-800 transition-colors"
+              className="flex items-center justify-center w-full min-h-[52px] bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-slate-800 transition-colors"
             >
               오늘 일정 화면으로 이동
             </Link>
@@ -259,7 +341,7 @@ export default function CrewCheckinPage() {
 
             <Link
               href="/crew"
-              className="block w-full py-3 bg-[#08734E] text-white rounded-xl font-bold text-sm hover:bg-[#065F40] transition-colors"
+              className="flex items-center justify-center w-full min-h-[52px] bg-[#08734E] text-white rounded-xl font-bold text-sm hover:bg-[#065F40] transition-colors"
             >
               오늘 일정으로 돌아가기
             </Link>

@@ -20,15 +20,13 @@ import {
 import { cn } from '@/lib/utils';
 
 export default function CrewTodayPage() {
-  // Real state backed by server response without optimistic illusions
   const [status, setStatus] = useState<CrewLinkStatus>('NEED_CONFIRMATION');
   const [isDeparting, setIsDeparting] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
 
-  // Near-future event details
   const todayEvent = {
     title: '2026 서울 모빌리티 엑스포 현장 운영',
-    clientName: '(주)모빌리티랩스',
+    clientName: '(주)네온패밀리',
     role: 'VIP 라운지 안내 및 리셉션',
     date: '2026년 10월 9일 (오늘)',
     shiftTime: '13:00 ~ 19:00 (6시간)',
@@ -37,24 +35,25 @@ export default function CrewTodayPage() {
     roadAddress: '서울 강남구 영동대로 513',
     hourlyRateWon: 15000,
     estimatedTotalWon: 90000,
-    contractSigned: false, // Contract needed
+    contractSigned: false,
   };
 
   const handleDepart = async () => {
     setIsDeparting(true);
     setServerError(null);
     try {
-      // Direct call to simulate / execute server confirmation
       const res = await fetch('/api/crew/depart', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ assignmentId: 'asgn-001' }),
+        headers: {
+          'Content-Type': 'application/json',
+          'x-actor-person-id': '11111111-1111-1111-1111-111111111111',
+        },
+        body: JSON.stringify({ assignmentId: 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee' }),
       });
       const data = await res.json();
       if (!res.ok) {
         throw new Error(data.message || '출발 상태 전송에 실패했습니다.');
       }
-      // ONLY update UI upon confirmed server response (Non-negotiable rule #5)
       setStatus('DEPARTED');
     } catch (err: unknown) {
       setServerError((err as Error).message || '서버 응답 오류가 발생했습니다.');
@@ -65,7 +64,7 @@ export default function CrewTodayPage() {
 
   return (
     <AppShell initialRole="crew">
-      <div className="max-w-2xl mx-auto px-4 py-5 w-full space-y-5">
+      <div className="max-w-2xl mx-auto px-4 py-5 w-full space-y-5 pb-24">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -145,7 +144,7 @@ export default function CrewTodayPage() {
             </div>
           </div>
 
-          {/* Action CTA Box (Single Primary CTA according to specification) */}
+          {/* Action CTA Box (Touch Target Height 52px Minimum) */}
           <div className="p-4 bg-slate-50 border-t border-slate-100">
             {status === 'NEED_CONFIRMATION' && (
               <button
@@ -153,7 +152,7 @@ export default function CrewTodayPage() {
                 onClick={handleDepart}
                 disabled={isDeparting}
                 className={cn(
-                  'w-full h-12 rounded-xl bg-[#1E60F3] hover:bg-[#164BC4] text-white font-bold text-base',
+                  'w-full min-h-[52px] rounded-xl bg-[#1E60F3] hover:bg-[#164BC4] text-white font-bold text-base',
                   'flex items-center justify-center gap-2 shadow-sm transition-colors',
                   'disabled:opacity-60 disabled:cursor-not-allowed'
                 )}
@@ -168,7 +167,7 @@ export default function CrewTodayPage() {
                 <Link
                   href="/crew/checkin"
                   className={cn(
-                    'w-full h-12 rounded-xl bg-[#08734E] hover:bg-[#065F40] text-white font-bold text-base',
+                    'w-full min-h-[52px] rounded-xl bg-[#08734E] hover:bg-[#065F40] text-white font-bold text-base',
                     'flex items-center justify-center gap-2 shadow-sm transition-colors'
                   )}
                 >
@@ -182,14 +181,14 @@ export default function CrewTodayPage() {
             )}
 
             {status === 'ARRIVED_CONFIRMED' && (
-              <div className="p-3 bg-[#E7F5EE] border border-[#B6E6CE] rounded-xl flex items-center justify-center gap-2 text-[#08734E] font-bold text-sm">
+              <div className="p-3 bg-[#E7F5EE] border border-[#B6E6CE] rounded-xl flex items-center justify-center gap-2 text-[#08734E] font-bold text-sm min-h-[52px]">
                 <CheckCircle2 className="w-5 h-5" />
                 <span>도착 확인이 완료되었습니다. 과업을 안전하게 진행해 주세요.</span>
               </div>
             )}
 
             {status === 'OPS_REVIEW' && (
-              <div className="p-3 bg-[#FFF3D9] border border-[#FDE19E] rounded-xl flex items-center justify-center gap-2 text-[#895400] font-bold text-sm">
+              <div className="p-3 bg-[#FFF3D9] border border-[#FDE19E] rounded-xl flex items-center justify-center gap-2 text-[#895400] font-bold text-sm min-h-[52px]">
                 <Clock className="w-5 h-5" />
                 <span>대면 확인 요청 접수됨 - 현장 운영자의 승인을 기다려요.</span>
               </div>
