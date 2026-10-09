@@ -12,7 +12,7 @@ export async function POST(request: Request) {
     const { assignmentId } = body;
 
     if (!assignmentId) {
-      return NextResponse.json({ message: 'assignmentId가 필요합니다.' }, { status: 400 });
+      return NextResponse.json({ message: '일정을 다시 열고 출발 소식을 보내주세요.' }, { status: 400 });
     }
 
     // 2. Ownership Guard

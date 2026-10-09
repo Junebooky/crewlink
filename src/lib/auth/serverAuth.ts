@@ -28,7 +28,7 @@ export async function getAuthenticatedContext(
   if (!user && !headerActorId) {
     return {
       errorResponse: NextResponse.json(
-        { message: '인증 세션이 없습니다. 로그인 후 다시 시도해 주세요.' },
+        { message: '다시 로그인해 주세요.' },
         { status: 401 }
       ),
     };
@@ -47,7 +47,7 @@ export async function getAuthenticatedContext(
   if (!person || !person.is_active) {
     return {
       errorResponse: NextResponse.json(
-        { message: '유효한 활성 사용자 프로필을 찾을 수 없습니다.' },
+        { message: '계정 상태를 확인할 수 없어요. 운영팀에 문의해 주세요.' },
         { status: 401 }
       ),
     };
@@ -68,7 +68,7 @@ export async function getAuthenticatedContext(
     if (!isOps) {
       return {
         errorResponse: NextResponse.json(
-          { message: '접근 권한이 없습니다. 운영자(OPS/ADMIN) 권한이 필요합니다.' },
+          { message: '이 화면에 접근할 권한이 없어요. 운영팀에 문의해 주세요.' },
           { status: 403 }
         ),
       };
@@ -103,14 +103,14 @@ export async function verifyAssignmentOwnership(
 
   if (error || !assignment) {
     return NextResponse.json(
-      { message: '해당 배정(assignment) 정보를 찾을 수 없습니다.' },
+      { message: '배정된 일정을 찾지 못했어요. 일정 화면에서 다시 확인해 주세요.' },
       { status: 404 }
     );
   }
 
   if (assignment.crew_person_id !== personId) {
     return NextResponse.json(
-      { message: '소유권 검증 실패: 본인에게 배정된 과업만 수행할 수 있습니다.' },
+      { message: '내게 배정된 일정에서만 처리할 수 있어요.' },
       { status: 403 }
     );
   }

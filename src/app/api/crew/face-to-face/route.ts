@@ -13,7 +13,7 @@ export async function POST(request: Request) {
 
     if (!assignmentId || !reason) {
       return NextResponse.json(
-        { message: 'assignmentId와 사유는 필수입니다.' },
+        { message: '일정과 확인 요청 이유를 확인해 주세요.' },
         { status: 400 }
       );
     }

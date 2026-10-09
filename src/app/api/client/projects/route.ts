@@ -28,7 +28,7 @@ export async function POST(request: Request) {
 
     if (!title || !eventDate || !startTime || !endTime) {
       return NextResponse.json(
-        { message: '행사명, 일자, 시작 및 종료 시각은 필수입니다.' },
+        { message: '행사명과 날짜, 시작·종료 시간을 입력해 주세요.' },
         { status: 400 }
       );
     }
@@ -40,7 +40,7 @@ export async function POST(request: Request) {
 
     if (totalMinutes <= 0) {
       return NextResponse.json(
-        { message: '종료 시각은 시작 시각보다 이후여야 합니다.' },
+        { message: '종료 시간은 시작 시간보다 늦어야 해요.' },
         { status: 400 }
       );
     }
@@ -70,7 +70,7 @@ export async function POST(request: Request) {
       .insert({
         organization_id: organizationId,
         title,
-        venue_name: venueName || roadAddress || '현장 지정 장소',
+        venue_name: venueName || roadAddress || '장소 확인 필요',
         road_address: roadAddress || '서울 강남구 영동대로 513',
         detail_address: detailAddress || '',
         status: 'published',
@@ -85,7 +85,7 @@ export async function POST(request: Request) {
       .single();
 
     if (projError) {
-      throw new Error(`프로젝트 생성 실패: ${projError.message}`);
+      throw new Error('행사를 저장하지 못했어요. 잠시 후 다시 시도해 주세요.');
     }
 
     // 4. Insert Shift
@@ -96,7 +96,7 @@ export async function POST(request: Request) {
       .from('shifts')
       .insert({
         project_id: project.id,
-        shift_name: `${title} - 메인 교대`,
+        shift_name: `${title} · 근무 일정`,
         required_headcount: Number(headcount),
         start_time: startDateTime.toISOString(),
         end_time: endDateTime.toISOString(),
@@ -108,7 +108,7 @@ export async function POST(request: Request) {
       .single();
 
     if (shiftError) {
-      throw new Error(`교대(Shift) 생성 실패: ${shiftError.message}`);
+      throw new Error('근무 일정을 저장하지 못했어요. 입력한 시간을 확인해 주세요.');
     }
 
     // 5. Create Shift Slots
@@ -145,21 +145,21 @@ export async function POST(request: Request) {
       .single();
 
     if (quoteError) {
-      throw new Error(`견적서 생성 실패: ${quoteError.message}`);
+      throw new Error('견적을 저장하지 못했어요. 잠시 후 다시 시도해 주세요.');
     }
 
     // 7. Insert Quote Items
     await supabase.from('quote_items').insert([
       {
         quote_id: quote.id,
-        item_name: `크루 도급 보수 (${headcount}명 × ${netWorkHours}h)`,
+        item_name: `크루 보수 (${headcount}명 × ${netWorkHours}시간)`,
         quantity: Number(headcount),
         unit_price_won: Math.floor(netWorkHours * Number(hourlyRateWon)),
         amount_won: staffRemunerationWon,
       },
       {
         quote_id: quote.id,
-        item_name: '플랫폼 운영 및 품질 관리 수수료 (15%)',
+        item_name: '운영료 (15%)',
         quantity: 1,
         unit_price_won: platformFeeWon,
         amount_won: platformFeeWon,
@@ -174,7 +174,7 @@ export async function POST(request: Request) {
       quoteNumber: quote.quote_number,
       netWorkHours,
       totalAmountWon,
-      message: '프로젝트 및 SOW 발주가 성공적으로 등록되었습니다.',
+      message: '운영 요청을 보냈어요.',
     });
   } catch (err: unknown) {
     return NextResponse.json({ message: (err as Error).message }, { status: 400 });

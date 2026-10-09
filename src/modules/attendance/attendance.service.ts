@@ -21,7 +21,10 @@ export class AttendanceService {
     });
 
     if (error) {
-      throw new Error(`출근 처리 실패: ${error.message}`);
+      const err = new Error('출근을 확인하지 못했어요. 잠시 후 다시 시도해 주세요.');
+      (err as unknown as { code: string; originalMessage: string }).code = 'CHECKIN_FAILED';
+      (err as unknown as { originalMessage: string }).originalMessage = error.message;
+      throw err;
     }
 
     const rpcResult = data as {
@@ -37,7 +40,7 @@ export class AttendanceService {
       alreadyRecorded: rpcResult.already_recorded,
       assignmentId: rpcResult.assignment_id,
       checkedInAt: rpcResult.checked_in_at,
-      message: rpcResult.message,
+      message: rpcResult.already_recorded ? '이미 도착 확인을 마쳤어요.' : '도착 확인을 마쳤어요.',
     };
   }
 
@@ -55,11 +58,15 @@ export class AttendanceService {
       .single();
 
     if (fetchError || !assignment) {
-      throw new Error('ASSIGNMENT_NOT_FOUND: 배정 정보를 찾을 수 없습니다.');
+      const notFoundErr = new Error('배정된 일정을 찾지 못했어요. 일정 화면에서 다시 확인해 주세요.');
+      (notFoundErr as unknown as { code: string }).code = 'ASSIGNMENT_NOT_FOUND';
+      throw notFoundErr;
     }
 
     if (assignment.status === 'checked_in') {
-      throw new Error('ALREADY_CHECKED_IN: 이미 출근 확인된 과업입니다.');
+      const alreadyErr = new Error('이미 도착 확인을 마쳤어요.');
+      (alreadyErr as unknown as { code: string }).code = 'ALREADY_CHECKED_IN';
+      throw alreadyErr;
     }
 
     const departedAt = new Date().toISOString();
@@ -74,7 +81,10 @@ export class AttendanceService {
       .eq('id', assignmentId);
 
     if (updateError) {
-      throw new Error(`출발 상태 갱신 실패: ${updateError.message}`);
+      const updateErr = new Error('출발 소식을 보내지 못했어요. 잠시 후 다시 시도해 주세요.');
+      (updateErr as unknown as { code: string; originalMessage: string }).code = 'UPDATE_DEPARTED_FAILED';
+      (updateErr as unknown as { originalMessage: string }).originalMessage = updateError.message;
+      throw updateErr;
     }
 
     return { success: true, departedAt };
@@ -93,7 +103,9 @@ export class AttendanceService {
       .single();
 
     if (fetchError || !assignment) {
-      throw new Error('ASSIGNMENT_NOT_FOUND: 배정 정보를 찾을 수 없습니다.');
+      const notFoundErr = new Error('배정된 일정을 찾지 못했어요. 일정 화면에서 다시 확인해 주세요.');
+      (notFoundErr as unknown as { code: string }).code = 'ASSIGNMENT_NOT_FOUND';
+      throw notFoundErr;
     }
 
     // Update assignment status to waiting_ops
@@ -106,7 +118,10 @@ export class AttendanceService {
       .eq('id', req.assignmentId);
 
     if (updateError) {
-      throw new Error(`대면 확인 요청 전송 실패: ${updateError.message}`);
+      const updateErr = new Error('확인 요청을 보내지 못했어요. 잠시 후 다시 시도해 주세요.');
+      (updateErr as unknown as { code: string; originalMessage: string }).code = 'FACE_TO_FACE_FAILED';
+      (updateErr as unknown as { originalMessage: string }).originalMessage = updateError.message;
+      throw updateErr;
     }
 
     // Record audit event for ops queue

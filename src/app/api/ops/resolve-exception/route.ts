@@ -13,7 +13,7 @@ export async function POST(request: Request) {
 
     if (!taskId || !reason || !reason.trim()) {
       return NextResponse.json(
-        { message: '처리 사유(reason) 입력은 필수입니다.' },
+        { message: '처리 이유를 적어주세요.' },
         { status: 400 }
       );
     }
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
     if (expectedVersion !== undefined && expectedVersion !== currentVersion) {
       return NextResponse.json(
         {
-          message: `선점 충돌: 다른 운영자에 의해 이미 해당 작업이 변경되었습니다. (현재 버전: v${currentVersion}, 요청 버전: v${expectedVersion})`,
+          message: '다른 운영자가 먼저 처리했어요. 최신 내용을 확인해 주세요.',
         },
         { status: 409 }
       );

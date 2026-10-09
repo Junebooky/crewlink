@@ -14,7 +14,7 @@ export async function POST(request: Request) {
 
     if (!signatureStrokes || signatureStrokes.length === 0) {
       return NextResponse.json(
-        { message: '유효한 자필 벡터 서명 데이터가 필요합니다.' },
+        { message: '서명한 뒤 다시 시도해 주세요.' },
         { status: 400 }
       );
     }
@@ -88,7 +88,7 @@ export async function POST(request: Request) {
       .single();
 
     if (insertError) {
-      throw new Error(`전자서약 저장 실패: ${insertError.message}`);
+      throw new Error('서명을 저장하지 못했어요. 잠시 후 다시 시도해 주세요.');
     }
 
     return NextResponse.json({
@@ -99,7 +99,7 @@ export async function POST(request: Request) {
       termsSha256,
       contractVersion,
       signedAt,
-      message: '전자서약이 성공적으로 체결 및 저장되었습니다.',
+      message: '서명을 저장했어요.',
     });
   } catch (err: unknown) {
     return NextResponse.json({ message: (err as Error).message }, { status: 400 });

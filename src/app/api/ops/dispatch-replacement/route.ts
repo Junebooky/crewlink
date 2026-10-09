@@ -13,7 +13,7 @@ export async function POST(request: Request) {
 
     if (!requestId || !candidatePersonId) {
       return NextResponse.json(
-        { message: 'requestId 및 candidatePersonId는 필수입니다.' },
+        { message: '요청과 후보 크루를 다시 확인해 주세요.' },
         { status: 400 }
       );
     }

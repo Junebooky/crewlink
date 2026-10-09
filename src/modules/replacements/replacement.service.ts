@@ -62,14 +62,16 @@ export class ReplacementService {
       .maybeSingle();
 
     if (candError || !candidate) {
-      const notFoundErr = new Error('CANDIDATE_NOT_FOUND: 존재하지 않는 크루 후보 ID입니다.');
-      (notFoundErr as unknown as { statusCode: number }).statusCode = 404;
+      const notFoundErr = new Error('CANDIDATE_NOT_FOUND: 후보 크루 정보를 찾지 못했어요. 후보 목록을 새로 확인해 주세요.');
+      (notFoundErr as unknown as { statusCode: number; code: string }).statusCode = 404;
+      (notFoundErr as unknown as { code: string }).code = 'CANDIDATE_NOT_FOUND';
       throw notFoundErr;
     }
 
     if (!candidate.is_active) {
-      const inactiveErr = new Error('INACTIVE_CANDIDATE: 비활성 상태의 크루입니다.');
-      (inactiveErr as unknown as { statusCode: number }).statusCode = 400;
+      const inactiveErr = new Error('INACTIVE_CANDIDATE: 지금은 이 크루에게 제안할 수 없어요. 다른 후보를 선택해 주세요.');
+      (inactiveErr as unknown as { statusCode: number; code: string }).statusCode = 400;
+      (inactiveErr as unknown as { code: string }).code = 'INACTIVE_CANDIDATE';
       throw inactiveErr;
     }
 
@@ -81,21 +83,24 @@ export class ReplacementService {
       .maybeSingle();
 
     if (reqError || !request) {
-      const notFoundErr = new Error('REPLACEMENT_REQUEST_NOT_FOUND: 결원 요청을 찾을 수 없습니다.');
-      (notFoundErr as unknown as { statusCode: number }).statusCode = 404;
+      const notFoundErr = new Error('REPLACEMENT_REQUEST_NOT_FOUND: 대타 요청을 찾지 못했어요. 작업함에서 다시 확인해 주세요.');
+      (notFoundErr as unknown as { statusCode: number; code: string }).statusCode = 404;
+      (notFoundErr as unknown as { code: string }).code = 'REPLACEMENT_REQUEST_NOT_FOUND';
       throw notFoundErr;
     }
 
     // 3. Concurrency check: version mismatch
     if (request.version !== expectedVersion) {
-      const conflictError = new Error('CONCURRENCY_CONFLICT: 다른 운영자 또는 후보자에 의해 이미 선점되었습니다.');
-      (conflictError as unknown as { statusCode: number }).statusCode = 409;
+      const conflictError = new Error('CONCURRENCY_CONFLICT: 다른 운영자가 먼저 처리했어요. 최신 내용을 확인해 주세요.');
+      (conflictError as unknown as { statusCode: number; code: string }).statusCode = 409;
+      (conflictError as unknown as { code: string }).code = 'CONCURRENCY_CONFLICT';
       throw conflictError;
     }
 
     if (request.status !== 'open') {
-      const conflictError = new Error('ALREADY_FILLED: 이미 배정이 완료된 결원 슬롯입니다.');
-      (conflictError as unknown as { statusCode: number }).statusCode = 409;
+      const conflictError = new Error('ALREADY_FILLED: 이 자리는 이미 배정됐어요. 최신 내용을 확인해 주세요.');
+      (conflictError as unknown as { statusCode: number; code: string }).statusCode = 409;
+      (conflictError as unknown as { code: string }).code = 'ALREADY_FILLED';
       throw conflictError;
     }
 
@@ -122,9 +127,11 @@ export class ReplacementService {
     if (reservationError) {
       // 23P01 is PostgreSQL exclusion constraint violation
       const conflictError = new Error(
-        `CONCURRENCY_CONFLICT: 동일 시간대에 이미 확정된 타 일정이 존재하여 중복 배정할 수 없습니다. (${reservationError.message})`
+        'CONCURRENCY_CONFLICT: 이 크루는 같은 시간에 다른 일정이 있어요. 다른 후보를 선택해 주세요.'
       );
-      (conflictError as unknown as { statusCode: number }).statusCode = 409;
+      (conflictError as unknown as { statusCode: number; code: string; dbMessage: string }).statusCode = 409;
+      (conflictError as unknown as { code: string }).code = 'CONCURRENCY_CONFLICT';
+      (conflictError as unknown as { dbMessage: string }).dbMessage = reservationError.message;
       throw conflictError;
     }
 

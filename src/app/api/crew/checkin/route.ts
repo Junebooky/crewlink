@@ -13,7 +13,7 @@ export async function POST(request: Request) {
 
     if (!assignmentId || !tokenHash) {
       return NextResponse.json(
-        { message: 'assignmentId 및 tokenHash는 필수입니다.' },
+        { message: 'QR과 배정 정보를 다시 확인해 주세요.' },
         { status: 400 }
       );
     }
