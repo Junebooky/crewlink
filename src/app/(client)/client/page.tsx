@@ -22,7 +22,7 @@ import { cn } from '@/lib/utils';
 
 interface CrewDeploymentItem {
   id: string;
-  maskedName: string;
+  name: string;
   positionCode: string;
   positionLabel: string;
   uniformSize: string;
@@ -34,11 +34,11 @@ interface CrewDeploymentItem {
 export default function ClientLiveBoardPage() {
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
 
-  // Deployment crew members with masked private info
+  // Deployment crew members with full names for onsite identification
   const deployments: CrewDeploymentItem[] = [
     {
       id: 'dep-1',
-      maskedName: '김*수',
+      name: '김철수',
       positionCode: 'POS-01',
       positionLabel: '동선 관리 · 1구역 (D홀 입구)',
       uniformSize: 'L (100)',
@@ -47,7 +47,7 @@ export default function ClientLiveBoardPage() {
     },
     {
       id: 'dep-2',
-      maskedName: '이*민',
+      name: '이민우',
       positionCode: 'POS-02',
       positionLabel: '동선 관리 · 2구역 (중앙 로비)',
       uniformSize: 'M (95)',
@@ -56,7 +56,7 @@ export default function ClientLiveBoardPage() {
     },
     {
       id: 'dep-3',
-      maskedName: '박*호',
+      name: '박준호',
       positionCode: 'POS-03',
       positionLabel: 'VIP 라운지 · 리셉션',
       uniformSize: 'XL (105)',
@@ -65,7 +65,7 @@ export default function ClientLiveBoardPage() {
     },
     {
       id: 'dep-4',
-      maskedName: '정*아',
+      name: '정지아',
       positionCode: 'POS-04',
       positionLabel: 'VIP 라운지 · 케이터링',
       uniformSize: 'S (90)',
@@ -74,7 +74,7 @@ export default function ClientLiveBoardPage() {
     },
     {
       id: 'dep-5',
-      maskedName: '최*우',
+      name: '최선우',
       positionCode: 'POS-05',
       positionLabel: '등록 데스크 · 현장 발권',
       uniformSize: 'L (100)',
@@ -83,7 +83,7 @@ export default function ClientLiveBoardPage() {
     },
     {
       id: 'dep-6',
-      maskedName: '강*현',
+      name: '강도현',
       positionCode: 'POS-06',
       positionLabel: '등록 데스크 · 사전 등록',
       uniformSize: 'M (95)',
@@ -92,7 +92,7 @@ export default function ClientLiveBoardPage() {
     },
     {
       id: 'dep-7',
-      maskedName: '윤*영',
+      name: '윤소영',
       positionCode: 'POS-07',
       positionLabel: '체험 부스 · 인솔',
       uniformSize: 'M (95)',
@@ -101,7 +101,7 @@ export default function ClientLiveBoardPage() {
     },
     {
       id: 'dep-8',
-      maskedName: '한*진',
+      name: '한유진',
       positionCode: 'POS-08',
       positionLabel: '무대 · 대기열 관리',
       uniformSize: 'XL (105)',
@@ -225,7 +225,7 @@ export default function ClientLiveBoardPage() {
                       {crew.avatarUrl ? (
                         <img
                           src={crew.avatarUrl}
-                          alt={crew.maskedName}
+                          alt={crew.name}
                           className="w-full h-full object-cover"
                         />
                       ) : (
@@ -234,7 +234,7 @@ export default function ClientLiveBoardPage() {
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-baseline gap-1.5">
-                        <h3 className="font-bold text-ink text-base leading-snug">{crew.maskedName}</h3>
+                        <h3 className="font-bold text-ink text-base leading-snug">{crew.name}</h3>
                         <span className="text-xs text-muted font-normal">유니폼 {crew.uniformSize}</span>
                       </div>
                       <p className="text-xs text-muted font-medium mt-0.5 truncate">{crew.positionLabel}</p>
@@ -258,7 +258,7 @@ export default function ClientLiveBoardPage() {
         <div className="p-4 bg-canvas border border-border rounded-xl flex items-start gap-2.5 text-xs text-muted">
           <ShieldCheck className="w-4 h-4 text-brand shrink-0 mt-0.5" />
           <span>
-            <strong>공유되는 정보:</strong> 현장 운영에 필요한 배치 구역, 유니폼 사이즈, 출결 상태만 보여드려요. 크루 이름은 일부 가리고, 연락처와 계좌 정보는 공개하지 않아요.
+            <strong>공유되는 정보:</strong> 현장 운영에 필요한 실명, 배치 구역, 유니폼 사이즈, 출결 상태를 확인하실 수 있어요. 연락처와 계좌 번호 등 민감한 개인 정보는 안전하게 보호돼요.
           </span>
         </div>
       </div>

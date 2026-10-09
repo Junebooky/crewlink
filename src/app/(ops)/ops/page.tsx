@@ -43,7 +43,7 @@ export default function OpsDashboardPage() {
       id: 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee',
       type: 'MANUAL_FACE_TO_FACE',
       title: 'QR 확인이 어려워요 · 도착 확인 요청',
-      crewName: '김*루',
+      crewName: '김크루',
       shiftName: '2026 서울 모빌리티 엑스포 · 리셉션',
       venueName: '코엑스 3층 D홀',
       reportedAt: '12:35 · 5분 전',
@@ -55,7 +55,7 @@ export default function OpsDashboardPage() {
       id: '99999999-9999-9999-9999-999999999999',
       type: 'T30_VACANCY_ALERT',
       title: '시작 30분 전 · 출발 확인 필요',
-      crewName: '한*진',
+      crewName: '한유진',
       shiftName: '2026 서울 모빌리티 엑스포 · 무대 대기열 관리',
       venueName: '코엑스 3층 D홀',
       reportedAt: '12:30 · 10분 전',
@@ -67,7 +67,7 @@ export default function OpsDashboardPage() {
       id: 'task-03',
       type: 'UNCONFIRMED_DEPARTURE',
       title: '집합 15분 경과 · 도착 확인 필요',
-      crewName: '윤*영',
+      crewName: '윤소영',
       shiftName: '체험 부스 · 인솔',
       venueName: '코엑스 3층 D홀',
       reportedAt: '12:45',
@@ -87,9 +87,9 @@ export default function OpsDashboardPage() {
   // O03 Emergency Replacement State
   const [showReplacementModal, setShowReplacementModal] = useState(false);
   const [candidateList, setCandidateList] = useState([
-    { id: '11111111-1111-1111-1111-111111111111', name: '김*루', distance: '1.2km', rating: '★ 4.96', total: 24, status: '대기 중' },
-    { id: 'cand-2', name: '송*우', distance: '2.1km', rating: '★ 4.88', total: 15, status: '대기 중' },
-    { id: 'cand-3', name: '임*아', distance: '3.0km', rating: '★ 4.92', total: 31, status: '대기 중' },
+    { id: '11111111-1111-1111-1111-111111111111', name: '김하늘', distance: '1.2km', rating: '★ 4.96', total: 24, status: '대기 중' },
+    { id: 'cand-2', name: '송민우', distance: '2.1km', rating: '★ 4.88', total: 15, status: '대기 중' },
+    { id: 'cand-3', name: '임서아', distance: '3.0km', rating: '★ 4.92', total: 31, status: '대기 중' },
   ]);
   const [selectedCandidate, setSelectedCandidate] = useState<string | null>('11111111-1111-1111-1111-111111111111');
   const [isDispatching, setIsDispatching] = useState(false);
@@ -280,15 +280,20 @@ export default function OpsDashboardPage() {
                   <h3 className="font-bold text-ink text-sm">{task.title}</h3>
                   <p className="text-xs text-muted line-clamp-1">{task.details}</p>
 
-                  <div className="text-xs text-muted flex items-center gap-3 pt-1">
-                    <span>크루 <strong className="text-ink">{task.crewName}</strong></span>
-                    <span>• {task.shiftName}</span>
-                    <span>• {task.venueName}</span>
+                  <div className="text-xs text-muted flex flex-wrap items-center gap-x-2.5 gap-y-1 pt-1">
+                    <span className="inline-flex items-center gap-1 shrink-0">
+                      <span className="text-muted">크루</span>
+                      <strong className="font-bold text-ink">{task.crewName}</strong>
+                    </span>
+                    <span className="text-border-subtle" aria-hidden="true">·</span>
+                    <span className="text-ink font-medium">{task.shiftName}</span>
+                    <span className="text-border-subtle" aria-hidden="true">·</span>
+                    <span>{task.venueName}</span>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-xs font-bold text-brand hover:underline flex items-center gap-1">
+                <div className="flex items-center justify-end self-end md:self-center shrink-0 pt-2 md:pt-0">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-brand-soft text-brand-strong text-xs font-bold hover:bg-brand hover:text-inverse transition-colors shadow-2xs">
                     <span>확인하기</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </span>
@@ -325,18 +330,20 @@ export default function OpsDashboardPage() {
                 </div>
 
                 {/* Target info */}
-                <div className="space-y-2 p-3 bg-canvas rounded-xl text-muted">
-                  <div className="flex justify-between">
-                    <span className="text-muted">크루</span>
-                    <span className="font-bold text-ink">{selectedTask.crewName}</span>
+                <div className="space-y-2.5 p-3.5 bg-canvas border border-border-subtle rounded-xl text-xs">
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="text-muted shrink-0 whitespace-nowrap">크루</span>
+                    <span className="font-bold text-ink text-right">{selectedTask.crewName}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted">행사</span>
-                    <span>{selectedTask.shiftName}</span>
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="text-muted shrink-0 whitespace-nowrap">행사</span>
+                    <span className="text-ink text-right break-keep">{selectedTask.shiftName}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted">요청 내용</span>
-                    <span className="font-medium text-ink">{selectedTask.details}</span>
+                  <div className="flex items-start justify-between gap-4 pt-2 border-t border-border-subtle">
+                    <span className="text-muted shrink-0 whitespace-nowrap pt-0.5">요청 내용</span>
+                    <span className="font-medium text-ink text-right break-keep leading-relaxed flex-1">
+                      {selectedTask.details}
+                    </span>
                   </div>
                 </div>
 
