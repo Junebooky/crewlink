@@ -56,8 +56,8 @@ export function HeadcountInput({
   return (
     <div className={cn('flex flex-col gap-1.5', className)}>
       {label && (
-        <label htmlFor={id} className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
-          <Users className="w-4 h-4 text-slate-500" aria-hidden="true" />
+        <label htmlFor={id} className="text-sm font-semibold text-muted flex items-center gap-1.5">
+          <Users className="w-4 h-4 text-muted" aria-hidden="true" />
           {label}
         </label>
       )}
@@ -66,11 +66,11 @@ export function HeadcountInput({
           type="button"
           onClick={handleDecrement}
           disabled={disabled || value <= min}
-          aria-label={`${label || '인원'} 1명 감소`}
+          aria-label={`${label || '인원'} ${step}명 줄이기`}
           className={cn(
-            'w-11 h-11 flex items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-700',
-            'hover:bg-slate-50 active:bg-slate-100 transition-colors focus:outline-none focus:ring-2 focus:ring-[#1E60F3]',
-            'disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white'
+            'w-11 h-11 flex items-center justify-center rounded-lg border border-border bg-surface text-muted',
+            'hover:bg-canvas active:bg-surface-muted transition-colors focus:outline-none focus:ring-2 focus:ring-brand',
+            'disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-surface'
           )}
         >
           <Minus className="w-5 h-5" />
@@ -86,14 +86,14 @@ export function HeadcountInput({
             onChange={handleInputChange}
             disabled={disabled}
             className={cn(
-              'w-full h-11 px-3 py-2 text-center text-lg font-bold text-slate-900 bg-white border border-slate-300 rounded-lg',
-              'focus:outline-none focus:ring-2 focus:ring-[#1E60F3] focus:border-[#1E60F3] tabular-nums',
-              'disabled:bg-slate-100 disabled:text-slate-400'
+              'w-full h-11 px-3 py-2 text-center text-lg font-bold text-ink bg-surface border border-border rounded-lg',
+              'focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand tabular-nums',
+              'disabled:bg-surface-muted disabled:text-disabled'
             )}
             aria-label={`${label || '인원'} 직접 입력`}
           />
           {unit && (
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-medium text-slate-400 pointer-events-none">
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-medium text-muted pointer-events-none">
               {unit}
             </span>
           )}
@@ -103,11 +103,11 @@ export function HeadcountInput({
           type="button"
           onClick={handleIncrement}
           disabled={disabled || (max !== undefined && value >= max)}
-          aria-label={`${label || '인원'} 1명 증가`}
+          aria-label={`${label || '인원'} ${step}명 늘리기`}
           className={cn(
-            'w-11 h-11 flex items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-700',
-            'hover:bg-slate-50 active:bg-slate-100 transition-colors focus:outline-none focus:ring-2 focus:ring-[#1E60F3]',
-            'disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white'
+            'w-11 h-11 flex items-center justify-center rounded-lg border border-border bg-surface text-muted',
+            'hover:bg-canvas active:bg-surface-muted transition-colors focus:outline-none focus:ring-2 focus:ring-brand',
+            'disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-surface'
           )}
         >
           <Plus className="w-5 h-5" />

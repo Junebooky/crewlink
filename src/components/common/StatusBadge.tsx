@@ -7,10 +7,10 @@ import { Clock, Navigation, CheckCircle2, AlertCircle, FileCheck, Ban } from 'lu
 export type CrewLinkStatus =
   | 'NEED_CONFIRMATION'   // 참여 확인 필요
   | 'DEPARTED'            // 출발했어요
-  | 'ARRIVED_CONFIRMED'   // 도착 확인 완료
-  | 'OPS_REVIEW'          // 운영자 확인 중
-  | 'CONTRACT_PENDING'    // 전자서약 필요
-  | 'ASSIGNMENT_CANCELLED'// 배정 취소됨
+  | 'ARRIVED_CONFIRMED'   // 도착 확인
+  | 'OPS_REVIEW'          // 확인 대기
+  | 'CONTRACT_PENDING'    // 서명 필요
+  | 'ASSIGNMENT_CANCELLED'// 배정 취소
   | 'SETTLED';            // 정산 완료
 
 export interface StatusBadgeProps {
@@ -31,37 +31,37 @@ const statusConfig: Record<
   NEED_CONFIRMATION: {
     label: '참여 확인 필요',
     icon: Clock,
-    styleClasses: 'bg-[#FFF3D9] text-[#895400] border-[#FDE19E]',
+    styleClasses: 'bg-surface-muted text-muted border-neutral-border',
   },
   DEPARTED: {
     label: '출발했어요',
     icon: Navigation,
-    styleClasses: 'bg-[#EDF3FF] text-[#194DA8] border-[#C7DCFE]',
+    styleClasses: 'bg-brand-subtle text-brand-strong border-brand-border',
   },
   ARRIVED_CONFIRMED: {
-    label: '도착 확인 완료',
+    label: '도착 확인',
     icon: CheckCircle2,
-    styleClasses: 'bg-[#E7F5EE] text-[#08734E] border-[#B6E6CE]',
+    styleClasses: 'bg-brand-soft text-brand-strong border-brand-border',
   },
   OPS_REVIEW: {
-    label: '운영자 확인 중',
+    label: '확인 대기',
     icon: AlertCircle,
-    styleClasses: 'bg-[#FFF3D9] text-[#895400] border-[#FDE19E]',
+    styleClasses: 'bg-surface-muted text-muted border-neutral-border',
   },
   CONTRACT_PENDING: {
-    label: '전자서약 필요',
+    label: '서명 필요',
     icon: FileCheck,
-    styleClasses: 'bg-[#EDF1F6] text-[#526174] border-[#D5DCE5]',
+    styleClasses: 'bg-surface-muted text-muted border-neutral-border',
   },
   ASSIGNMENT_CANCELLED: {
-    label: '배정 취소됨',
+    label: '배정 취소',
     icon: Ban,
-    styleClasses: 'bg-[#FFF0F3] text-[#BB2449] border-[#FDC4D0]',
+    styleClasses: 'bg-surface-muted text-muted border-neutral-border',
   },
   SETTLED: {
     label: '정산 완료',
     icon: CheckCircle2,
-    styleClasses: 'bg-[#E7F5EE] text-[#08734E] border-[#B6E6CE]',
+    styleClasses: 'bg-brand-soft text-brand-strong border-brand-border',
   },
 };
 

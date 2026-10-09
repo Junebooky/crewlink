@@ -1,49 +1,53 @@
 /**
  * CrewLink Design Tokens & WCAG 2.2 AA Theme Constants
+ * Single source of truth: palette.json
  */
+import palette from './palette.json';
+
+export const paletteTokens = palette;
 
 export const colors = {
   primary: {
-    DEFAULT: '#1E60F3',
-    hover: '#164BC4',
-    subtle: '#E8F0FE',
+    DEFAULT: palette.brand,
+    hover: palette['brand-hover'],
+    subtle: palette['brand-soft'],
   },
   background: {
-    canvas: '#F5F7FB',
-    surface: '#FFFFFF',
-    muted: '#F0F3F8',
-    card: '#FFFFFF',
+    canvas: palette.canvas,
+    surface: palette.surface,
+    muted: palette['surface-muted'],
+    card: palette.surface,
   },
   border: {
-    subtle: '#E2E8F0',
-    default: '#CBD5E1',
-    strong: '#94A3B8',
+    subtle: palette['border-subtle'],
+    default: palette.border,
+    strong: palette['border-strong'],
   },
   state: {
     info: {
-      text: '#194DA8',
-      bg: '#EDF3FF',
-      border: '#C7DCFE',
+      text: palette['brand-strong'],
+      bg: palette['brand-subtle'],
+      border: palette['brand-border'],
     },
     success: {
-      text: '#08734E',
-      bg: '#E7F5EE',
-      border: '#B6E6CE',
+      text: palette['brand-strong'],
+      bg: palette['brand-soft'],
+      border: palette['brand-border'],
     },
     attention: {
-      text: '#895400',
-      bg: '#FFF3D9',
-      border: '#FDE19E',
+      text: palette.muted,
+      bg: palette['surface-muted'],
+      border: palette['neutral-border'],
     },
     critical: {
-      text: '#BB2449',
-      bg: '#FFF0F3',
-      border: '#FDC4D0',
+      text: palette.error,
+      bg: palette['error-bg'],
+      border: palette['error-border'],
     },
     neutral: {
-      text: '#526174',
-      bg: '#EDF1F6',
-      border: '#D5DCE5',
+      text: palette.muted,
+      bg: palette['surface-muted'],
+      border: palette['neutral-border'],
     },
   },
 } as const;

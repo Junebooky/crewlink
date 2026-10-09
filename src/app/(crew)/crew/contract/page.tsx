@@ -149,7 +149,7 @@ export default function CrewContractPage() {
                   className="mt-0.5 w-4 h-4 rounded text-[#1E60F3] border-slate-300 focus:ring-[#1E60F3]"
                 />
                 <span>
-                  [필수] 개인정보 처리방침 및 원천징수 세무 신고 관련 개인 식별자(tax_provider_user_key) 처리에 동의합니다.
+                  [필수] 개인정보 처리방침 및 원천징수 세무 신고 관련 개인 식별자 처리에 동의합니다.
                 </span>
               </label>
             </div>

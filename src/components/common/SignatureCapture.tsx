@@ -1,41 +1,43 @@
 'use client';
 
-import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { RotateCcw, Check, PenTool } from 'lucide-react';
+import React, { useRef, useState, useEffect } from 'react';
+import { PenTool, RotateCcw, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import palette from '@/lib/tokens/palette.json';
 
-export type SignaturePoint = {
+export interface StrokePoint {
   x: number;
   y: number;
   time: number;
-};
+}
 
-export type SignatureStroke = SignaturePoint[];
+export type Stroke = StrokePoint[];
+export type SignatureStroke = Stroke;
 
 export interface SignatureCaptureProps {
-  value?: SignatureStroke[];
-  onChange?: (strokes: SignatureStroke[]) => void;
-  width?: number;
+  value?: Stroke[];
+  onChange?: (strokes: Stroke[]) => void;
   height?: number;
   className?: string;
   disabled?: boolean;
 }
 
 export function SignatureCapture({
-  value = [],
+  value,
   onChange,
-  height = 180,
+  height = 160,
   className,
   disabled = false,
 }: SignatureCaptureProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [strokes, setStrokes] = useState<SignatureStroke[]>(value);
-  const [isDrawing, setIsDrawing] = useState(false);
-  const currentStrokeRef = useRef<SignaturePoint[]>([]);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
-  // Redraw all strokes onto canvas with DPR scaling
-  const redraw = useCallback((currentStrokes: SignatureStroke[]) => {
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [strokes, setStrokes] = useState<Stroke[]>([]);
+  const currentStrokeRef = useRef<StrokePoint[]>([]);
+
+  // Redraw canvas from stroke coordinates
+  const redraw = (currentStrokes: Stroke[]) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -46,7 +48,7 @@ export function SignatureCapture({
 
     ctx.save();
     ctx.scale(dpr, dpr);
-    ctx.strokeStyle = '#0F172A';
+    ctx.strokeStyle = palette.ink;
     ctx.lineWidth = 2.5;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
@@ -67,40 +69,40 @@ export function SignatureCapture({
     });
 
     ctx.restore();
-  }, []);
+  };
 
-  // Handle Resize and DPR changes
+  // Resize canvas when container dimensions change
   useEffect(() => {
     const handleResize = () => {
-      const container = containerRef.current;
       const canvas = canvasRef.current;
-      if (!container || !canvas) return;
+      const container = containerRef.current;
+      if (!canvas || !container) return;
 
-      const rect = container.getBoundingClientRect();
       const dpr = window.devicePixelRatio || 1;
+      const rect = container.getBoundingClientRect();
+      const displayWidth = rect.width;
+      const displayHeight = height;
 
-      canvas.width = rect.width * dpr;
-      canvas.height = height * dpr;
-      canvas.style.width = `${rect.width}px`;
-      canvas.style.height = `${height}px`;
+      canvas.width = displayWidth * dpr;
+      canvas.height = displayHeight * dpr;
+      canvas.style.width = `${displayWidth}px`;
+      canvas.style.height = `${displayHeight}px`;
 
       redraw(strokes);
     };
 
     handleResize();
     window.addEventListener('resize', handleResize);
-    window.addEventListener('orientationchange', handleResize);
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      window.removeEventListener('orientationchange', handleResize);
-    };
-  }, [height, redraw, strokes]);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [height, strokes]);
 
-  const getCanvasCoords = (e: React.MouseEvent | React.TouchEvent): SignaturePoint | null => {
+  const getCoordinates = (
+    e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>
+  ): StrokePoint | null => {
     const canvas = canvasRef.current;
     if (!canvas) return null;
-    const rect = canvas.getBoundingClientRect();
 
+    const rect = canvas.getBoundingClientRect();
     let clientX = 0;
     let clientY = 0;
 
@@ -120,22 +122,67 @@ export function SignatureCapture({
     };
   };
 
-  const startDrawing = (e: React.MouseEvent | React.TouchEvent) => {
+  const startDrawing = (
+    e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>
+  ) => {
     if (disabled) return;
-    const point = getCanvasCoords(e);
-    if (!point) return;
+    const pt = getCoordinates(e);
+    if (!pt) return;
 
     setIsDrawing(true);
-    currentStrokeRef.current = [point];
+    currentStrokeRef.current = [pt];
+
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        const dpr = window.devicePixelRatio || 1;
+        ctx.save();
+        ctx.scale(dpr, dpr);
+        ctx.strokeStyle = palette.ink;
+        ctx.lineWidth = 2.5;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(pt.x, pt.y);
+        ctx.lineTo(pt.x + 0.1, pt.y + 0.1);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
   };
 
-  const draw = (e: React.MouseEvent | React.TouchEvent) => {
+  const draw = (
+    e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>
+  ) => {
     if (!isDrawing || disabled) return;
-    const point = getCanvasCoords(e);
-    if (!point) return;
+    const pt = getCoordinates(e);
+    if (!pt) return;
 
-    currentStrokeRef.current.push(point);
-    redraw([...strokes, currentStrokeRef.current]);
+    currentStrokeRef.current.push(pt);
+
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const dpr = window.devicePixelRatio || 1;
+    ctx.save();
+    ctx.scale(dpr, dpr);
+    ctx.strokeStyle = palette.ink;
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    const pts = currentStrokeRef.current;
+    if (pts.length >= 2) {
+      const p1 = pts[pts.length - 2];
+      const p2 = pts[pts.length - 1];
+      ctx.beginPath();
+      ctx.moveTo(p1.x, p1.y);
+      ctx.lineTo(p2.x, p2.y);
+      ctx.stroke();
+    }
+    ctx.restore();
   };
 
   const stopDrawing = () => {
@@ -162,17 +209,17 @@ export function SignatureCapture({
 
   return (
     <div ref={containerRef} className={cn('flex flex-col gap-2 w-full', className)}>
-      <div className="flex items-center justify-between text-sm text-slate-600">
+      <div className="flex items-center justify-between text-sm text-muted">
         <span className="flex items-center gap-1.5 font-medium">
-          <PenTool className="w-4 h-4 text-[#1E60F3]" />
-          자필 서명 (벡터 스트로크 보존)
+          <PenTool className="w-4 h-4 text-brand" />
+          여기에 서명해 주세요
         </span>
         <button
           type="button"
           onClick={handleClear}
           disabled={disabled || !hasSignature}
-          className="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-red-600 disabled:opacity-40 transition-colors"
-          aria-label="서명 초기화"
+          className="inline-flex items-center gap-1 text-xs text-muted hover:text-brand-strong disabled:opacity-40 transition-colors"
+          aria-label="서명 지우기"
         >
           <RotateCcw className="w-3.5 h-3.5" />
           다시 쓰기
@@ -181,9 +228,9 @@ export function SignatureCapture({
 
       <div
         className={cn(
-          'relative w-full rounded-xl border-2 border-dashed border-slate-300 bg-white overflow-hidden transition-all',
+          'relative w-full rounded-xl border-2 border-dashed border-border bg-surface overflow-hidden transition-all',
           'touch-none select-none',
-          hasSignature ? 'border-solid border-[#1E60F3]' : 'hover:border-slate-400'
+          hasSignature ? 'border-solid border-brand' : 'hover:border-border-strong'
         )}
         style={{ height }}
       >
@@ -197,19 +244,19 @@ export function SignatureCapture({
           onTouchMove={draw}
           onTouchEnd={stopDrawing}
           className="block w-full h-full cursor-crosshair"
-          aria-label="전자서명 캔버스"
+          aria-label="서명 입력 영역"
         />
 
         {!hasSignature && (
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none text-slate-400 text-sm">
-            여기에 서명해 주세요
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none text-muted text-sm">
+            손가락이나 펜으로 서명해 주세요
           </div>
         )}
 
         {hasSignature && (
-          <div className="absolute bottom-2 right-2 pointer-events-none flex items-center gap-1 text-xs font-semibold text-[#08734E] bg-[#E7F5EE] px-2 py-0.5 rounded-full">
+          <div className="absolute bottom-2 right-2 pointer-events-none flex items-center gap-1 text-xs font-semibold text-brand-strong bg-brand-soft px-2 py-0.5 rounded-full">
             <Check className="w-3.5 h-3.5" />
-            서명 기록됨 ({strokes.length} 획)
+            입력했어요
           </div>
         )}
       </div>

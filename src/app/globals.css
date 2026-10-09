@@ -1,22 +1,47 @@
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
 @import "tailwindcss";
 
+@theme {
+  --color-brand: #1E60F3;
+  --color-brand-hover: #164BC4;
+  --color-brand-strong: #1749B5;
+  --color-brand-soft: #E8F0FE;
+  --color-brand-subtle: #F2F6FF;
+  --color-brand-border: #CCDDFD;
+  --color-brand-inverse: #B8D0FF;
+  --color-canvas: #F5F7FB;
+  --color-surface: #FFFFFF;
+  --color-surface-muted: #F0F3F8;
+  --color-ink: #152238;
+  --color-muted: #526174;
+  --color-inverse: #FFFFFF;
+  --color-inverse-muted: #CBD5E1;
+  --color-border: #CBD5E1;
+  --color-border-subtle: #E2E8F0;
+  --color-border-strong: #94A3B8;
+  --color-neutral-border: #D5DCE5;
+  --color-error: #BB2449;
+  --color-error-bg: #FFF0F3;
+  --color-error-border: #FDC4D0;
+  --color-disabled: #8793A5;
+}
+
 :root {
   --primary: #1E60F3;
   --primary-hover: #164BC4;
   --canvas: #F5F7FB;
   --surface: #FFFFFF;
 
-  --info-text: #194DA8;
-  --info-bg: #EDF3FF;
-  --success-text: #08734E;
-  --success-bg: #E7F5EE;
-  --attention-text: #895400;
-  --attention-bg: #FFF3D9;
+  --info-text: #1749B5;
+  --info-bg: #F2F6FF;
+  --success-text: #1749B5;
+  --success-bg: #E8F0FE;
+  --attention-text: #526174;
+  --attention-bg: #F0F3F8;
   --critical-text: #BB2449;
   --critical-bg: #FFF0F3;
   --neutral-text: #526174;
-  --neutral-bg: #EDF1F6;
+  --neutral-bg: #F0F3F8;
 
   --ease-settle: cubic-bezier(0.22, 1, 0.36, 1);
   --duration-fast: 140ms;
@@ -27,7 +52,7 @@
 body {
   font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
   background-color: var(--canvas);
-  color: #0F172A;
+  color: #152238;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

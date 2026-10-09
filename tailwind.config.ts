@@ -1,4 +1,5 @@
 import type { Config } from 'tailwindcss';
+import palette from './src/lib/tokens/palette.json';
 
 const config: Config = {
   content: [
@@ -11,37 +12,62 @@ const config: Config = {
     extend: {
       colors: {
         brand: {
-          DEFAULT: '#1E60F3',
-          hover: '#164BC4',
-          subtle: '#E8F0FE',
+          DEFAULT: palette.brand,
+          hover: palette['brand-hover'],
+          strong: palette['brand-strong'],
+          soft: palette['brand-soft'],
+          subtle: palette['brand-subtle'],
+          border: palette['brand-border'],
+          inverse: palette['brand-inverse'],
         },
-        canvas: '#F5F7FB',
-        surface: '#FFFFFF',
+        canvas: palette.canvas,
+        surface: {
+          DEFAULT: palette.surface,
+          muted: palette['surface-muted'],
+        },
+        ink: palette.ink,
+        muted: palette.muted,
+        inverse: {
+          DEFAULT: palette.inverse,
+          muted: palette['inverse-muted'],
+        },
+        border: {
+          DEFAULT: palette.border,
+          subtle: palette['border-subtle'],
+          strong: palette['border-strong'],
+        },
+        'neutral-border': palette['neutral-border'],
+        error: {
+          DEFAULT: palette.error,
+          bg: palette['error-bg'],
+          border: palette['error-border'],
+        },
+        disabled: palette.disabled,
         state: {
           info: {
-            text: '#194DA8',
-            bg: '#EDF3FF',
-            border: '#C7DCFE',
+            text: palette['brand-strong'],
+            bg: palette['brand-subtle'],
+            border: palette['brand-border'],
           },
           success: {
-            text: '#08734E',
-            bg: '#E7F5EE',
-            border: '#B6E6CE',
+            text: palette['brand-strong'],
+            bg: palette['brand-soft'],
+            border: palette['brand-border'],
           },
           attention: {
-            text: '#895400',
-            bg: '#FFF3D9',
-            border: '#FDE19E',
+            text: palette.muted,
+            bg: palette['surface-muted'],
+            border: palette['neutral-border'],
           },
           critical: {
-            text: '#BB2449',
-            bg: '#FFF0F3',
-            border: '#FDC4D0',
+            text: palette.error,
+            bg: palette['error-bg'],
+            border: palette['error-border'],
           },
           neutral: {
-            text: '#526174',
-            bg: '#EDF1F6',
-            border: '#D5DCE5',
+            text: palette.muted,
+            bg: palette['surface-muted'],
+            border: palette['neutral-border'],
           },
         },
       },
