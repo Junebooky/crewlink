@@ -15,7 +15,8 @@ import {
   PlusCircle,
   ShieldCheck,
   Search,
-  Filter
+  Filter,
+  User,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -27,6 +28,7 @@ interface CrewDeploymentItem {
   uniformSize: string;
   status: CrewLinkStatus;
   updatedAt: string;
+  avatarUrl?: string;
 }
 
 export default function ClientLiveBoardPage() {
@@ -216,19 +218,32 @@ export default function ClientLiveBoardPage() {
               className="p-4 bg-surface border border-border rounded-xl hover:border-border transition-colors shadow-xs flex flex-col justify-between"
             >
               <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-mono font-bold text-muted bg-surface-muted px-2 py-0.5 rounded">
-                    {crew.positionCode}
-                  </span>
-                  <StatusBadge status={crew.status} size="sm" />
+                <div className="flex items-start justify-between gap-2.5 mb-2.5">
+                  <div className="flex items-center gap-3 min-w-0">
+                    {/* Circular Profile Avatar */}
+                    <div className="w-10 h-10 rounded-full bg-brand-subtle border border-brand-border/60 flex items-center justify-center text-brand shrink-0 overflow-hidden shadow-2xs">
+                      {crew.avatarUrl ? (
+                        <img
+                          src={crew.avatarUrl}
+                          alt={crew.maskedName}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <User className="w-5 h-5 text-brand" />
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-baseline gap-1.5">
+                        <h3 className="font-bold text-ink text-base leading-snug">{crew.maskedName}</h3>
+                        <span className="text-xs text-muted font-normal">유니폼 {crew.uniformSize}</span>
+                      </div>
+                      <p className="text-xs text-muted font-medium mt-0.5 truncate">{crew.positionLabel}</p>
+                    </div>
+                  </div>
+                  <div className="shrink-0 pt-0.5">
+                    <StatusBadge status={crew.status} size="sm" />
+                  </div>
                 </div>
-
-                <div className="flex items-baseline gap-2">
-                  <h3 className="font-bold text-ink text-base">{crew.maskedName}</h3>
-                  <span className="text-xs text-muted">유니폼 {crew.uniformSize}</span>
-                </div>
-
-                <p className="text-xs text-muted font-medium mt-1.5">{crew.positionLabel}</p>
               </div>
 
               <div className="mt-4 pt-3 border-t border-border-subtle flex items-center justify-between text-[11px] text-muted">

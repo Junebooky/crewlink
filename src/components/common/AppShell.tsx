@@ -44,7 +44,7 @@ const NAV_CONFIG: Record<UserRole, { title: string; items: NavItem[] }> = {
     ],
   },
   client: {
-    title: '행사 담당자',
+    title: '주최사',
     items: [
       { id: 'events', label: '내 행사', href: '/client', icon: Briefcase },
       { id: 'request', label: '행사 요청', href: '/client/request', icon: PlusCircle },
@@ -135,7 +135,7 @@ export function AppShell({ children, initialRole = 'crew' }: AppShellProps) {
                     : 'text-muted hover:text-ink'
                 )}
               >
-                {r === 'crew' ? '크루' : r === 'client' ? '고객' : '운영팀'}
+                {r === 'crew' ? '크루' : r === 'client' ? '주최사' : '운영팀'}
               </button>
             ))}
           </div>
@@ -207,7 +207,7 @@ export function AppShell({ children, initialRole = 'crew' }: AppShellProps) {
                 role === r ? 'bg-brand text-inverse' : 'text-muted hover:bg-surface-muted'
               )}
             >
-              {r === 'crew' ? '크루' : r === 'client' ? '고객' : '운영팀'}
+              {r === 'crew' ? '크루' : r === 'client' ? '주최사' : '운영팀'}
             </button>
           ))}
         </div>
