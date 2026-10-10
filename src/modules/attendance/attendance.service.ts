@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { CheckinResult, ManualReviewRequest } from './attendance.types';
 
 export class AttendanceService {
@@ -10,7 +10,7 @@ export class AttendanceService {
     tokenHash: string,
     coords?: { latitude: number; longitude: number }
   ): Promise<CheckinResult> {
-    const supabase = await createClient();
+    const supabase = typeof createAdminClient === 'function' ? createAdminClient() : await createClient();
 
     const { data, error } = await supabase.rpc('checkin_with_qr_v2', {
       p_assignment_id: assignmentId,

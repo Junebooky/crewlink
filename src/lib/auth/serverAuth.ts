@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 
 export interface AuthContext {
@@ -22,8 +22,9 @@ export async function getAuthenticatedContext(
   const supabase = await createClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-  // Support development/test bypass header if explicitly provided
-  const headerActorId = request?.headers.get('x-actor-person-id');
+  // Support development/test bypass header only in non-production environments
+  const isDevOrTest = process.env.NODE_ENV !== 'production';
+  const headerActorId = isDevOrTest ? request?.headers.get('x-actor-person-id') : null;
 
   if (!user && !headerActorId) {
     return {
@@ -34,8 +35,9 @@ export async function getAuthenticatedContext(
     };
   }
 
-  // Lookup person in Supabase DB
-  let query = supabase.from('people').select('id, full_name, auth_user_id, is_active');
+  // Lookup person in Supabase DB using adminClient to bypass RLS bootstrap restriction
+  const adminClient = createAdminClient();
+  let query = adminClient.from('people').select('id, full_name, auth_user_id, is_active');
   if (user) {
     query = query.or(`auth_user_id.eq.${user.id},id.eq.${user.id}`);
   } else if (headerActorId) {
@@ -54,7 +56,7 @@ export async function getAuthenticatedContext(
   }
 
   // Query platform roles for RBAC verification
-  const { data: roleRecords } = await supabase
+  const { data: roleRecords } = await adminClient
     .from('platform_roles')
     .select('role')
     .eq('person_id', person.id)
@@ -62,16 +64,39 @@ export async function getAuthenticatedContext(
 
   const roles = (roleRecords || []).map((r) => r.role);
 
-  // Check required role if specified
-  if (requiredRole === 'ops' || requiredRole === 'admin') {
-    const isOps = roles.includes('ops') || roles.includes('admin');
-    if (!isOps) {
-      return {
-        errorResponse: NextResponse.json(
-          { message: '이 화면에 접근할 권한이 없어요. 운영팀에 문의해 주세요.' },
-          { status: 403 }
-        ),
-      };
+  // Check required role if specified (strict 403 if missing)
+  if (requiredRole) {
+    if (requiredRole === 'ops' || requiredRole === 'admin') {
+      const isOps = roles.includes('ops') || roles.includes('admin');
+      if (!isOps) {
+        return {
+          errorResponse: NextResponse.json(
+            { message: '이 화면에 접근할 권한이 없어요. 운영팀에 문의해 주세요.' },
+            { status: 403 }
+          ),
+        };
+      }
+    } else if (requiredRole === 'client') {
+      const isClient = roles.includes('client') || roles.includes('ops') || roles.includes('admin');
+      if (!isClient) {
+        return {
+          errorResponse: NextResponse.json(
+            { message: '주최사 계정 권한이 필요해요.' },
+            { status: 403 }
+          ),
+        };
+      }
+    } else if (requiredRole === 'crew') {
+      // Crew role check or default active person
+      const isCrew = roles.includes('crew') || roles.length === 0;
+      if (!isCrew && !roles.includes('admin') && !roles.includes('ops')) {
+        return {
+          errorResponse: NextResponse.json(
+            { message: '크루 권한이 필요해요.' },
+            { status: 403 }
+          ),
+        };
+      }
     }
   }
 

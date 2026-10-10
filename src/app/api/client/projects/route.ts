@@ -4,10 +4,12 @@ import { getAuthenticatedContext } from '@/lib/auth/serverAuth';
 
 export async function POST(request: Request) {
   try {
-    const { authContext, errorResponse } = await getAuthenticatedContext(request);
-    // Allow client or ops/admin
+    const { authContext, errorResponse } = await getAuthenticatedContext(request, 'client');
     if (errorResponse) {
-      // In dev mode without explicit auth cookie, fallback context is permitted
+      return errorResponse;
+    }
+    if (!authContext) {
+      return NextResponse.json({ message: '다시 로그인해 주세요.' }, { status: 401 });
     }
 
     const body = await request.json();
@@ -58,142 +60,170 @@ export async function POST(request: Request) {
 
     const supabase = createAdminClient();
 
-    // 2. Resolve client organization
-    let organizationId = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
-    if (authContext?.personId) {
-      const { data: member } = await supabase
-        .from('organization_members')
-        .select('organization_id')
-        .eq('person_id', authContext.personId)
-        .maybeSingle();
+    // 2. Resolve client organization without arbitrary fallback
+    const { data: member } = await supabase
+      .from('organization_members')
+      .select('organization_id')
+      .eq('person_id', authContext.personId)
+      .maybeSingle();
 
-      if (member) {
-        organizationId = member.organization_id;
+    let organizationId = member?.organization_id || null;
+    if (!organizationId) {
+      // If ops/admin user is creating project, allow assigning to default active org if member row absent
+      if (authContext.roles.includes('ops') || authContext.roles.includes('admin')) {
+        const { data: defaultOrg } = await supabase
+          .from('organizations')
+          .select('id')
+          .eq('status', 'active')
+          .limit(1)
+          .maybeSingle();
+        organizationId = defaultOrg?.id || null;
       }
     }
 
-    // 3. Insert Project
-    const { data: project, error: projError } = await supabase
-      .from('projects')
-      .insert({
-        organization_id: organizationId,
-        title,
-        venue_name: venueName || roadAddress || '장소 확인 필요',
-        road_address: roadAddress || '서울 강남구 영동대로 513',
-        detail_address: detailAddress || '',
-        status: 'published',
-        sow_spec: {
-          scopes: selectedScopes,
-          netWorkHours,
-          breakMinutes,
-          positionSpecs,
+    if (!organizationId) {
+      return NextResponse.json(
+        { message: '등록된 주최사 조직 정보를 찾을 수 없어요. 주최사 등록 후 다시 시도해 주세요.' },
+        { status: 403 }
+      );
+    }
+
+    let createdProjectId: string | null = null;
+
+    try {
+      // 3. Insert Project
+      const { data: project, error: projError } = await supabase
+        .from('projects')
+        .insert({
+          organization_id: organizationId,
+          title,
+          venue_name: venueName || roadAddress || '장소 확인 필요',
+          road_address: roadAddress || '서울 강남구 영동대로 513',
+          detail_address: detailAddress || '',
+          status: 'published',
+          sow_spec: {
+            scopes: selectedScopes,
+            netWorkHours,
+            breakMinutes,
+            positionSpecs,
+          },
+        })
+        .select('id')
+        .single();
+
+      if (projError || !project) {
+        console.error('[POST /api/client/projects] projError:', projError);
+        throw new Error(projError?.message || '행사를 저장하지 못했어요. 잠시 후 다시 시도해 주세요.');
+      }
+
+      createdProjectId = project.id;
+
+      // 4. Insert Shift
+      const checkinOpensAt = new Date(startDateTime.getTime() - 60 * 60 * 1000).toISOString();
+      const checkinClosesAt = new Date(startDateTime.getTime() + 60 * 60 * 1000).toISOString();
+
+      const { data: shift, error: shiftError } = await supabase
+        .from('shifts')
+        .insert({
+          project_id: project.id,
+          shift_name: `${title} · 근무 일정`,
+          required_headcount: count,
+          start_time: startDateTime.toISOString(),
+          end_time: endDateTime.toISOString(),
+          checkin_opens_at: checkinOpensAt,
+          checkin_closes_at: checkinClosesAt,
+          hourly_rate_won: Number(hourlyRateWon),
+        })
+        .select('id')
+        .single();
+
+      if (shiftError || !shift) {
+        console.error('[POST /api/client/projects] shiftError:', shiftError);
+        throw new Error(shiftError?.message || '근무 일정을 저장하지 못했어요. 입력한 시간을 확인해 주세요.');
+      }
+
+      // 5. Create Shift Slots
+      const slotsToInsert = Array.from({ length: count }, (_, i) => ({
+        shift_id: shift.id,
+        slot_number: i + 1,
+        position_code: `POS-${String(i + 1).padStart(2, '0')}`,
+        status: 'open',
+      }));
+
+      const { error: slotsError } = await supabase.from('shift_slots').insert(slotsToInsert);
+      if (slotsError) {
+        console.error('[POST /api/client/projects] slotsError:', slotsError);
+        throw new Error(slotsError.message || '근무 슬롯을 생성하지 못했어요.');
+      }
+
+      // 6. Calculate Quote and insert into quotes table
+      const staffRemunerationWon = Math.floor(count * netWorkHours * Number(hourlyRateWon));
+      const platformFeeWon = Math.floor(staffRemunerationWon * 0.15); // 15% platform fee
+      const subtotalWon = staffRemunerationWon + platformFeeWon;
+      const vatWon = Math.floor(subtotalWon * 0.10); // 10% VAT
+      const totalAmountWon = subtotalWon + vatWon;
+
+      const quoteNumber = `Q-${Date.now()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+
+      const { data: quote, error: quoteError } = await supabase
+        .from('quotes')
+        .insert({
+          project_id: project.id,
+          quote_number: quoteNumber,
+          subtotal_won: subtotalWon,
+          platform_fee_won: platformFeeWon,
+          vat_won: vatWon,
+          total_amount_won: totalAmountWon,
+          status: 'issued',
+        })
+        .select('id, quote_number')
+        .single();
+
+      if (quoteError || !quote) {
+        console.error('[POST /api/client/projects] quoteError:', quoteError);
+        throw new Error(quoteError?.message || '견적을 저장하지 못했어요. 잠시 후 다시 시도해 주세요.');
+      }
+
+      // 7. Insert Quote Items
+      const { error: quoteItemsError } = await supabase.from('quote_items').insert([
+        {
+          quote_id: quote.id,
+          item_name: `크루 보수 (${count}명 × ${netWorkHours}시간)`,
+          quantity: count,
+          unit_price_won: Math.floor(netWorkHours * Number(hourlyRateWon)),
+          amount_won: staffRemunerationWon,
         },
-      })
-      .select('id')
-      .single();
+        {
+          quote_id: quote.id,
+          item_name: '운영료 (15%)',
+          quantity: 1,
+          unit_price_won: platformFeeWon,
+          amount_won: platformFeeWon,
+        },
+      ]);
 
-    if (projError || !project) {
-      console.error('[POST /api/client/projects] projError:', projError);
-      throw new Error(projError?.message || '행사를 저장하지 못했어요. 잠시 후 다시 시도해 주세요.');
+      if (quoteItemsError) {
+        console.error('[POST /api/client/projects] quoteItemsError:', quoteItemsError);
+        throw new Error(quoteItemsError.message || '견적 항목을 저장하지 못했어요.');
+      }
+
+      return NextResponse.json({
+        success: true,
+        projectId: project.id,
+        shiftId: shift.id,
+        quoteId: quote.id,
+        quoteNumber: quote.quote_number,
+        netWorkHours,
+        totalAmountWon,
+        message: '운영 요청을 보냈어요.',
+      });
+    } catch (atomicError) {
+      if (createdProjectId) {
+        console.warn('[POST /api/client/projects] Rolling back project due to error:', createdProjectId);
+        await supabase.from('projects').delete().eq('id', createdProjectId);
+      }
+      throw atomicError;
     }
-
-    // 4. Insert Shift
-    const checkinOpensAt = new Date(startDateTime.getTime() - 60 * 60 * 1000).toISOString();
-    const checkinClosesAt = new Date(startDateTime.getTime() + 60 * 60 * 1000).toISOString();
-
-    const { data: shift, error: shiftError } = await supabase
-      .from('shifts')
-      .insert({
-        project_id: project.id,
-        shift_name: `${title} · 근무 일정`,
-        required_headcount: count,
-        start_time: startDateTime.toISOString(),
-        end_time: endDateTime.toISOString(),
-        checkin_opens_at: checkinOpensAt,
-        checkin_closes_at: checkinClosesAt,
-        hourly_rate_won: Number(hourlyRateWon),
-      })
-      .select('id')
-      .single();
-
-    if (shiftError || !shift) {
-      console.error('[POST /api/client/projects] shiftError:', shiftError);
-      throw new Error(shiftError?.message || '근무 일정을 저장하지 못했어요. 입력한 시간을 확인해 주세요.');
-    }
-
-    // 5. Create Shift Slots
-    const slotsToInsert = Array.from({ length: count }, (_, i) => ({
-      shift_id: shift.id,
-      slot_number: i + 1,
-      position_code: `POS-${String(i + 1).padStart(2, '0')}`,
-      status: 'open',
-    }));
-
-    const { error: slotsError } = await supabase.from('shift_slots').insert(slotsToInsert);
-    if (slotsError) {
-      console.error('[POST /api/client/projects] slotsError:', slotsError);
-    }
-
-    // 6. Calculate Quote and insert into quotes table
-    const staffRemunerationWon = Math.floor(count * netWorkHours * Number(hourlyRateWon));
-    const platformFeeWon = Math.floor(staffRemunerationWon * 0.15); // 15% platform fee
-    const subtotalWon = staffRemunerationWon + platformFeeWon;
-    const vatWon = Math.floor(subtotalWon * 0.10); // 10% VAT
-    const totalAmountWon = subtotalWon + vatWon;
-
-    const quoteNumber = `Q-${Date.now()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-
-    const { data: quote, error: quoteError } = await supabase
-      .from('quotes')
-      .insert({
-        project_id: project.id,
-        quote_number: quoteNumber,
-        subtotal_won: subtotalWon,
-        platform_fee_won: platformFeeWon,
-        vat_won: vatWon,
-        total_amount_won: totalAmountWon,
-        status: 'issued',
-      })
-      .select('id, quote_number')
-      .single();
-
-    if (quoteError || !quote) {
-      console.error('[POST /api/client/projects] quoteError:', quoteError);
-      throw new Error(quoteError?.message || '견적을 저장하지 못했어요. 잠시 후 다시 시도해 주세요.');
-    }
-
-    // 7. Insert Quote Items
-    const { error: quoteItemsError } = await supabase.from('quote_items').insert([
-      {
-        quote_id: quote.id,
-        item_name: `크루 보수 (${count}명 × ${netWorkHours}시간)`,
-        quantity: count,
-        unit_price_won: Math.floor(netWorkHours * Number(hourlyRateWon)),
-        amount_won: staffRemunerationWon,
-      },
-      {
-        quote_id: quote.id,
-        item_name: '운영료 (15%)',
-        quantity: 1,
-        unit_price_won: platformFeeWon,
-        amount_won: platformFeeWon,
-      },
-    ]);
-
-    if (quoteItemsError) {
-      console.error('[POST /api/client/projects] quoteItemsError:', quoteItemsError);
-    }
-
-    return NextResponse.json({
-      success: true,
-      projectId: project.id,
-      shiftId: shift.id,
-      quoteId: quote.id,
-      quoteNumber: quote.quote_number,
-      netWorkHours,
-      totalAmountWon,
-      message: '운영 요청을 보냈어요.',
-    });
   } catch (err: unknown) {
     console.error('[POST /api/client/projects] Error caught:', err);
     return NextResponse.json({ message: (err as Error).message }, { status: 400 });

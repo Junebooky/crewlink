@@ -17,7 +17,11 @@ export const metadata: Metadata = {
   description: "함께할 크루부터 현장 확인과 정산까지. 행사 운영을 한곳에서 이어가세요.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html
       lang="ko"

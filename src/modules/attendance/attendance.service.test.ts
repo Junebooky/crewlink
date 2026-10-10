@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AttendanceService } from './attendance.service';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 
 vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(),
+  createAdminClient: vi.fn(),
 }));
 
 describe('AttendanceService (출결 RPC 및 멱등성 검증)', () => {
@@ -53,6 +54,7 @@ describe('AttendanceService (출결 RPC 및 멱등성 검증)', () => {
     };
 
     (createClient as any).mockResolvedValue(mockSupabase);
+    (createAdminClient as any).mockReturnValue(mockSupabase);
 
     // 1st Check-in Call
     const firstCall = await service.checkinWithQR(assignmentId, validTokenHash);

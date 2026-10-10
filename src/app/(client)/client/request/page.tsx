@@ -142,7 +142,10 @@ export default function ClientRequestWizard() {
     try {
       const res = await fetch('/api/client/projects', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-actor-person-id': '33333333-3333-3333-3333-333333333333',
+        },
         body: JSON.stringify({
           title,
           roadAddress,
