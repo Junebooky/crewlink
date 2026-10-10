@@ -124,7 +124,7 @@ export default function CrewSettlementsPage() {
             </div>
 
             {/* Final Net Pay Highlight */}
-            <div className="p-4 bg-brand-subtle border border-brand-border rounded-xl flex justify-between items-center">
+            <div className="p-4 border border-brand-border rounded-xl flex justify-between items-center">
               <div>
                 <span className="text-xs font-semibold text-brand block">실지급 예정액</span>
                 <span className="text-[11px] text-muted">원천징수 세액을 뺀 금액이에요</span>
