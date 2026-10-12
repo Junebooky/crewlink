@@ -62,6 +62,12 @@ const SORT_OPTIONS: { id: SortOrder; label: string }[] = [
   { id: 'wage_desc', label: '보수 높은순' },
 ];
 
+export const ROLLING_PLACEHOLDERS = [
+  '관심 있는 행사 찾기 (예: 팝업스토어, 페스티벌)',
+  '가까운 핫플로 찾기 (예: 성수, 코엑스, 킨텍스)',
+  '자신 있는 역할로 찾기 (예: 리셉션, 동선 안내, 운영)',
+] as const;
+
 export default function HomePage() {
   const events = useMemo(() => getPublicEvents(), []);
 
@@ -83,6 +89,37 @@ export default function HomePage() {
   const sortDropdownRef = useRef<HTMLDivElement>(null);
   const [searchKeyword, setSearchKeyword] = useState('');
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
+
+  // 토스 스타일 부드러운 롤링 플레이스홀더 (3초 주기 순환, 검색어 입력 시 중단)
+  const [placeholderIndex, setPlaceholderIndex] = useState(0);
+  const [prevPlaceholderIndex, setPrevPlaceholderIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (searchKeyword.length > 0) {
+      setPrevPlaceholderIndex(null);
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setPlaceholderIndex((current) => {
+        setPrevPlaceholderIndex(current);
+        return (current + 1) % ROLLING_PLACEHOLDERS.length;
+      });
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [searchKeyword]);
+
+  // 이전 문구 퇴장 애니메이션 완료 후(300ms) 정리
+  useEffect(() => {
+    if (prevPlaceholderIndex === null) return;
+
+    const timer = setTimeout(() => {
+      setPrevPlaceholderIndex(null);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [prevPlaceholderIndex]);
 
   // 정렬 드롭다운 바깥 영역 클릭 및 ESC 키 입력 시 닫힘 처리
   useEffect(() => {
@@ -208,15 +245,40 @@ export default function HomePage() {
             <label htmlFor="event-search-input" className="sr-only">
               행사, 지역, 업무 검색
             </label>
-            <Search className="w-4 h-4 text-muted absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <Search className="w-4 h-4 text-muted absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none z-10" />
             <input
               id="event-search-input"
               type="text"
               value={searchKeyword}
               onChange={(e) => setSearchKeyword(e.target.value)}
-              placeholder="행사, 지역, 업무로 검색 (예: 성수, 코엑스, 안내)"
+              placeholder=""
+              aria-label="행사, 지역, 업무 검색"
               className="w-full h-[52px] pl-11 pr-4 rounded-2xl border border-border bg-surface text-ink text-base focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-xs transition-colors"
             />
+            {/* 토스 스타일 부드러운 롤링 플레이스홀더 (검색창이 비어 있을 때만 렌더링) */}
+            {searchKeyword.length === 0 && (
+              <div
+                aria-hidden="true"
+                className="absolute left-11 right-4 top-0 bottom-0 pointer-events-none flex items-center overflow-hidden select-none"
+              >
+                <div className="relative w-full h-5 sm:h-6 overflow-hidden flex items-center">
+                  {prevPlaceholderIndex !== null && (
+                    <span
+                      key={`prev-${prevPlaceholderIndex}`}
+                      className="absolute inset-0 flex items-center text-xs sm:text-sm text-muted truncate pointer-events-none animate-rolling-out -translate-y-2 opacity-0 duration-300 ease-out"
+                    >
+                      {ROLLING_PLACEHOLDERS[prevPlaceholderIndex]}
+                    </span>
+                  )}
+                  <span
+                    key={`curr-${placeholderIndex}`}
+                    className="absolute inset-0 flex items-center text-xs sm:text-sm text-muted truncate pointer-events-none animate-rolling-in translate-y-0 opacity-100 duration-300 ease-out"
+                  >
+                    {ROLLING_PLACEHOLDERS[placeholderIndex]}
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* 2. 날짜 퀵 필터 바 (한 손 조작 최적화) */}
