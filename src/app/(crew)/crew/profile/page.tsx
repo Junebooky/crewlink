@@ -738,7 +738,7 @@ export default function CrewProfilePage() {
                   </p>
                 </div>
 
-                <div className="flex flex-wrap gap-2 pt-1">
+                <div className="grid grid-cols-4 gap-1.5 sm:gap-2 pt-1">
                   {AVAILABLE_LANGUAGES.map((lang) => {
                     const isSelected = languages.includes(lang);
                     return (
@@ -747,14 +747,14 @@ export default function CrewProfilePage() {
                         type="button"
                         onClick={() => toggleLanguage(lang)}
                         className={cn(
-                          'h-10 px-4 rounded-full border text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5',
+                          'h-10 px-1 sm:px-2 rounded-xl sm:rounded-2xl border text-[11px] sm:text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1 select-none',
                           isSelected
                             ? 'bg-brand text-white border-brand shadow-xs'
                             : 'bg-white text-ink border-border hover:border-brand-border'
                         )}
                       >
-                        {isSelected && <Check className="w-3.5 h-3.5 text-white shrink-0" />}
-                        <span>{lang}</span>
+                        {isSelected && <Check className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-white shrink-0" />}
+                        <span className="truncate">{lang}</span>
                       </button>
                     );
                   })}
