@@ -1,9 +1,10 @@
 import { Suspense } from 'react';
-import { EVENT_FEED_DATA } from '@/lib/data/events';
+import { notFound } from 'next/navigation';
+import { getPublicEvents, getEventById } from '@/lib/data/events';
 import EventDetailClient from './EventDetailClient';
 
 export function generateStaticParams() {
-  return EVENT_FEED_DATA.map((e) => ({
+  return getPublicEvents().map((e) => ({
     id: e.id,
   }));
 }
@@ -14,7 +15,13 @@ async function EventDetailContent({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  return <EventDetailClient id={id} />;
+  const event = getEventById(id);
+
+  if (!event) {
+    notFound();
+  }
+
+  return <EventDetailClient id={id} event={event} />;
 }
 
 export default function EventDetailPage({
@@ -34,4 +41,3 @@ export default function EventDetailPage({
     </Suspense>
   );
 }
-

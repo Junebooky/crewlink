@@ -89,6 +89,8 @@ export async function POST(request: Request) {
     }
 
     let createdProjectId: string | null = null;
+    let createdShiftId: string | null = null;
+    let createdQuoteId: string | null = null;
 
     try {
       // 3. Insert Project
@@ -142,6 +144,8 @@ export async function POST(request: Request) {
         throw new Error(shiftError?.message || '근무 일정을 저장하지 못했어요. 입력한 시간을 확인해 주세요.');
       }
 
+      createdShiftId = shift.id;
+
       // 5. Create Shift Slots
       const slotsToInsert = Array.from({ length: count }, (_, i) => ({
         shift_id: shift.id,
@@ -184,6 +188,8 @@ export async function POST(request: Request) {
         throw new Error(quoteError?.message || '견적을 저장하지 못했어요. 잠시 후 다시 시도해 주세요.');
       }
 
+      createdQuoteId = quote.id;
+
       // 7. Insert Quote Items
       const { error: quoteItemsError } = await supabase.from('quote_items').insert([
         {
@@ -218,10 +224,35 @@ export async function POST(request: Request) {
         message: '운영 요청을 보냈어요.',
       });
     } catch (atomicError) {
-      if (createdProjectId) {
-        console.warn('[POST /api/client/projects] Rolling back project due to error:', createdProjectId);
-        await supabase.from('projects').delete().eq('id', createdProjectId);
+      // Reverse hierarchical compensation rollback to prevent orphan records
+      console.warn('[POST /api/client/projects] Rolling back intermediate entities due to error:', atomicError);
+
+      if (createdQuoteId) {
+        try {
+          await supabase.from('quote_items').delete().eq('quote_id', createdQuoteId);
+          await supabase.from('quotes').delete().eq('id', createdQuoteId);
+        } catch (rollbackErr) {
+          console.error('[Rollback Failure: Quotes]', rollbackErr);
+        }
       }
+
+      if (createdShiftId) {
+        try {
+          await supabase.from('shift_slots').delete().eq('shift_id', createdShiftId);
+          await supabase.from('shifts').delete().eq('id', createdShiftId);
+        } catch (rollbackErr) {
+          console.error('[Rollback Failure: Shifts]', rollbackErr);
+        }
+      }
+
+      if (createdProjectId) {
+        try {
+          await supabase.from('projects').delete().eq('id', createdProjectId);
+        } catch (rollbackErr) {
+          console.error('[Rollback Failure: Projects]', rollbackErr);
+        }
+      }
+
       throw atomicError;
     }
   } catch (err: unknown) {

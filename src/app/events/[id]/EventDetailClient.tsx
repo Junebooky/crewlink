@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   ArrowLeft,
   Clock,
@@ -9,220 +10,56 @@ import {
   Check,
   Share2,
   ChevronRight,
+  ShieldCheck,
+  CheckCircle2,
+  Loader2,
+  AlertCircle,
 } from 'lucide-react';
+import { ClayWallet3DAsset } from '@/components/assets/ClayWallet3DAsset';
+import { AccessibleSheet } from '@/components/common/AccessibleSheet';
+import { getEventById, type EventItem } from '@/lib/data/events';
 
 interface EventDetailProps {
   id?: string;
-  event?: {
-    id: string;
-    displayTitle: string;
-    hostName: string;
-    categoryLabel: string;
-    regionLabel: string;
-    venueAddress: string;
-    venueDetail: string;
-    deadlineDateLabel: string;
-    workHoursLabel: string;
-    breakMinutesLabel: string;
-    dailyWageWon: number;
-    dates: { id: string; date: string; dayOfWeek: string }[];
-    roles: { title: string; desc: string }[];
-    dressCode: {
-      type: 'FORMAL' | 'CASUAL' | 'UNIFORM';
-      title: string;
-      desc: string;
-    };
-    qualifications: string[];
-  };
-}
-
-// 3D 클레이 지갑 + 코인 스택 + 반짝이 별 에셋
-function ClayWallet3DAsset() {
-  return (
-    <div className="relative w-28 h-20 shrink-0 flex items-center justify-center select-none">
-      <svg
-        viewBox="0 0 160 120"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        className="w-full h-full drop-shadow-sm overflow-visible"
-      >
-        <defs>
-          <filter id="clayShadow" x="-20%" y="-20%" width="140%" height="160%">
-            <feGaussianBlur in="SourceAlpha" stdDeviation="4" />
-            <feOffset dx="0" dy="6" />
-            <feComponentTransfer>
-              <feFuncA type="linear" slope="0.15" />
-            </feComponentTransfer>
-            <feMerge>
-              <feMergeNode />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-
-          <linearGradient id="walletBlue" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#4B8DFF" />
-            <stop offset="35%" stopColor="#2563EB" />
-            <stop offset="100%" stopColor="#1D4ED8" />
-          </linearGradient>
-
-          <linearGradient id="walletBack" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#2563EB" />
-            <stop offset="100%" stopColor="#1E40AF" />
-          </linearGradient>
-
-          <linearGradient id="strapGrad" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="#60A5FA" />
-            <stop offset="100%" stopColor="#3B82F6" />
-          </linearGradient>
-
-          <radialGradient id="silverSnap" cx="35%" cy="30%" r="65%">
-            <stop offset="0%" stopColor="#FFFFFF" />
-            <stop offset="60%" stopColor="#E2E8F0" />
-            <stop offset="100%" stopColor="#94A3B8" />
-          </radialGradient>
-
-          <linearGradient id="coinBody" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#FEF08A" />
-            <stop offset="30%" stopColor="#FDE047" />
-            <stop offset="100%" stopColor="#EAB308" />
-          </linearGradient>
-
-          <linearGradient id="coinTop" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="#FEF9C3" />
-            <stop offset="100%" stopColor="#FDE047" />
-          </linearGradient>
-        </defs>
-
-        {/* 바닥 그림자 */}
-        <ellipse cx="80" cy="106" rx="65" ry="8" fill="#1E3A8A" opacity="0.12" filter="blur(3px)" />
-
-        {/* 지갑 뒤쪽 플랩 */}
-        <path
-          d="M58 36 C58 28, 64 24, 74 24 L114 24 C124 24, 130 28, 130 36 L130 52 L58 52 Z"
-          fill="url(#walletBack)"
-        />
-
-        {/* 지갑 메인 본체 */}
-        <rect
-          x="50"
-          y="34"
-          width="86"
-          height="58"
-          rx="18"
-          fill="url(#walletBlue)"
-          filter="url(#clayShadow)"
-        />
-
-        {/* 상단 3D 엠보싱 하이라이트 */}
-        <path
-          d="M66 38 Q93 35 120 38"
-          stroke="rgba(255, 255, 255, 0.45)"
-          strokeWidth="3.5"
-          strokeLinecap="round"
-        />
-
-        {/* 잠금 스트랩 */}
-        <path
-          d="M102 54 L138 54 C143 54, 147 58, 147 64 C147 70, 143 74, 138 74 L102 74 C97 74, 94 70, 94 64 C94 58, 97 54, 102 54 Z"
-          fill="url(#strapGrad)"
-          filter="drop-shadow(0 2px 3px rgba(15,23,42,0.2))"
-        />
-        <circle cx="109" cy="64" r="5.5" fill="url(#silverSnap)" filter="drop-shadow(0 1px 2px rgba(0,0,0,0.25))" />
-
-        {/* 코인 스택 1 (왼쪽) */}
-        <g transform="translate(28, 80)">
-          <rect x="0" y="3" width="28" height="11" rx="5.5" fill="url(#coinBody)" />
-          <ellipse cx="14" cy="4" rx="14" ry="4" fill="url(#coinTop)" />
-        </g>
-        <g transform="translate(28, 69)">
-          <rect x="0" y="3" width="28" height="11" rx="5.5" fill="url(#coinBody)" />
-          <ellipse cx="14" cy="4" rx="14" ry="4" fill="url(#coinTop)" />
-        </g>
-        <g transform="translate(28, 58)">
-          <rect x="0" y="3" width="28" height="11" rx="5.5" fill="url(#coinBody)" />
-          <ellipse cx="14" cy="4" rx="14" ry="4" fill="url(#coinTop)" />
-        </g>
-        <g transform="translate(28, 47)">
-          <rect x="0" y="3" width="28" height="11" rx="5.5" fill="url(#coinBody)" />
-          <ellipse cx="14" cy="4" rx="14" ry="4" fill="url(#coinTop)" />
-          <path d="M4 3.5 Q14 2 24 3.5" stroke="rgba(255,255,255,0.7)" strokeWidth="1.5" strokeLinecap="round" />
-        </g>
-
-        {/* 코인 스택 2 (오른쪽) */}
-        <g transform="translate(54, 82)">
-          <rect x="0" y="3" width="26" height="11" rx="5.5" fill="url(#coinBody)" />
-          <ellipse cx="13" cy="4" rx="13" ry="4" fill="url(#coinTop)" />
-        </g>
-        <g transform="translate(54, 71)">
-          <rect x="0" y="3" width="26" height="11" rx="5.5" fill="url(#coinBody)" />
-          <ellipse cx="13" cy="4" rx="13" ry="4" fill="url(#coinTop)" />
-          <path d="M4 3.5 Q13 2 22 3.5" stroke="rgba(255,255,255,0.7)" strokeWidth="1.5" strokeLinecap="round" />
-        </g>
-
-        {/* 3D 반짝이 별 */}
-        <path
-          d="M116 14 Q116 23 124 23 Q116 23 116 32 Q116 23 108 23 Q116 23 116 14 Z"
-          fill="#3B82F6"
-          filter="drop-shadow(0 2px 4px rgba(59,130,246,0.3))"
-        />
-        <path
-          d="M12 68 Q12 73 17 73 Q12 73 12 78 Q12 73 7 73 Q12 73 12 68 Z"
-          fill="#60A5FA"
-        />
-      </svg>
-    </div>
-  );
+  event?: EventItem;
 }
 
 export default function EventDetailClient({ id, event: initialEvent }: EventDetailProps) {
-  const event = initialEvent || {
-    id: 'evt-2026-001',
-    displayTitle: '2026 성수 럭셔리 뷰티 브랜드 팝업스토어 현장 운영 크루',
-    hostName: '(주)글로우랩스 코리아',
-    categoryLabel: '팝업스토어',
-    regionLabel: '서울 성동구',
-    venueAddress: '서울 성동구 연무장길 45',
-    venueDetail: '성수역 3번 출구 도보 5분 메인 팝업존',
-    deadlineDateLabel: '10.18까지 모집',
-    workHoursLabel: '11:00 ~ 20:00',
-    breakMinutesLabel: '60분 휴게',
-    dailyWageWon: 120000,
-    dates: [
-      { id: 'd1', date: '2026-10-16', dayOfWeek: '금' },
-      { id: 'd2', date: '2026-10-17', dayOfWeek: '토' },
-      { id: 'd3', date: '2026-10-18', dayOfWeek: '일' },
-      { id: 'd4', date: '2026-10-19', dayOfWeek: '월' },
-      { id: 'd5', date: '2026-10-20', dayOfWeek: '화' },
-    ],
-    roles: [
-      {
-        title: '동선 및 관람객 입장 통제',
-        desc: '사전 예약자 대기열 라인 정돈 및 현장 대기 인원 동선 분리 안내',
-      },
-      {
-        title: '체험 부스 및 이벤트 지원',
-        desc: '포토존 인솔, 럭키드로우 룰렛 진행 및 인스타그램 인증 확인',
-      },
-      {
-        title: '사은품 배부 및 체크리스트 관리',
-        desc: '방문 완료 키트 패키징 불출 및 수량 체크',
-      },
-    ],
-    dressCode: {
-      type: 'FORMAL' as const,
-      title: '단정 올블랙 정장 및 단화 착용',
-      desc: '상/하의 단정한 블랙 슬랙스 및 셔츠, 찢어진 바지/운동화/슬리퍼 불가',
-    },
-    qualifications: [
-      '고객 응대에 밝고 적극적인 태도를 가지신 분',
-      '시간 엄수 및 근태가 성실하신 분 (지각/무단이탈 절대 불가)',
-      '단정한 용모와 복장 규정 준수가 가능하신 분',
-    ],
-  };
+  const router = useRouter();
+  const event = initialEvent || getEventById(id || 'evt-2026-001') || getEventById('evt-2026-001')!;
 
   const [selectedDateIds, setSelectedDateIds] = useState<string[]>(
     event.dates.map((d) => d.id)
   );
+
+  // 모달 상태 관리
+  const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
+  const [applicantName, setApplicantName] = useState('');
+  const [applicantPhone, setApplicantPhone] = useState('');
+  const [agreePrivacy, setAgreePrivacy] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isSuccess, setIsSuccess] = useState(false);
+
+  // 사용자 세션 기본값 프리필 (가능한 경우)
+  useEffect(() => {
+    async function loadSession() {
+      try {
+        const res = await fetch('/api/auth/me', { cache: 'no-store' });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.authenticated && data.user) {
+            if (data.user.fullName && !applicantName) {
+              setApplicantName(data.user.fullName);
+            }
+          }
+        }
+      } catch {
+        // 무시하고 수동 입력 지원
+      }
+    }
+    loadSession();
+  }, []);
 
   // 가로 스크롤 및 우측 화살표 인디케이터 관제
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -247,23 +84,102 @@ export default function EventDetailClient({ id, event: initialEvent }: EventDeta
     }
   };
 
-  const toggleDate = (id: string) => {
+  const toggleDate = (dateId: string) => {
     setSelectedDateIds((prev) =>
-      prev.includes(id)
+      prev.includes(dateId)
         ? prev.length > 1
-          ? prev.filter((item) => item !== id)
+          ? prev.filter((item) => item !== dateId)
           : prev
-        : [...prev, id]
+        : [...prev, dateId]
     );
   };
 
   const totalEstimatedWage = event.dailyWageWon * selectedDateIds.length;
+  const selectedDateObjects = event.dates.filter((d) => selectedDateIds.includes(d.id));
+
+  // 전화번호 자동 포맷팅 (010-XXXX-XXXX)
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value.replace(/[^0-9]/g, '').slice(0, 11);
+    if (raw.length <= 3) {
+      setApplicantPhone(raw);
+    } else if (raw.length <= 7) {
+      setApplicantPhone(`${raw.slice(0, 3)}-${raw.slice(3)}`);
+    } else {
+      setApplicantPhone(`${raw.slice(0, 3)}-${raw.slice(3, 7)}-${raw.slice(7)}`);
+    }
+  };
+
+  // 지원 신청 제출 핸들러
+  const handleSubmitApplication = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!applicantName.trim()) {
+      setSubmitError('이름을 입력해 주세요.');
+      return;
+    }
+    const cleanPhone = applicantPhone.replace(/[^0-9]/g, '');
+    if (cleanPhone.length < 10) {
+      setSubmitError('연락처(010-XXXX-XXXX)를 정확히 입력해 주세요.');
+      return;
+    }
+    if (!agreePrivacy) {
+      setSubmitError('개인정보 수집 및 제3자 제공에 동의해 주세요.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      const res = await fetch('/api/crew/applications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          eventId: event.id,
+          selectedDates: selectedDateObjects.map((d) => d.date),
+          applicantName: applicantName.trim(),
+          applicantPhone: applicantPhone.trim(),
+          agreePrivacy: true,
+          agreeNotice: true,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        if (res.status === 401) {
+          setSubmitError('로그인이 필요한 서비스예요. 로그인 후 다시 지원해 주세요.');
+        } else {
+          setSubmitError(data.message || '지원 접수 중 오류가 발생했습니다.');
+        }
+        return;
+      }
+
+      setIsSuccess(true);
+    } catch {
+      setSubmitError('네트워크 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleModalClose = (open: boolean) => {
+    if (!open) {
+      setIsApplyModalOpen(false);
+      // 성공 상태에서 모달 닫을 시 상태 초기화
+      if (isSuccess) {
+        setIsSuccess(false);
+        setSubmitError(null);
+      }
+    } else {
+      setIsApplyModalOpen(true);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-canvas text-ink pb-28">
       {/* 넛지(Nudge) 애니메이션 키프레임 */}
-      <style dangerouslySetInnerHTML={{
-        __html: `
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
         @keyframes gentleNudge {
           0%, 100% { transform: translateX(0); }
           50% { transform: translateX(3px); }
@@ -271,7 +187,9 @@ export default function EventDetailClient({ id, event: initialEvent }: EventDeta
         .animate-nudge {
           animation: gentleNudge 1.3s ease-in-out infinite;
         }
-      ` }} />
+      `,
+        }}
+      />
 
       {/* 1. 상단 내비게이션 바 */}
       <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-border/80 h-14 flex items-center justify-between px-4 sm:px-6">
@@ -345,10 +263,11 @@ export default function EventDetailClient({ id, event: initialEvent }: EventDeta
                       key={d.id}
                       type="button"
                       onClick={() => toggleDate(d.id)}
-                      className={`py-2.5 px-2 rounded-2xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center shrink-0 w-[calc((100%-24px)/4)] min-w-[70px] snap-start ${isSelected
-                        ? 'border-brand bg-white text-ink font-bold shadow-xs ring-1 ring-inset ring-brand'
-                        : 'border-border/80 bg-canvas text-muted hover:border-brand/40'
-                        }`}
+                      className={`py-2.5 px-2 rounded-2xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center shrink-0 w-[calc((100%-24px)/4)] min-w-[70px] snap-start ${
+                        isSelected
+                          ? 'border-brand bg-white text-ink font-bold shadow-xs ring-1 ring-inset ring-brand'
+                          : 'border-border/80 bg-canvas text-muted hover:border-brand/40'
+                      }`}
                     >
                       <span className="text-xs text-muted mb-0.5">{d.dayOfWeek}요일</span>
                       <span className="text-sm font-semibold tracking-tight">
@@ -490,7 +409,7 @@ export default function EventDetailClient({ id, event: initialEvent }: EventDeta
           <button
             type="button"
             onClick={() => {
-              alert(`${selectedDateIds.length}일 일정으로 지원을 시작합니다.`);
+              setIsApplyModalOpen(true);
             }}
             className="min-h-[52px] px-8 rounded-2xl bg-brand hover:bg-brand-hover text-white font-bold text-sm shadow-sm transition-colors active:scale-[0.99] flex items-center justify-center gap-1.5 cursor-pointer"
           >
@@ -498,6 +417,181 @@ export default function EventDetailClient({ id, event: initialEvent }: EventDeta
           </button>
         </div>
       </footer>
+
+      {/* 9. Radix Dialog 기반 지원 신청 모달 (AccessibleSheet) */}
+      <AccessibleSheet
+        open={isApplyModalOpen}
+        onOpenChange={handleModalClose}
+        title={isSuccess ? '지원 완료' : '현장 크루 지원 신청'}
+        description={
+          isSuccess
+            ? '지원이 성공적으로 접수되었습니다.'
+            : '신청 정보를 확인하고 지원을 완료해 주세요.'
+        }
+        side="center"
+        className="max-w-md w-[92vw] p-5 sm:p-6"
+      >
+        {isSuccess ? (
+          <div className="py-4 space-y-5 text-center">
+            <div className="w-14 h-14 rounded-full bg-brand-soft border border-brand-border text-brand-strong flex items-center justify-center mx-auto shadow-2xs">
+              <CheckCircle2 className="w-8 h-8" />
+            </div>
+
+            <div className="space-y-1">
+              <h3 className="text-lg font-bold text-ink">지원 신청이 접수되었어요!</h3>
+              <p className="text-xs text-muted leading-relaxed break-keep">
+                주최사 담당자가 지원서를 검토한 후 승인 여부를 알림톡 또는 문자로 안내해 드려요.
+              </p>
+            </div>
+
+            <div className="bg-canvas rounded-2xl p-4 text-left border border-border/80 space-y-2 text-xs">
+              <div className="flex justify-between">
+                <span className="text-muted">지원 행사</span>
+                <span className="font-semibold text-ink truncate max-w-[200px]">
+                  {event.displayTitle}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted">선택 일정</span>
+                <span className="font-semibold text-ink">
+                  총 {selectedDateObjects.length}일 ({selectedDateObjects.map((d) => `${d.date.slice(5)}(${d.dayOfWeek})`).join(', ')})
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted">예상 총 보수</span>
+                <span className="font-bold text-brand-strong">
+                  {totalEstimatedWage.toLocaleString()}원
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted">신청자</span>
+                <span className="font-semibold text-ink">{applicantName} ({applicantPhone})</span>
+              </div>
+            </div>
+
+            <div className="pt-2 flex flex-col sm:flex-row gap-2">
+              <Link
+                href="/crew/schedule"
+                className="flex-1 h-11 rounded-xl bg-brand text-white font-bold text-xs flex items-center justify-center hover:bg-brand-hover transition-colors shadow-2xs"
+              >
+                내 활동(일정) 확인하기
+              </Link>
+              <button
+                type="button"
+                onClick={() => handleModalClose(false)}
+                className="h-11 px-5 rounded-xl border border-border bg-surface text-ink font-semibold text-xs hover:bg-canvas transition-colors cursor-pointer"
+              >
+                닫기
+              </button>
+            </div>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmitApplication} className="pt-2 pb-1 space-y-4 text-left">
+            {submitError && (
+              <div className="p-3 rounded-xl bg-surface border border-brand-border text-brand-strong text-xs flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                <span className="break-keep leading-tight">{submitError}</span>
+              </div>
+            )}
+
+            {/* 선택 근무 일자 요약 카드 */}
+            <div className="bg-canvas rounded-2xl p-3.5 border border-border/80 space-y-2 text-xs">
+              <div className="flex items-center justify-between font-bold text-ink">
+                <span>선택한 근무 일정</span>
+                <span className="text-brand-strong">{selectedDateObjects.length}일 선택</span>
+              </div>
+              <div className="flex flex-wrap gap-1 text-[11px]">
+                {selectedDateObjects.map((d) => (
+                  <span
+                    key={d.id}
+                    className="px-2 py-0.5 rounded-md bg-surface border border-border text-ink font-medium"
+                  >
+                    {d.date.slice(5).replace('-', '.')} ({d.dayOfWeek})
+                  </span>
+                ))}
+              </div>
+              <div className="pt-1 border-t border-border-subtle flex items-center justify-between text-xs">
+                <span className="text-muted">예상 총 보수</span>
+                <span className="font-extrabold text-ink text-sm">
+                  {totalEstimatedWage.toLocaleString()}원
+                </span>
+              </div>
+            </div>
+
+            {/* 지원자 이름 */}
+            <div className="space-y-1">
+              <label htmlFor="applicant-name" className="text-xs font-semibold text-ink">
+                이름 <span className="text-brand">*</span>
+              </label>
+              <input
+                id="applicant-name"
+                type="text"
+                required
+                value={applicantName}
+                onChange={(e) => setApplicantName(e.target.value)}
+                placeholder="실명을 입력해 주세요"
+                className="w-full h-11 px-3.5 rounded-xl border border-border bg-surface text-ink text-sm focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-colors"
+              />
+            </div>
+
+            {/* 지원자 연락처 */}
+            <div className="space-y-1">
+              <label htmlFor="applicant-phone" className="text-xs font-semibold text-ink">
+                연락처 <span className="text-brand">*</span>
+              </label>
+              <input
+                id="applicant-phone"
+                type="tel"
+                required
+                value={applicantPhone}
+                onChange={handlePhoneChange}
+                placeholder="010-0000-0000"
+                maxLength={13}
+                className="w-full h-11 px-3.5 rounded-xl border border-border bg-surface text-ink text-sm focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-colors font-mono"
+              />
+              <p className="text-[11px] text-muted">선정 결과 및 현장 공지 수신용 연락처입니다.</p>
+            </div>
+
+            {/* 개인정보 수집 및 제3자 제공 동의 (체크박스, 기본값 false) */}
+            <div className="pt-1">
+              <label className="flex items-start gap-2.5 p-3 rounded-xl border border-border hover:bg-canvas transition-colors cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={agreePrivacy}
+                  onChange={(e) => setAgreePrivacy(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 rounded text-brand border-border focus:ring-brand accent-brand cursor-pointer"
+                />
+                <div className="text-xs leading-relaxed">
+                  <span className="font-semibold text-ink">
+                    개인정보 수집 및 주최사 제3자 제공 동의 (필수)
+                  </span>
+                  <p className="text-[11px] text-muted mt-0.5">
+                    현장 출근 확인 및 계약 체결을 위해 주최사에 이름 및 연락처를 제공하는 것에 동의합니다.
+                  </p>
+                </div>
+              </label>
+            </div>
+
+            {/* 제출 버튼 */}
+            <div className="pt-2">
+              <button
+                type="submit"
+                disabled={isSubmitting || !agreePrivacy || !applicantName || applicantPhone.length < 10}
+                className="w-full min-h-[48px] rounded-xl bg-brand hover:bg-brand-hover disabled:bg-surface-muted disabled:text-muted disabled:border disabled:border-border text-white font-bold text-sm transition-all shadow-sm active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>지원서 제출 중…</span>
+                  </>
+                ) : (
+                  <span>지원 신청 완료하기</span>
+                )}
+              </button>
+            </div>
+          </form>
+        )}
+      </AccessibleSheet>
     </div>
   );
 }

@@ -5,6 +5,10 @@ import { getEventById } from '@/lib/data/events';
 
 // Map static feed events to known shift UUIDs or resolve dynamically
 const STATIC_EVENT_SHIFT_MAP: Record<string, { projectId: string; shiftId: string }> = {
+  'evt-2026-001': {
+    projectId: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+    shiftId: 'bbbbbbbb-1111-2222-3333-cccccccccccc',
+  },
   'evt-2026-002': {
     projectId: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
     shiftId: 'cccccccc-cccc-cccc-cccc-cccccccccccc',
@@ -25,15 +29,19 @@ export async function POST(request: Request) {
     const body = await request.json();
     const {
       eventId,
+      projectId: reqProjectId,
       shiftId: reqShiftId,
       applicantName,
       applicantPhone,
+      selectedDates,
       agreeNotice,
+      agreePrivacy,
     } = body;
 
-    if (!agreeNotice) {
+    const hasAgreed = agreeNotice === true || agreePrivacy === true;
+    if (!hasAgreed) {
       return NextResponse.json(
-        { message: '행사 안내 및 성실 참여 약속에 동의해 주세요.' },
+        { message: '개인정보 수집 및 행사 안내에 동의해 주세요.' },
         { status: 400 }
       );
     }
@@ -41,7 +49,7 @@ export async function POST(request: Request) {
     const supabase = createAdminClient();
     const todayStr = new Date().toISOString().slice(0, 10);
 
-    let targetProjectId: string | null = null;
+    let targetProjectId: string | null = reqProjectId || null;
     let targetShiftId: string | null = reqShiftId || null;
 
     // 2. Check Static Event Data if eventId provided
@@ -63,8 +71,8 @@ export async function POST(request: Request) {
           );
         }
 
-        // Resolve mapped shift ID if static
-        if (STATIC_EVENT_SHIFT_MAP[eventId]) {
+        // Resolve mapped shift ID if static and not explicitly supplied
+        if (!targetProjectId && !targetShiftId && STATIC_EVENT_SHIFT_MAP[eventId]) {
           targetProjectId = STATIC_EVENT_SHIFT_MAP[eventId].projectId;
           targetShiftId = STATIC_EVENT_SHIFT_MAP[eventId].shiftId;
         }
@@ -147,20 +155,34 @@ export async function POST(request: Request) {
     }
 
     // Update applicant profile contact details if provided
-    if (applicantName || applicantPhone) {
+    if (applicantName) {
       await supabase
         .from('people')
         .update({
-          full_name: applicantName || authContext.fullName,
+          full_name: applicantName,
           updated_at: new Date().toISOString(),
         })
         .eq('id', authContext.personId);
+    }
+
+    if (applicantPhone) {
+      await supabase
+        .from('private_contact_details')
+        .upsert(
+          {
+            person_id: authContext.personId,
+            phone_number: applicantPhone,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'person_id' }
+        );
     }
 
     return NextResponse.json({
       success: true,
       applicationId: application.id,
       shiftId: application.shift_id,
+      selectedDates: selectedDates || [],
       status: application.status.toUpperCase(),
       appliedAt: application.applied_at,
       message: '지원이 성공적으로 접수되었어요.',

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { createClient } from '@/lib/supabase/client';
 import { AccountMenu } from './AccountMenu';
 
 export interface PublicHeaderProps {
@@ -20,27 +21,52 @@ export function PublicHeader({ className }: PublicHeaderProps) {
   } | null>(null);
   const [isLoadingSession, setIsLoadingSession] = useState(true);
 
-  // Fetch session user from /api/auth/me
+  // Reactive Supabase auth synchronization
   useEffect(() => {
     let isMounted = true;
-    async function checkAuth() {
+    const supabase = createClient();
+
+    async function syncAuth() {
       try {
         const res = await fetch('/api/auth/me', { cache: 'no-store' });
         if (res.ok) {
           const data = await res.json();
-          if (data.authenticated && data.user && isMounted) {
-            setSessionUser(data.user);
+          if (isMounted) {
+            if (data.authenticated && data.user) {
+              setSessionUser(data.user);
+            } else {
+              setSessionUser(null);
+            }
           }
+        } else if (isMounted) {
+          setSessionUser(null);
         }
-      } catch (err) {
-        // Silently default to unauthenticated public mode
+      } catch {
+        if (isMounted) setSessionUser(null);
       } finally {
         if (isMounted) setIsLoadingSession(false);
       }
     }
-    checkAuth();
+
+    // Initial check
+    syncAuth();
+
+    // Listen reactively to auth state changes (login, logout, token refresh)
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!isMounted) return;
+      if (event === 'SIGNED_OUT' || !session) {
+        setSessionUser(null);
+        setIsLoadingSession(false);
+      } else {
+        syncAuth();
+      }
+    });
+
     return () => {
       isMounted = false;
+      subscription.unsubscribe();
     };
   }, []);
 
@@ -73,7 +99,6 @@ export function PublicHeader({ className }: PublicHeaderProps) {
             CrewLink
           </span>
         </Link>
-
 
         {/* Public Crew Links (NO client links in top header!) */}
         <nav className="flex items-center gap-1 sm:gap-2">
@@ -109,16 +134,16 @@ export function PublicHeader({ className }: PublicHeaderProps) {
         ) : sessionUser ? (
           <AccountMenu
             user={sessionUser}
-            onLogout={() => {
+            onLogout={async () => {
+              const supabase = createClient();
+              await supabase.auth.signOut();
               setSessionUser(null);
-              window.location.reload();
             }}
           />
         ) : (
           <button
             type="button"
             onClick={() => {
-              // Quick demo crew session login or redirect
               window.location.href = '/crew';
             }}
             className="h-9 px-4 rounded-xl bg-brand hover:bg-brand-hover text-inverse text-xs sm:text-sm font-bold transition-colors shadow-2xs flex items-center justify-center cursor-pointer"

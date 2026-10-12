@@ -14,10 +14,11 @@ export function MobileBottomNav({ className }: MobileBottomNavProps) {
   const pathname = usePathname();
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
 
-  // Requirement: Hide bottom bar when entering event detail page (/events/[id]) to avoid overlap with sticky application bar
+  // Requirement: Hide bottom navigation when in event detail (/events/[id]) or client request (/client/request)
+  // to avoid overlapping with fixed bottom action buttons (52px CTA)
   const isEventDetail = pathname.startsWith('/events/');
-  // Also hide if in organizer or ops areas
-  const isExcludedArea = isEventDetail || pathname.startsWith('/ops');
+  const isClientRequest = pathname.startsWith('/client/request') || pathname === '/client/request';
+  const isExcludedArea = isEventDetail || isClientRequest || pathname.startsWith('/ops');
 
   // Detect virtual viewport changes for software keyboard on mobile
   useEffect(() => {
