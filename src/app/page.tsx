@@ -253,37 +253,37 @@ export default function HomePage() {
   const currentSortLabel = SORT_OPTIONS.find((opt) => opt.id === sortOrder)?.label || '최신순';
 
   return (
-    <div className="min-h-screen bg-[#E8F3FE] text-ink flex flex-col pb-[calc(76px+env(safe-area-inset-bottom,0px))] md:pb-12">
+    <div className="min-h-screen bg-[#EBF5FD] text-ink flex flex-col pb-[calc(76px+env(safe-area-inset-bottom,0px))] md:pb-12">
       {/* 1. 크루 중심 퍼블릭 헤더 */}
-      <PublicHeader className="bg-[#E8F3FE]/90 border-b border-[#D4E8FC] backdrop-blur-md" />
+      <PublicHeader className="bg-[#EBF5FD]/90 border-b border-[#D4E8FC] backdrop-blur-md" />
 
-      {/* 2. 상단 히어로 섹션 (3D 에셋 hero.png + 텍스트 + 검색창 + 필터) */}
+      {/* 2. 상단 히어로 섹션 (hero.png 배경 일체화 + 검색창 + 필터) */}
       <section className="pt-6 sm:pt-8 pb-5 px-4 sm:px-6">
         <div className="max-w-4xl mx-auto space-y-4">
-          {/* 텍스트 카피 & 3D 히어로 일러스트 반응형 2단 배치 */}
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex-1 min-w-0">
-              <p className="text-xs sm:text-sm font-bold text-brand tracking-tight mb-1">
-                지금, 새로운 현장이 기다려요
-              </p>
-              <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-ink tracking-tight leading-tight">
-                좋은 사람들과<br />
-                멋진 현장을 만들어봐요
-              </h1>
-              <p className="text-xs sm:text-sm text-muted mt-1.5 sm:mt-2 break-keep font-medium leading-relaxed">
-                행사·전시·콘서트·페스티벌까지<br className="sm:hidden" /> 다양한 크루 공고를 한눈에!
-              </p>
-            </div>
-            {/* 3D 히어로 일러스트 에셋 (/assets/clay/hero.png) */}
-            <div className="w-36 sm:w-52 md:w-64 shrink-0 relative flex justify-end">
+          {/* 히어로 배경 컨테이너 */}
+          <div className="relative overflow-hidden rounded-3xl min-h-[220px] sm:min-h-[260px] p-6 sm:p-8 flex items-center bg-[#EBF5FD] border border-white/60 shadow-2xs">
+            {/* 히어로 배경 3D 일러스트 */}
+            <div className="absolute inset-0 z-0 pointer-events-none">
               <Image
-                src="/assets/clay/hero.png"
-                alt="CrewLink 3D Hero"
-                width={320}
-                height={260}
-                className="w-36 sm:w-52 md:w-64 h-auto object-contain select-none pointer-events-none drop-shadow-sm"
+                alt="히어로 배경"
+                className="object-cover object-right select-none pointer-events-none"
+                fill
                 priority
+                src="/assets/clay/hero.png"
               />
+            </div>
+
+            {/* 히어로 상단 텍스트 & 검색창 (z-10으로 배경 위에 배치) */}
+            <div className="relative z-10 max-w-xl text-left">
+              <span className="text-xs sm:text-sm font-bold text-brand tracking-tight">
+                지금, 새로운 현장이 기다려요
+              </span>
+              <h1 className="text-2xl sm:text-3xl font-black text-ink tracking-tight mt-1 leading-snug break-keep">
+                좋은 사람들과<br className="hidden sm:block" /> 멋진 현장을 만들어봐요
+              </h1>
+              <p className="text-xs sm:text-sm font-medium text-muted mt-2 break-keep">
+                행사·전시·콘서트·페스티벌까지 다양한 크루 공고를 한눈에!
+              </p>
             </div>
           </div>
 
@@ -747,10 +747,10 @@ export default function HomePage() {
                   <Link
                     key={item.id}
                     href={`/events/${item.id}`}
-                    className="bg-white rounded-2xl shadow-2xs hover:shadow-xs p-3.5 sm:p-4 flex gap-3.5 sm:gap-4 items-center transition-all group border border-transparent hover:border-brand-border/40"
+                    className="w-full bg-white rounded-2xl shadow-2xs hover:shadow-xs p-4 mb-3 flex items-center gap-3.5 sm:gap-4 transition-all group border border-transparent hover:border-brand-border/40"
                   >
-                    {/* 좌측: 라운드 썸네일 */}
-                    <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden relative shrink-0 bg-slate-100">
+                    {/* 좌측 썸네일 */}
+                    <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden relative shrink-0 bg-slate-100">
                       <Image
                         src={getCategoryFallbackImage(item.category, item.title)}
                         alt={item.title}
@@ -758,11 +758,11 @@ export default function HomePage() {
                         unoptimized
                         className="object-cover group-hover:scale-105 transition-transform duration-300"
                       />
-                      {/* 미니 뱃지 */}
+                      {/* 좌측 상단 마감 뱃지 (D-day) */}
                       <div className="absolute top-1.5 left-1.5 z-10">
                         <span
                           className={cn(
-                            'px-1.5 py-0.5 rounded-md text-[10px] font-extrabold shadow-2xs',
+                            'px-2 py-0.5 rounded-md text-[10px] font-extrabold shadow-2xs',
                             idx % 3 === 0
                               ? 'bg-brand text-white'
                               : idx % 3 === 1
@@ -775,10 +775,10 @@ export default function HomePage() {
                       </div>
                     </div>
 
-                    {/* 중앙: 정보 영역 */}
-                    <div className="min-w-0 flex-1">
-                      {/* 1줄: [카테고리] · [지역] · [주최사] */}
-                      <div className="text-[11px] text-muted flex items-center gap-1 truncate font-medium">
+                    {/* 중앙 본문 영역 */}
+                    <div className="flex-1 min-w-0 pr-2">
+                      {/* 1줄: 카테고리/지역 */}
+                      <div className="text-[11px] sm:text-xs text-muted font-medium flex items-center gap-1 truncate">
                         <span>{item.categoryLabel}</span>
                         <span>·</span>
                         <span className="text-ink font-semibold">{item.regionLabel}</span>
@@ -786,25 +786,29 @@ export default function HomePage() {
                         <span className="truncate">{item.hostName}</span>
                       </div>
 
-                      {/* 2줄: 행사 타이틀 */}
-                      <h3 className="text-sm sm:text-base font-bold text-ink truncate mt-0.5 group-hover:text-brand transition-colors">
+                      {/* 2줄: 행사 제목 */}
+                      <h3 className="text-sm sm:text-base font-bold text-ink leading-snug line-clamp-1 sm:line-clamp-2 mt-0.5 group-hover:text-brand transition-colors">
                         {item.displayTitle}
                       </h3>
 
-                      {/* 3줄: 행사 일정 및 시간 */}
-                      <div className="text-xs text-muted mt-1 flex items-center gap-1.5 truncate">
-                        <CalendarIcon className="w-3 h-3 text-muted shrink-0" />
-                        <span className="truncate font-medium text-ink">{item.dateRangeLabel}</span>
-                        <Clock className="w-3 h-3 text-muted shrink-0 ml-1" />
-                        <span className="truncate">{item.workHoursLabel}</span>
+                      {/* 3줄: 일정 및 시간 - 잘림 완전 제거 */}
+                      <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-muted font-medium">
+                        <span className="inline-flex items-center gap-1 shrink-0 font-medium text-ink">
+                          <CalendarIcon className="w-3.5 h-3.5 text-muted shrink-0" />
+                          <span>{item.dateRangeLabel}</span>
+                        </span>
+                        <span className="inline-flex items-center gap-1 shrink-0">
+                          <Clock className="w-3.5 h-3.5 text-muted shrink-0" />
+                          <span>{item.workHoursLabel}</span>
+                        </span>
                       </div>
 
-                      {/* 4줄: 역할/조건 태그 칩 */}
-                      <div className="flex flex-wrap gap-1 mt-1.5">
+                      {/* 4줄: 하는 일 태그 - 가로 인라인 정렬 */}
+                      <div className="mt-2 flex flex-wrap items-center gap-1.5">
                         {item.primaryRoles.slice(0, 3).map((role) => (
                           <span
                             key={role}
-                            className="bg-brand-soft/40 text-brand-strong text-[11px] font-semibold px-2 py-0.5 rounded-md"
+                            className="bg-brand-soft/40 text-brand-strong text-[11px] font-semibold px-2 py-0.5 rounded-md shrink-0"
                           >
                             {role}
                           </span>
@@ -812,8 +816,8 @@ export default function HomePage() {
                       </div>
                     </div>
 
-                    {/* 우측: 마감 D-day + 하트 & 하루 일당 */}
-                    <div className="flex flex-col items-end justify-between self-stretch shrink-0 py-0.5">
+                    {/* 우측 액션 및 보수 영역 */}
+                    <div className="shrink-0 flex flex-col justify-between items-end self-stretch pl-1 py-0.5">
                       <div className="flex items-center gap-1.5">
                         <span className="text-[11px] font-bold text-brand">
                           {deadlineInfo.dDayLabel}
@@ -840,7 +844,7 @@ export default function HomePage() {
                           alt="하루 일당"
                           width={24}
                           height={24}
-                          className="w-5 h-5 sm:w-6 sm:h-6 object-contain"
+                          className="w-5 h-5 sm:w-6 sm:h-6 object-contain shrink-0"
                         />
                         <span className="text-base sm:text-lg font-black text-ink tabular-nums">
                           {item.dailyWageWon.toLocaleString()}

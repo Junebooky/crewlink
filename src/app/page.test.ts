@@ -47,9 +47,9 @@ describe('Home Page Revamp Verification', () => {
     );
   });
 
-  it('홈 화면 파일에 #E8F3FE 배경색과 핫한 공고 및 방금 올라왔어요 섹션이 포함되어야 한다', () => {
+  it('홈 화면 파일에 #EBF5FD 배경색과 핫한 공고 및 방금 올라왔어요 섹션이 포함되어야 한다', () => {
     const pageContent = fs.readFileSync(path.resolve(process.cwd(), 'src/app/page.tsx'), 'utf-8');
-    expect(pageContent).toContain('#E8F3FE');
+    expect(pageContent).toContain('#EBF5FD');
     expect(pageContent).toContain('지금 핫한 공고');
     expect(pageContent).toContain('방금 올라왔어요');
     expect(pageContent).toContain('/assets/clay/hero.png');
