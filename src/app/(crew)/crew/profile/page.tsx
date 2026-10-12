@@ -12,6 +12,7 @@ import {
   Check,
   Trash2,
   Sparkles,
+  Lightbulb,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AvatarCropModal } from '@/components/profile/AvatarCropModal';
@@ -554,9 +555,20 @@ export default function CrewProfilePage() {
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
-              {/* 2. 프로필 사진 영역 (상반신 1장 단일화) */}
-              <section className="bg-white rounded-3xl p-5 sm:p-6 shadow-[0_0_0_1px_rgba(15,23,42,0.04),0_2px_8px_rgba(15,23,42,0.06),0_12px_28px_-4px_rgba(15,23,42,0.12),0_24px_48px_-8px_rgba(15,23,42,0.12)] hover:shadow-[0_0_0_1px_rgba(15,23,42,0.06),0_4px_16px_rgba(15,23,42,0.08),0_20px_40px_-4px_rgba(15,23,42,0.16),0_32px_64px_-8px_rgba(15,23,42,0.16)] hover:-translate-y-1 transition-all duration-200">
-                <div className="flex items-center gap-2 mb-4 text-left">
+              {/* 2. 프로필 사진 영역 (은은한 곡선 파동 배경 & 네온 블루 글로우) */}
+              <section className="bg-white rounded-3xl p-5 sm:p-6 shadow-[0_12px_40px_rgba(15,23,42,0.08)] relative overflow-hidden mb-5">
+                {/* 카드 내부의 은은한 파란색 곡선 백그라운드 (데코레이션) */}
+                <div className="absolute inset-0 pointer-events-none z-0 opacity-40">
+                  <div className="absolute -top-10 -right-20 w-[300px] h-[300px] bg-gradient-to-br from-brand-soft/60 to-transparent rounded-full filter blur-3xl" />
+                  <div className="absolute top-20 -left-20 w-[250px] h-[250px] bg-gradient-to-tr from-blue-100/40 via-brand-soft/20 to-transparent rounded-full filter blur-2xl" />
+                  {/* 물결 모양의 SVG 데코 */}
+                  <svg className="absolute bottom-0 left-0 w-full h-1/2 text-brand-soft/30 opacity-70" viewBox="0 0 1440 320" fill="none">
+                    <path fill="currentColor" d="M0,160L80,181.3C160,203,320,245,480,245C640,245,800,203,960,181.3C1120,160,1280,160,1360,160L1440,160L1440,320L1360,320C1280,320,1120,320,960,320C800,320,640,320,480,320C320,320,160,320,80,320L0,320Z"></path>
+                  </svg>
+                </div>
+
+                {/* 타이틀 & 소개 영역 */}
+                <div className="flex items-center gap-2 mb-4 text-left relative z-10">
                   <Image
                     src="/assets/clay/profile.png"
                     alt="프로필 사진"
@@ -565,99 +577,98 @@ export default function CrewProfilePage() {
                     className="w-8 h-8 sm:w-8 sm:h-8 object-contain shrink-0"
                   />
                   <div>
-                    <h2 className="text-base font-bold text-ink">프로필 사진</h2>
-                    <p className="text-xs text-muted mt-0.5 break-keep">
+                    <h2 className="text-base sm:text-lg font-black text-ink tracking-tight">프로필 사진</h2>
+                    <p className="text-xs sm:text-sm text-muted font-medium mt-0.5 break-keep">
                       얼굴이 잘 보이는 밝은 인상의 사진을 올려주세요.
                     </p>
                   </div>
                 </div>
 
-                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 pt-1">
-                  {/* 프로필 이미지 원형 미리보기 */}
-                  <div className="relative group shrink-0">
-                    <div
-                      onClick={() => {
-                        if (uploadingAvatar) return;
-                        if (currentPhoto) {
-                          handleOpenCropForCurrent();
-                        } else {
-                          avatarInputRef.current?.click();
-                        }
-                      }}
-                      className="w-30 h-30 sm:w-28 sm:h-28 rounded-full overflow-hidden bg-white border-1 border-border shadow-xs relative flex items-center justify-center cursor-pointer hover:border-brand-border transition-colors"
-                      title={currentPhoto ? '사진 위치 조절하기' : '사진 등록하기'}
-                    >
-                      {currentPhoto ? (
-                        <Image
-                          src={currentPhoto}
-                          alt="프로필 사진"
-                          fill
-                          className="object-cover"
-                          unoptimized
-                        />
-                      ) : (
-                        <User className="w-12 h-12 text-muted/60 stroke-[1.5]" />
-                      )}
+                {/* [핵심] 인물 사진 파란색 네온 글로우(Blue Neon Glow) */}
+                <div className="w-40 h-40 sm:w-44 sm:h-44 rounded-full relative mx-auto my-6 flex items-center justify-center shrink-0 z-10">
+                  <div
+                    onClick={() => {
+                      if (uploadingAvatar) return;
+                      if (currentPhoto) {
+                        handleOpenCropForCurrent();
+                      } else {
+                        avatarInputRef.current?.click();
+                      }
+                    }}
+                    className="w-full h-full rounded-full overflow-hidden border-4 border-[#00BFFF] shadow-[0_0_24px_rgba(0,191,255,0.5),_0_0_12px_rgba(0,191,255,0.3)] bg-slate-50 relative flex items-center justify-center cursor-pointer transition-transform hover:scale-[1.01]"
+                    title={currentPhoto ? '사진 위치 조절하기' : '사진 등록하기'}
+                  >
+                    {currentPhoto ? (
+                      <Image
+                        src={currentPhoto}
+                        alt="프로필 사진"
+                        fill
+                        className="rounded-full object-cover w-full h-full"
+                        unoptimized
+                      />
+                    ) : (
+                      <User className="w-16 h-16 sm:w-20 sm:h-20 text-muted/40 stroke-[1.5]" />
+                    )}
 
-                      {/* 업로드 중 로딩 오버레이 */}
-                      {uploadingAvatar && (
-                        <div className="absolute inset-0 bg-black/40 backdrop-blur-2xs flex items-center justify-center text-white z-10">
-                          <Loader2 className="w-6 h-6 animate-spin" />
-                        </div>
-                      )}
-                    </div>
+                    {/* 업로드 중 로딩 오버레이 */}
+                    {uploadingAvatar && (
+                      <div className="absolute inset-0 bg-black/40 backdrop-blur-2xs flex items-center justify-center text-white z-10 rounded-full">
+                        <Loader2 className="w-7 h-7 animate-spin" />
+                      </div>
+                    )}
+                  </div>
 
-                    {/* 카메라 플로팅 뱃지 */}
+                  {/* 카메라 오버레이 버튼 (오른쪽 아래) */}
+                  <button
+                    type="button"
+                    disabled={uploadingAvatar}
+                    onClick={() => avatarInputRef.current?.click()}
+                    className="absolute bottom-1 right-1 w-11 h-11 rounded-full bg-brand hover:bg-brand-hover border-2 sm:border-[2.5px] border-white flex items-center justify-center text-white shadow-[0_4px_14px_rgba(0,191,255,0.55)] transition-all transform hover:scale-105 active:scale-95 cursor-pointer z-20"
+                    aria-label="사진 등록/변경"
+                    title="변경"
+                  >
+                    <Camera className="w-5 h-5 stroke-[2.2]" />
+                  </button>
+                </div>
+
+                {/* 숨김 파일 인풋 */}
+                <input
+                  ref={avatarInputRef}
+                  type="file"
+                  accept="image/png, image/jpeg, image/jpg, image/webp, image/heic, image/heif"
+                  className="hidden"
+                  onChange={handlePhotoSelect}
+                />
+
+                {/* 하단 액션 버튼 그룹 */}
+                <div className="flex gap-3 mt-4 z-10 relative">
+                  <button
+                    type="button"
+                    disabled={uploadingAvatar}
+                    onClick={() => avatarInputRef.current?.click()}
+                    className="flex-1 h-12 rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:opacity-95 text-white font-bold text-sm shadow-[0_4px_15px_rgba(37,99,235,0.3)] flex items-center justify-center gap-2 transition-all active:scale-[0.99] cursor-pointer"
+                  >
+                    <Camera className="w-4 h-4 stroke-[2.2]" />
+                    <span>{currentPhoto ? '변경' : '사진 등록하기'}</span>
+                  </button>
+
+                  {currentPhoto && (
                     <button
                       type="button"
                       disabled={uploadingAvatar}
-                      onClick={() => avatarInputRef.current?.click()}
-                      className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-brand text-white flex items-center justify-center shadow-md border-2 border-white cursor-pointer hover:bg-brand-hover transition-colors"
-                      aria-label="사진 등록/변경"
-                      title="사진 변경하기"
+                      onClick={handleRemovePhoto}
+                      className="px-5 h-12 rounded-2xl bg-slate-50 border border-slate-100 hover:bg-slate-100/80 text-muted hover:text-danger font-bold text-sm flex items-center justify-center gap-1.5 transition-colors cursor-pointer shrink-0"
                     >
-                      <Camera className="w-4 h-4" />
+                      <Trash2 className="w-4 h-4 stroke-[2]" />
+                      <span>삭제</span>
                     </button>
-                  </div>
+                  )}
+                </div>
 
-                  {/* 사진 선택 액션 */}
-                  <div className="flex flex-col items-center sm:items-start space-y-2 text-center sm:text-left">
-                    <input
-                      ref={avatarInputRef}
-                      type="file"
-                      accept="image/png, image/jpeg, image/jpg, image/webp, image/heic, image/heif"
-                      className="hidden"
-                      onChange={handlePhotoSelect}
-                    />
-
-                    <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-                      <button
-                        type="button"
-                        disabled={uploadingAvatar}
-                        onClick={() => avatarInputRef.current?.click()}
-                        className="h-10 px-4 rounded-xl border border-border bg-white hover:border-brand-border text-xs font-bold text-ink inline-flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
-                      >
-                        <Camera className="w-3.5 h-3.5 text-muted" />
-                        <span>{currentPhoto ? '사진 변경하기' : '사진 등록하기'}</span>
-                      </button>
-
-                      {currentPhoto && (
-                        <button
-                          type="button"
-                          disabled={uploadingAvatar}
-                          onClick={handleRemovePhoto}
-                          className="h-10 px-3 rounded-xl border border-transparent text-muted hover:text-danger text-xs font-semibold inline-flex items-center gap-1 transition-colors cursor-pointer"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                          <span>삭제</span>
-                        </button>
-                      )}
-                    </div>
-
-                    <p className="text-[11px] text-muted">
-                      선명한 셀카 또는 증명사진을 추천해요
-                    </p>
-                  </div>
+                {/* 추천 안내 팁 배너 */}
+                <div className="w-full mt-3.5 p-3.5 rounded-2xl bg-brand-soft/20 text-brand-strong text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 z-10 relative">
+                  <Lightbulb className="w-4 h-4 text-brand shrink-0" />
+                  <span>선명한 셀카 또는 증명사진을 추천해요</span>
                 </div>
 
                 {/* 원형 크롭 및 위치 조절 모달 */}

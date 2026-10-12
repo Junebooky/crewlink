@@ -63,4 +63,18 @@ describe('크루 프로필 관리 페이지 UI/UX 검증', () => {
     // 폼 컨테이너 space-y 검증
     expect(profileContent).toContain('space-y-5 sm:space-y-6');
   });
+
+  it('프로필 사진 카드에 은은한 곡선 파동 배경과 파란색 네온 글로우가 적용되어야 한다', () => {
+    // 배경 파동 데코레이션 및 카드 쉐도우
+    expect(profileContent).toContain('shadow-[0_12px_40px_rgba(15,23,42,0.08)]');
+    expect(profileContent).toContain('viewBox="0 0 1440 320"');
+
+    // 파란색 네온 글로우 및 보더
+    expect(profileContent).toContain('border-[#00BFFF]');
+    expect(profileContent).toContain('shadow-[0_0_24px_rgba(0,191,255,0.5),_0_0_12px_rgba(0,191,255,0.3)]');
+
+    // 버튼 그라데이션 및 팁 배너
+    expect(profileContent).toContain('bg-gradient-to-r from-blue-600 to-cyan-500');
+    expect(profileContent).toContain('선명한 셀카 또는 증명사진을 추천해요');
+  });
 });
