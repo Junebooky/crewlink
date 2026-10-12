@@ -275,7 +275,7 @@ export function KakaoPlaceSearchInput({
               if (results.length > 0) setIsOpenDropdown(true);
             }}
             placeholder="예: 코엑스 D홀, 성수 에스팩토리, 더현대 서울"
-            className="w-full h-11 pl-10 pr-10 border border-border rounded-xl text-sm text-ink bg-surface focus:ring-2 focus:ring-brand focus:outline-none transition-all placeholder:text-muted/60"
+            className="w-full min-h-12 sm:min-h-13 pl-11 pr-11 border border-border rounded-xl text-sm sm:text-base font-medium text-ink bg-white focus:ring-2 focus:ring-brand focus:outline-none transition-all placeholder:text-muted/60 shadow-2xs"
           />
           {isSearching && (
             <div className="absolute right-3.5">
@@ -330,28 +330,42 @@ export function KakaoPlaceSearchInput({
         )}
       </div>
 
-      {/* 2. 현장 위치 미리보기 카카오 지도 및 요약 카드 */}
-      {hasSelectedLocation && latitude && longitude && (
-        <div className="space-y-2.5">
-          {/* 지도 컨테이너 (h-72 sm:h-80 = 288px ~ 320px 시원한 높이) */}
-          <div className="w-full h-72 sm:h-80 rounded-2xl overflow-hidden border border-border shadow-2xs relative bg-surface-muted/30">
-            {/* 상단 좌측: 현장 위치 미리보기 배지 */}
-            <div className="absolute top-3 left-3 z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface/90 backdrop-blur-md border border-border shadow-xs text-xs font-bold text-ink pointer-events-none">
-              <MapPin className="w-3.5 h-3.5 text-brand" />
-              <span>현장 위치 미리보기</span>
-            </div>
+      {/* 2. 도로명 주소 카드 (장소 검색창 및 상세 위치 인풋과 규격/폰트 일치) */}
+      {hasSelectedLocation && venueAddress && (
+        <div className="w-full min-h-12 sm:min-h-13 px-4 py-3.5 rounded-xl border border-border bg-white shadow-2xs flex items-center gap-3">
+          <MapPin className="w-4 h-4 text-brand shrink-0" />
+          <span className="text-muted text-xs sm:text-sm font-normal shrink-0">도로명</span>
+          <span className="text-sm sm:text-base font-medium text-ink truncate flex-1">{venueAddress}</span>
+        </div>
+      )}
 
-            {/* 상단 우측: 카카오맵 크게보기 바로가기 */}
+      {/* 3. 현장 위치 미리보기 카카오 지도 및 요약 카드 */}
+      {hasSelectedLocation && latitude && longitude && (
+        <div className="space-y-2.5 pt-1">
+          {/* 지도 상단 토스풍 대화형 UX 라이팅 */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="text-xs sm:text-sm font-bold text-ink flex items-center gap-1.5">
+                <MapPin className="w-3.5 h-3.5 text-brand" />
+                크루들이 찾아올 위치예요
+              </h4>
+              <p className="text-[11px] sm:text-xs text-muted mt-0.5">
+                당일 출퇴근 체크인과 현장 안내의 기준지가 돼요.
+              </p>
+            </div>
             <a
               href={`https://map.kakao.com/link/map/${encodeURIComponent(venueName || '행사 위치')},${latitude},${longitude}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="absolute top-3 right-3 z-10 flex items-center gap-1 px-3 py-1.5 rounded-full bg-surface/90 backdrop-blur-md border border-border shadow-xs text-xs font-semibold text-brand hover:text-brand-strong hover:bg-surface transition-all cursor-pointer"
+              className="px-2.5 py-1 rounded-full bg-brand-soft border border-brand-border text-xs font-semibold text-brand hover:text-brand-strong transition-colors flex items-center gap-1 shrink-0"
             >
               <span>지도 크게보기</span>
               <ExternalLink className="w-3 h-3" />
             </a>
+          </div>
 
+          {/* 지도 컨테이너 (h-72 sm:h-80 = 288px ~ 320px 시원한 높이) */}
+          <div className="w-full h-72 sm:h-80 rounded-2xl overflow-hidden border border-border shadow-2xs relative bg-surface-muted/30">
             {/* 공식 카카오 지도 캔버스 (OSM iframe 완전 제거) */}
             <div ref={miniMapRef} className="w-full h-full" />
 
@@ -372,15 +386,15 @@ export function KakaoPlaceSearchInput({
             )}
           </div>
 
-          {/* 3. 지도 바로 아래 선택된 장소 요약 카드 (토스 스타일: 건물명, 도로명 주소, 좌표) */}
-          <div className="p-3.5 sm:p-4 rounded-2xl border border-border bg-surface text-xs shadow-2xs">
+          {/* 지도 바로 아래 선택된 장소 요약 카드 */}
+          <div className="p-3.5 sm:p-4 rounded-2xl border border-border bg-white text-xs shadow-2xs">
             <div className="flex items-start gap-3">
               <div className="w-9 h-9 rounded-xl bg-brand-soft text-brand flex items-center justify-center shrink-0 mt-0.5">
                 <MapPin className="w-5 h-5 text-brand" />
               </div>
               <div className="min-w-0 flex-1 space-y-1">
                 <div className="flex items-center justify-between gap-2">
-                  <h4 className="text-sm font-bold text-ink truncate">
+                  <h4 className="text-sm sm:text-base font-bold text-ink truncate">
                     {venueName || '선택된 행사 장소'}
                   </h4>
                   <span className="text-[10px] font-semibold text-brand bg-brand-soft px-2 py-0.5 rounded-full shrink-0">
@@ -388,7 +402,7 @@ export function KakaoPlaceSearchInput({
                   </span>
                 </div>
                 {venueAddress && (
-                  <p className="text-xs text-muted leading-relaxed break-keep">
+                  <p className="text-xs sm:text-sm text-muted leading-relaxed break-keep">
                     {venueAddress}
                   </p>
                 )}
@@ -413,7 +427,7 @@ export function KakaoPlaceSearchInput({
           value={venueDetail}
           onChange={(e) => onChangeDetail(e.target.value)}
           placeholder="예: 3층 D홀 컨벤션 메인 로비, 2번 게이트 앞"
-          className="w-full h-11 px-3 border border-border rounded-xl text-sm text-ink bg-surface focus:ring-2 focus:ring-brand focus:outline-none transition-all placeholder:text-muted/60"
+          className="w-full min-h-12 sm:min-h-13 px-4 py-3 border border-border rounded-xl text-sm sm:text-base font-medium text-ink bg-white focus:ring-2 focus:ring-brand focus:outline-none transition-all placeholder:text-muted/60 shadow-2xs"
         />
       </div>
     </div>

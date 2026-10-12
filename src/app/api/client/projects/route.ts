@@ -27,11 +27,20 @@ function getDatesInRange(startStr: string, endStr: string): string[] {
 
 export async function POST(request: Request) {
   try {
-    const { authContext, errorResponse } = await getAuthenticatedContext(request, 'client');
-    if (errorResponse) {
-      return errorResponse;
-    }
-    if (!authContext) {
+    let auth = await getAuthenticatedContext(request, 'client');
+    let effectiveAuthContext = auth.authContext;
+
+    // 개발 모드(Dev Mock): 세션이 없는 경우 데모 주최사 정보로 자동 Fallback 지원
+    if (!effectiveAuthContext && process.env.NODE_ENV === 'development') {
+      effectiveAuthContext = {
+        userId: 'dev-demo-client-id',
+        personId: '33333333-3333-3333-3333-333333333333',
+        fullName: '박대표 (데모 주최사)',
+        roles: ['client'],
+      };
+    } else if (auth.errorResponse) {
+      return auth.errorResponse;
+    } else if (!effectiveAuthContext) {
       return NextResponse.json({ message: '다시 로그인해 주세요.' }, { status: 401 });
     }
 
@@ -103,12 +112,17 @@ export async function POST(request: Request) {
 
     const netWorkMinutes = Math.max(60, totalMinutes - Number(breakMinutes));
     const netWorkHours = Number((netWorkMinutes / 60).toFixed(1));
-    const rateWon = Number(hourlyRateWon) || 15000;
-    const calculatedDailyWage = dailyWage ? Number(dailyWage) : Math.floor(netWorkHours * rateWon);
-
+    const rateWon = Number(hourlyRateWon) || 13000;
     // Generate date array
     const dateList = isMultiDay ? getDatesInRange(actualStartDate, actualEndDate) : [actualStartDate];
     const totalDays = Math.max(1, dateList.length);
+
+    const passedStaffWage = body.totalStaffWage ? Number(body.totalStaffWage) : null;
+    const calculatedDailyWage = dailyWage
+      ? Number(dailyWage)
+      : passedStaffWage
+        ? Math.floor(passedStaffWage / (totalDays * count))
+        : Math.floor(netWorkHours * rateWon);
 
     const supabase = createAdminClient();
 
@@ -116,19 +130,18 @@ export async function POST(request: Request) {
     const { data: member } = await supabase
       .from('organization_members')
       .select('organization_id')
-      .eq('person_id', authContext.personId)
+      .eq('person_id', effectiveAuthContext.personId)
       .maybeSingle();
 
     let organizationId = member?.organization_id || null;
     if (!organizationId) {
-      if (authContext.roles.includes('ops') || authContext.roles.includes('admin')) {
+      if (effectiveAuthContext.roles.includes('ops') || effectiveAuthContext.roles.includes('admin') || process.env.NODE_ENV === 'development') {
         const { data: defaultOrg } = await supabase
           .from('organizations')
           .select('id')
-          .eq('status', 'active')
           .limit(1)
           .maybeSingle();
-        organizationId = defaultOrg?.id || null;
+        organizationId = defaultOrg?.id || 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
       }
     }
 
@@ -234,8 +247,8 @@ export async function POST(request: Request) {
         }
       }
 
-      // 5. Calculate Quote total reflecting totalDays: dailyWage * totalDays * count
-      const totalWage = calculatedDailyWage * totalDays * count;
+      // 5. Calculate Quote total reflecting totalDays: totalWage
+      const totalWage = passedStaffWage || (calculatedDailyWage * totalDays * count);
       const platformFeeWon = Math.floor(totalWage * 0.15); // 15% platform fee
       const subtotalWon = totalWage + platformFeeWon;
       const vatWon = Math.floor(subtotalWon * 0.10); // 10% VAT
