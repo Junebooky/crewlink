@@ -200,37 +200,35 @@ export function AppShell({ children, initialRole }: AppShellProps) {
           </Link>
         </div>
 
-        {/* Role Switcher (Convenient for Pair-Programming & Multi-role Demo) */}
-        {process.env.NODE_ENV !== 'production' && (
-          <div className="px-4 py-3 border-b border-border-subtle bg-canvas">
-            <div className="text-[11px] font-semibold text-muted uppercase tracking-wider mb-1.5">
-              화면 미리보기
-            </div>
-            <div className="grid grid-cols-3 gap-1 bg-surface-muted p-1 rounded-lg text-xs font-semibold">
-              {(['crew', 'client', 'ops'] as UserRole[]).map((r) => (
-                <button
-                  key={r}
-                  type="button"
-                  onClick={() => {
-                    if (typeof window !== 'undefined') {
-                      localStorage.setItem('crewlink_active_role', r);
-                      window.dispatchEvent(new CustomEvent('crewlink:auth-changed'));
-                    }
-                    window.location.href = NAV_CONFIG[r].items[0].href;
-                  }}
-                  className={cn(
-                    'py-1 rounded text-center transition-all cursor-pointer',
-                    role === r
-                      ? 'bg-surface text-brand shadow-xs font-bold'
-                      : 'text-muted hover:text-ink'
-                  )}
-                >
-                  {r === 'crew' ? '크루' : r === 'client' ? '주최사' : '운영진'}
-                </button>
-              ))}
-            </div>
+        {/* Role Switcher (Always Visible) */}
+        <div className="px-4 py-3 border-b border-border-subtle bg-canvas">
+          <div className="text-[11px] font-semibold text-muted uppercase tracking-wider mb-1.5">
+            화면 미리보기
           </div>
-        )}
+          <div className="grid grid-cols-3 gap-1 bg-surface-muted p-1 rounded-lg text-xs font-semibold">
+            {(['crew', 'client', 'ops'] as UserRole[]).map((r) => (
+              <button
+                key={r}
+                type="button"
+                onClick={() => {
+                  if (typeof window !== 'undefined') {
+                    localStorage.setItem('crewlink_active_role', r);
+                    window.dispatchEvent(new CustomEvent('crewlink:auth-changed'));
+                  }
+                  window.location.href = NAV_CONFIG[r].items[0].href;
+                }}
+                className={cn(
+                  'py-1 rounded text-center transition-all cursor-pointer',
+                  role === r
+                    ? 'bg-surface text-brand shadow-xs font-bold'
+                    : 'text-muted hover:text-ink'
+                )}
+              >
+                {r === 'crew' ? '크루' : r === 'client' ? '주최사' : '운영진'}
+              </button>
+            ))}
+          </div>
+        </div>
 
         {/* Sidebar Nav Items */}
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
@@ -304,29 +302,27 @@ export function AppShell({ children, initialRole }: AppShellProps) {
         </Link>
 
         <div className="flex items-center gap-2">
-          {/* Role toggle for mobile demo */}
-          {process.env.NODE_ENV !== 'production' && (
-            <div className="flex items-center gap-1">
-              {(['crew', 'client', 'ops'] as UserRole[]).map((r) => (
-                <button
-                  key={r}
-                  onClick={() => {
-                    if (typeof window !== 'undefined') {
-                      localStorage.setItem('crewlink_active_role', r);
-                      window.dispatchEvent(new CustomEvent('crewlink:auth-changed'));
-                    }
-                    window.location.href = NAV_CONFIG[r].items[0].href;
-                  }}
-                  className={cn(
-                    'px-2 py-1 text-xs rounded font-medium transition-colors cursor-pointer',
-                    role === r ? 'bg-brand text-inverse' : 'text-muted hover:bg-surface-muted'
-                  )}
-                >
-                  {r === 'crew' ? '크루' : r === 'client' ? '주최사' : '운영진'}
-                </button>
-              ))}
-            </div>
-          )}
+          {/* Role toggle (Always Visible) */}
+          <div className="flex items-center gap-1">
+            {(['crew', 'client', 'ops'] as UserRole[]).map((r) => (
+              <button
+                key={r}
+                onClick={() => {
+                  if (typeof window !== 'undefined') {
+                    localStorage.setItem('crewlink_active_role', r);
+                    window.dispatchEvent(new CustomEvent('crewlink:auth-changed'));
+                  }
+                  window.location.href = NAV_CONFIG[r].items[0].href;
+                }}
+                className={cn(
+                  'px-2 py-1 text-xs rounded font-medium transition-colors cursor-pointer',
+                  role === r ? 'bg-brand text-inverse' : 'text-muted hover:bg-surface-muted'
+                )}
+              >
+                {r === 'crew' ? '크루' : r === 'client' ? '주최사' : '운영진'}
+              </button>
+            ))}
+          </div>
           {sessionUser && <AccountMenu user={sessionUser} activeRole={role} />}
         </div>
       </header>
