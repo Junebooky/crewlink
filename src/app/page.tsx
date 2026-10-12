@@ -380,15 +380,15 @@ export default function HomePage() {
               selectedRegion !== 'all' ||
               datePreset !== 'all' ||
               searchKeyword) && (
-              <button
-                type="button"
-                onClick={handleResetFilters}
-                className="h-7 px-2.5 rounded-full bg-surface-muted hover:bg-border text-muted hover:text-ink text-xs font-medium flex items-center gap-1 transition-colors cursor-pointer"
-              >
-                <RotateCcw className="w-3 h-3" />
-                <span>초기화</span>
-              </button>
-            )}
+                <button
+                  type="button"
+                  onClick={handleResetFilters}
+                  className="h-7 px-2.5 rounded-full bg-surface-muted hover:bg-border text-muted hover:text-ink text-xs font-medium flex items-center gap-1 transition-colors cursor-pointer"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  <span>초기화</span>
+                </button>
+              )}
 
             {/* 활성 날짜 뱃지 */}
             {activeDateRange && (
@@ -408,26 +408,31 @@ export default function HomePage() {
 
           {/* Task 1 & Task 4: 보기 모드 전환 토글 & 커스텀 정렬 드롭다운 헤더 */}
           <div className="flex items-center gap-2 shrink-0 ml-auto">
-            {/* Task 4: 보기 모드 전환 토글 탭 [ ≡ 목록형 | 🗺️ 지도형 ] */}
+            {/* 보기 모드 전환 토글 탭 [ 목록형 | 지도형 ] - 슬라이딩 인디케이터 */}
             <div
               role="tablist"
               aria-label="공고 보기 방식 선택"
-              className="inline-flex p-1 bg-surface-muted/60 border border-border rounded-xl"
+              className="relative flex items-center p-1 bg-white/90 rounded-2xl border border-border-subtle select-none h-9"
             >
+              {/* 브랜드 색상 및 round 곡선이 적용된 슬라이딩 인디케이터 */}
+              <div
+                className="absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-full bg-brand shadow-xs transition-transform duration-300 ease-out will-change-transform"
+                style={{
+                  transform: viewMode === 'map' ? 'translateX(100%)' : 'translateX(0)',
+                  left: '4px',
+                }}
+              />
               <button
                 type="button"
                 role="tab"
                 aria-selected={viewMode === 'list'}
                 onClick={() => setViewMode('list')}
                 className={cn(
-                  'h-8 px-3 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer',
-                  viewMode === 'list'
-                    ? 'bg-surface text-brand shadow-xs border border-border-subtle'
-                    : 'text-muted hover:text-ink'
+                  'relative z-10 w-14 h-7 flex items-center justify-center text-xs font-bold transition-colors duration-200 cursor-pointer rounded-full select-none',
+                  viewMode === 'list' ? 'text-white' : 'text-muted hover:text-ink'
                 )}
               >
-                <span>≡</span>
-                <span>목록형</span>
+                목록형
               </button>
               <button
                 type="button"
@@ -435,27 +440,24 @@ export default function HomePage() {
                 aria-selected={viewMode === 'map'}
                 onClick={() => setViewMode('map')}
                 className={cn(
-                  'h-8 px-3 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer',
-                  viewMode === 'map'
-                    ? 'bg-surface text-brand shadow-xs border border-border-subtle'
-                    : 'text-muted hover:text-ink'
+                  'relative z-10 w-14 h-7 flex items-center justify-center text-xs font-bold transition-colors duration-200 cursor-pointer rounded-full select-none',
+                  viewMode === 'map' ? 'text-white' : 'text-muted hover:text-ink'
                 )}
               >
-                <span>🗺️</span>
-                <span>지도형</span>
+                지도형
               </button>
             </div>
 
-            {/* 커스텀 정렬 드롭다운 (플로팅 메뉴) */}
+            {/* 커스텀 정렬 드롭다운 (플로팅 메뉴) - 목록형/지도형과 텍스트 사이즈(text-xs font-bold) 및 높이(h-9) 일치 */}
             <div ref={sortDropdownRef} className="relative">
               <button
                 type="button"
                 aria-haspopup="listbox"
                 aria-expanded={isSortDropdownOpen}
                 onClick={() => setIsSortDropdownOpen((prev) => !prev)}
-                className="h-10 px-3.5 rounded-xl border border-border bg-surface text-sm font-semibold text-ink flex items-center gap-1.5 shadow-2xs hover:border-brand-border cursor-pointer transition-colors"
+                className="h-9 px-3 rounded-2xl border border-border bg-surface text-xs font-bold text-ink flex items-center gap-1.5 shadow-2xs hover:border-brand-border cursor-pointer transition-colors select-none"
               >
-                <ArrowUpDown className="w-4 h-4 text-muted shrink-0" />
+                <ArrowUpDown className="w-3.5 h-3.5 text-muted shrink-0" />
                 <span>{currentSortLabel}</span>
                 <ChevronDown
                   className={cn(
@@ -465,35 +467,35 @@ export default function HomePage() {
                 />
               </button>
 
-            {isSortDropdownOpen && (
-              <div
-                role="listbox"
-                className="absolute right-0 top-full mt-1.5 z-30 w-36 p-1.5 rounded-2xl border border-border bg-surface shadow-lg animate-in fade-in zoom-in-95 duration-150"
-              >
-                {SORT_OPTIONS.map((opt) => {
-                  const isSelected = sortOrder === opt.id;
-                  return (
-                    <button
-                      key={opt.id}
-                      type="button"
-                      role="option"
-                      aria-selected={isSelected}
-                      onClick={() => {
-                        setSortOrder(opt.id);
-                        setIsSortDropdownOpen(false);
-                      }}
-                      className={cn(
-                        'w-full text-sm font-medium rounded-xl px-3 py-2 text-ink hover:bg-brand-soft hover:text-brand-strong cursor-pointer flex items-center justify-between transition-colors',
-                        isSelected && 'bg-brand-soft text-brand-strong font-semibold'
-                      )}
-                    >
-                      <span>{opt.label}</span>
-                      {isSelected && <Check className="w-4 h-4 text-brand shrink-0" />}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
+              {isSortDropdownOpen && (
+                <div
+                  role="listbox"
+                  className="absolute right-0 top-full mt-1.5 z-30 w-36 p-1.5 rounded-2xl border border-border bg-surface shadow-lg animate-in fade-in zoom-in-95 duration-150"
+                >
+                  {SORT_OPTIONS.map((opt) => {
+                    const isSelected = sortOrder === opt.id;
+                    return (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        role="option"
+                        aria-selected={isSelected}
+                        onClick={() => {
+                          setSortOrder(opt.id);
+                          setIsSortDropdownOpen(false);
+                        }}
+                        className={cn(
+                          'w-full text-xs font-semibold rounded-xl px-3 py-2 text-ink hover:bg-brand-soft hover:text-brand-strong cursor-pointer flex items-center justify-between transition-colors',
+                          isSelected && 'bg-brand-soft text-brand-strong font-bold'
+                        )}
+                      >
+                        <span>{opt.label}</span>
+                        {isSelected && <Check className="w-3.5 h-3.5 text-brand shrink-0" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -510,116 +512,116 @@ export default function HomePage() {
       ) : (
         <main className="max-w-4xl w-full mx-auto px-4 sm:px-6 pt-3 flex-1">
           {filteredAndSortedEvents.length === 0 ? (
-          <div className="py-20 text-center rounded-3xl bg-surface border border-border space-y-3">
-            <p className="text-base font-bold text-ink">선택한 조건의 모집 공고가 없어요</p>
-            <p className="text-xs text-muted break-keep">
-              날짜나 지역, 검색어 조건을 변경하거나 필터를 초기화해 보세요.
-            </p>
-            <button
-              type="button"
-              onClick={handleResetFilters}
-              className="h-10 px-5 rounded-2xl bg-brand text-inverse text-xs font-bold hover:bg-brand-hover transition-colors shadow-2xs cursor-pointer inline-flex items-center gap-1.5"
-            >
-              <RotateCcw className="w-3 h-3" />
-              <span>전체 공고 보기</span>
-            </button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {filteredAndSortedEvents.map((item) => {
-              const deadlineInfo = getDeadlineInfo(item.deadlineDate, currentKST);
+            <div className="py-20 text-center rounded-3xl bg-surface border border-border space-y-3">
+              <p className="text-base font-bold text-ink">선택한 조건의 모집 공고가 없어요</p>
+              <p className="text-xs text-muted break-keep">
+                날짜나 지역, 검색어 조건을 변경하거나 필터를 초기화해 보세요.
+              </p>
+              <button
+                type="button"
+                onClick={handleResetFilters}
+                className="h-10 px-5 rounded-2xl bg-brand text-inverse text-xs font-bold hover:bg-brand-hover transition-colors shadow-2xs cursor-pointer inline-flex items-center gap-1.5"
+              >
+                <RotateCcw className="w-3 h-3" />
+                <span>전체 공고 보기</span>
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {filteredAndSortedEvents.map((item) => {
+                const deadlineInfo = getDeadlineInfo(item.deadlineDate, currentKST);
 
-              return (
-                <Link
-                  key={item.id}
-                  href={`/events/${item.id}`}
-                  className="group bg-surface rounded-3xl border border-border hover:border-brand-border transition-all duration-180 p-5 flex flex-col justify-between cursor-pointer shadow-2xs hover:shadow-xs"
-                >
-                  <div>
-                    {/* 카드 상단: 카테고리/지역 & 2단 지원 마감 배지 */}
-                    <div className="flex items-start justify-between gap-2 mb-2.5">
-                      <div className="flex items-center gap-1.5 text-xs text-muted font-medium truncate pt-1">
-                        <span>{item.categoryLabel}</span>
-                        <span className="text-border-subtle">·</span>
-                        <span className="text-ink font-semibold">{item.regionLabel}</span>
-                        {item.stationInfo && (
-                          <>
-                            <span className="text-border-subtle">·</span>
-                            <span className="truncate">{item.stationInfo}</span>
-                          </>
-                        )}
-                      </div>
-
-                      {/* 2단(상/하) 지원 마감 배지 컨테이너 */}
-                      <div className="flex flex-col items-end shrink-0 text-right rounded-xl px-2.5 py-1">
-                        <span className="text-[12px] font-bold text-brand leading-tight">
-                          {deadlineInfo.dateLabel}
-                        </span>
-                        <span className="text-xs font-bold text-brand leading-tight mt-0.5">
-                          {deadlineInfo.dDayLabel}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* 공고 제목 */}
-                    <h2 className="text-base sm:text-lg font-bold text-ink leading-snug group-hover:text-brand-strong transition-colors line-clamp-2 break-keep mb-3">
-                      {item.displayTitle}
-                    </h2>
-
-                    {/* 일시 및 시간 */}
-                    <div className="space-y-1.5 text-xs text-muted mb-3.5">
-                      <div className="flex items-center gap-1.5">
-                        <CalendarIcon className="w-3.5 h-3.5 text-muted shrink-0" />
-                        <span className="font-medium text-ink">{item.dateRangeLabel}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <Clock className="w-3.5 h-3.5 text-muted shrink-0" />
-                        <span>{item.workHoursLabel}</span>
-                      </div>
-                    </div>
-
-                    {/* 주요 업무 태그 */}
-                    <div className="flex flex-wrap gap-1 mb-4">
-                      {item.primaryRoles.map((role) => (
-                        <span
-                          key={role}
-                          className="px-2 py-0.5 rounded-md bg-brand text-white text-xs font-bold"
-                        >
-                          {role}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* 카드 하단: 하루 보수 (오픈형 3D 클레이 코인 좌측 인라인 배치) & 주최사 정보 */}
-                  <div className="pt-3 border-t border-border-subtle flex items-end justify-between">
+                return (
+                  <Link
+                    key={item.id}
+                    href={`/events/${item.id}`}
+                    className="group bg-surface rounded-3xl border border-border hover:border-brand-border transition-all duration-180 p-5 flex flex-col justify-between cursor-pointer shadow-2xs hover:shadow-xs"
+                  >
                     <div>
-                      <p className="text-xs text-muted">하루 보수 · 세전</p>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        {/* Task 2: 오픈형 3D 클레이 코인 금액 좌측 인라인 배치 */}
-                        <FloatingClayCoin3D className="w-6 h-6 shrink-0" />
-                        <span className="text-lg sm:text-xl font-extrabold text-ink tabular-nums">
-                          {item.dailyWageWon.toLocaleString()}
-                        </span>
-                        <span className="text-xs font-bold text-ink">원</span>
+                      {/* 카드 상단: 카테고리/지역 & 2단 지원 마감 배지 */}
+                      <div className="flex items-start justify-between gap-2 mb-2.5">
+                        <div className="flex items-center gap-1.5 text-xs text-muted font-medium truncate pt-1">
+                          <span>{item.categoryLabel}</span>
+                          <span className="text-border-subtle">·</span>
+                          <span className="text-ink font-semibold">{item.regionLabel}</span>
+                          {item.stationInfo && (
+                            <>
+                              <span className="text-border-subtle">·</span>
+                              <span className="truncate">{item.stationInfo}</span>
+                            </>
+                          )}
+                        </div>
+
+                        {/* 2단(상/하) 지원 마감 배지 컨테이너 */}
+                        <div className="flex flex-col items-end shrink-0 text-right rounded-xl px-2.5 py-1">
+                          <span className="text-[12px] font-bold text-brand leading-tight">
+                            {deadlineInfo.dateLabel}
+                          </span>
+                          <span className="text-xs font-bold text-brand leading-tight mt-0.5">
+                            {deadlineInfo.dDayLabel}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* 공고 제목 */}
+                      <h2 className="text-base sm:text-lg font-bold text-ink leading-snug group-hover:text-brand-strong transition-colors line-clamp-2 break-keep mb-3">
+                        {item.displayTitle}
+                      </h2>
+
+                      {/* 일시 및 시간 */}
+                      <div className="space-y-1.5 text-xs text-muted mb-3.5">
+                        <div className="flex items-center gap-1.5">
+                          <CalendarIcon className="w-3.5 h-3.5 text-muted shrink-0" />
+                          <span className="font-medium text-ink">{item.dateRangeLabel}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5 text-muted shrink-0" />
+                          <span>{item.workHoursLabel}</span>
+                        </div>
+                      </div>
+
+                      {/* 주요 업무 태그 */}
+                      <div className="flex flex-wrap gap-1 mb-4">
+                        {item.primaryRoles.map((role) => (
+                          <span
+                            key={role}
+                            className="px-2 py-0.5 rounded-md bg-brand text-white text-xs font-bold"
+                          >
+                            {role}
+                          </span>
+                        ))}
                       </div>
                     </div>
 
-                    <div className="text-right">
-                      <p className="text-xs text-muted truncate max-w-[120px] sm:max-w-[150px]">
-                        {item.hostName}
-                      </p>
-                      <span className="inline-flex items-center gap-0.5 text-xs font-bold text-brand group-hover:text-brand-strong mt-0.5">
-                        <span>상세보기</span>
-                        <ChevronRight className="w-3 h-3" />
-                      </span>
+                    {/* 카드 하단: 하루 보수 (오픈형 3D 클레이 코인 좌측 인라인 배치) & 주최사 정보 */}
+                    <div className="pt-3 border-t border-border-subtle flex items-end justify-between">
+                      <div>
+                        <p className="text-xs text-muted">하루 보수 · 세전</p>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          {/* Task 2: 오픈형 3D 클레이 코인 금액 좌측 인라인 배치 */}
+                          <FloatingClayCoin3D className="w-6 h-6 shrink-0" />
+                          <span className="text-lg sm:text-xl font-extrabold text-ink tabular-nums">
+                            {item.dailyWageWon.toLocaleString()}
+                          </span>
+                          <span className="text-xs font-bold text-ink">원</span>
+                        </div>
+                      </div>
+
+                      <div className="text-right">
+                        <p className="text-xs text-muted truncate max-w-[120px] sm:max-w-[150px]">
+                          {item.hostName}
+                        </p>
+                        <span className="inline-flex items-center gap-0.5 text-xs font-bold text-brand group-hover:text-brand-strong mt-0.5">
+                          <span>상세보기</span>
+                          <ChevronRight className="w-3 h-3" />
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        )}
+                  </Link>
+                );
+              })}
+            </div>
+          )}
         </main>
       )}
 

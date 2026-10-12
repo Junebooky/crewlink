@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft,
@@ -41,6 +42,7 @@ export default function EventDetailClient({ id, event: initialEvent }: EventDeta
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [activeRole, setActiveRole] = useState<'crew' | 'client' | 'ops'>('crew');
   const [sessionUser, setSessionUser] = useState<{
     fullName: string;
     email?: string;
@@ -54,9 +56,23 @@ export default function EventDetailClient({ id, event: initialEvent }: EventDeta
       try {
         const isExplicitlyLoggedOut =
           typeof window !== 'undefined' && localStorage.getItem('crewlink_logged_out') === 'true';
+        const currentRole =
+          (typeof window !== 'undefined' &&
+            (localStorage.getItem('crewlink_active_role') as 'crew' | 'client' | 'ops')) ||
+          'crew';
+        setActiveRole(currentRole);
+
+        const roleActorMap: Record<string, string> = {
+          crew: '11111111-1111-1111-1111-111111111111',
+          client: '33333333-3333-3333-3333-333333333333',
+          ops: '22222222-2222-2222-2222-222222222222',
+        };
+
+        const actorId = roleActorMap[currentRole] || roleActorMap.crew;
+
         const headers: Record<string, string> =
           process.env.NODE_ENV !== 'production' && !isExplicitlyLoggedOut
-            ? { 'x-actor-person-id': '11111111-1111-1111-1111-111111111111' }
+            ? { 'x-actor-person-id': actorId }
             : {};
         const res = await fetch('/api/auth/me', { cache: 'no-store', headers });
         if (res.ok) {
@@ -209,10 +225,20 @@ export default function EventDetailClient({ id, event: initialEvent }: EventDeta
       <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-border/80 h-14 flex items-center justify-between px-4 sm:px-6">
         <Link
           href="/"
-          className="flex items-center gap-1.5 text-muted hover:text-ink transition-colors font-medium text-sm"
+          className="flex items-center gap-2 text-muted hover:text-ink transition-colors font-medium text-sm group"
         >
-          <ArrowLeft className="w-4 h-4" />
-          <span>공고 목록</span>
+          <ArrowLeft className="w-4 h-4 text-muted group-hover:text-ink" />
+          <div className="w-7 h-7 rounded-lg overflow-hidden shadow-2xs group-hover:scale-105 transition-transform shrink-0">
+            <Image
+              src="/crewlink_favicon.png"
+              alt="CrewLink Logo"
+              width={28}
+              height={28}
+              className="w-full h-full object-cover"
+              priority
+            />
+          </div>
+          <span className="font-bold text-ink">공고 목록</span>
         </Link>
         <div className="flex items-center gap-2">
           <button
@@ -228,7 +254,7 @@ export default function EventDetailClient({ id, event: initialEvent }: EventDeta
           >
             <Share2 className="w-4 h-4" />
           </button>
-          {sessionUser && <AccountMenu user={sessionUser} />}
+          {sessionUser && <AccountMenu user={sessionUser} activeRole={activeRole} />}
         </div>
       </header>
 

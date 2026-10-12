@@ -21,6 +21,7 @@ export function PublicHeader({ className }: PublicHeaderProps) {
     roles: string[];
     profileImageUrl?: string | null;
   } | null>(null);
+  const [activeRole, setActiveRole] = useState<'crew' | 'client' | 'ops'>('crew');
   const [isLoadingSession, setIsLoadingSession] = useState(true);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
@@ -34,10 +35,27 @@ export function PublicHeader({ className }: PublicHeaderProps) {
         const isExplicitlyLoggedOut =
           typeof window !== 'undefined' && localStorage.getItem('crewlink_logged_out') === 'true';
 
-        // In dev mode, provide fallback dev actor header if not explicitly logged out
+        // In dev mode, resolve actor matching the active role (crew, client, ops)
+        const currentRole =
+          (typeof window !== 'undefined' &&
+            (localStorage.getItem('crewlink_active_role') as 'crew' | 'client' | 'ops')) ||
+          'crew';
+
+        if (isMounted) {
+          setActiveRole(currentRole);
+        }
+
+        const roleActorMap: Record<string, string> = {
+          crew: '11111111-1111-1111-1111-111111111111',
+          client: '33333333-3333-3333-3333-333333333333',
+          ops: '22222222-2222-2222-2222-222222222222',
+        };
+
+        const actorId = roleActorMap[currentRole] || roleActorMap.crew;
+
         const headers: Record<string, string> =
           process.env.NODE_ENV !== 'production' && !isExplicitlyLoggedOut
-            ? { 'x-actor-person-id': '11111111-1111-1111-1111-111111111111' }
+            ? { 'x-actor-person-id': actorId }
             : {};
 
         const res = await fetch('/api/auth/me', {
@@ -153,11 +171,42 @@ export function PublicHeader({ className }: PublicHeaderProps) {
 
       {/* Right Action: Logged In (AccountMenu) vs Logged Out ([로그인]) */}
       <div className="flex items-center gap-2">
+        {/* Role toggle for dev preview */}
+        {process.env.NODE_ENV !== 'production' && (
+          <div className="flex items-center gap-1 bg-surface-muted p-1 rounded-lg text-xs font-semibold mr-1">
+            {(['crew', 'client', 'ops'] as const).map((r) => (
+              <button
+                key={r}
+                type="button"
+                onClick={() => {
+                  setActiveRole(r);
+                  if (typeof window !== 'undefined') {
+                    localStorage.setItem('crewlink_active_role', r);
+                    window.dispatchEvent(new CustomEvent('crewlink:auth-changed'));
+                  }
+                  if (r === 'client') window.location.href = '/client';
+                  else if (r === 'ops') window.location.href = '/ops';
+                  else window.location.href = '/crew';
+                }}
+                className={cn(
+                  'px-2 py-0.5 rounded text-[11px] transition-all cursor-pointer',
+                  activeRole === r
+                    ? 'bg-surface text-brand shadow-2xs font-bold'
+                    : 'text-muted hover:text-ink'
+                )}
+              >
+                {r === 'crew' ? '크루' : r === 'client' ? '주최사' : '운영진'}
+              </button>
+            ))}
+          </div>
+        )}
+
         {isLoadingSession ? (
           <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-surface-muted animate-pulse" />
         ) : sessionUser ? (
           <AccountMenu
             user={sessionUser}
+            activeRole={activeRole}
             onLogout={async () => {
               if (typeof window !== 'undefined') {
                 localStorage.setItem('crewlink_logged_out', 'true');

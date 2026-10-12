@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import * as Dialog from '@radix-ui/react-dialog';
 import { X, Mail, Lock, Loader2, Sparkles, AlertCircle, ArrowRight } from 'lucide-react';
@@ -142,6 +143,18 @@ export function LoginModal({
 
           {/* Header */}
           <div className="space-y-1.5 pr-6">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 rounded-xl overflow-hidden shadow-xs shrink-0">
+                <Image
+                  src="/crewlink_favicon.png"
+                  alt="CrewLink Logo"
+                  width={32}
+                  height={32}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <span className="font-extrabold text-base text-ink tracking-tight">CrewLink</span>
+            </div>
             <Dialog.Title className="text-xl sm:text-2xl font-extrabold text-ink tracking-tight">
               크루링크 시작하기
             </Dialog.Title>

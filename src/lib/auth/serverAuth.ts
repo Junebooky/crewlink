@@ -38,10 +38,10 @@ export async function getAuthenticatedContext(
   // Lookup person in Supabase DB using adminClient to bypass RLS bootstrap restriction
   const adminClient = createAdminClient();
   let query = adminClient.from('people').select('id, full_name, auth_user_id, is_active');
-  if (user) {
-    query = query.or(`auth_user_id.eq.${user.id},id.eq.${user.id}`);
-  } else if (headerActorId) {
+  if (isDevOrTest && headerActorId) {
     query = query.eq('id', headerActorId);
+  } else if (user) {
+    query = query.or(`auth_user_id.eq.${user.id},id.eq.${user.id}`);
   }
 
   const { data: person, error: personError } = await query.limit(1).maybeSingle();

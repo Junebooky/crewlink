@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import {
   Calendar,
@@ -91,9 +92,27 @@ export function AppShell({ children, initialRole = 'crew' }: AppShellProps) {
         const isExplicitlyLoggedOut =
           typeof window !== 'undefined' && localStorage.getItem('crewlink_logged_out') === 'true';
 
+        // Dynamically resolve actor based on pathname and active role
+        const currentActiveRole =
+          pathname.startsWith('/client')
+            ? 'client'
+            : pathname.startsWith('/ops')
+            ? 'ops'
+            : pathname.startsWith('/crew')
+            ? 'crew'
+            : (typeof window !== 'undefined' && localStorage.getItem('crewlink_active_role')) || 'crew';
+
+        const roleActorMap: Record<string, string> = {
+          crew: '11111111-1111-1111-1111-111111111111',
+          client: '33333333-3333-3333-3333-333333333333',
+          ops: '22222222-2222-2222-2222-222222222222',
+        };
+
+        const actorId = roleActorMap[currentActiveRole] || roleActorMap.crew;
+
         const headers: Record<string, string> =
           process.env.NODE_ENV !== 'production' && !isExplicitlyLoggedOut
-            ? { 'x-actor-person-id': '11111111-1111-1111-1111-111111111111' }
+            ? { 'x-actor-person-id': actorId }
             : {};
 
         const res = await fetch('/api/auth/me', {
@@ -174,11 +193,18 @@ export function AppShell({ children, initialRole = 'crew' }: AppShellProps) {
       <aside className="hidden md:flex flex-col w-[224px] bg-surface border-r border-border shrink-0 sticky top-0 h-screen z-30 select-none">
         {/* Brand Header */}
         <div className="h-16 px-5 flex items-center justify-between border-b border-border-subtle">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-brand text-inverse flex items-center justify-center font-black text-lg shadow-sm">
-              C
+          <Link href="/" className="flex items-center gap-2 group">
+            <div className="w-8 h-8 rounded-xl overflow-hidden shadow-xs group-hover:scale-105 transition-transform shrink-0">
+              <Image
+                src="/crewlink_favicon.png"
+                alt="CrewLink Logo"
+                width={32}
+                height={32}
+                className="w-full h-full object-cover"
+                priority
+              />
             </div>
-            <span className="font-bold text-lg text-ink tracking-tight">CrewLink</span>
+            <span className="font-extrabold text-base sm:text-lg text-ink tracking-tight">CrewLink</span>
           </Link>
         </div>
 
@@ -195,16 +221,20 @@ export function AppShell({ children, initialRole = 'crew' }: AppShellProps) {
                   type="button"
                   onClick={() => {
                     setRole(r);
+                    if (typeof window !== 'undefined') {
+                      localStorage.setItem('crewlink_active_role', r);
+                      window.dispatchEvent(new CustomEvent('crewlink:auth-changed'));
+                    }
                     window.location.href = NAV_CONFIG[r].items[0].href;
                   }}
                   className={cn(
-                    'py-1 rounded text-center transition-all',
+                    'py-1 rounded text-center transition-all cursor-pointer',
                     role === r
                       ? 'bg-surface text-brand shadow-xs font-bold'
                       : 'text-muted hover:text-ink'
                   )}
                 >
-                  {r === 'crew' ? '크루' : r === 'client' ? '주최사' : '운영팀'}
+                  {r === 'crew' ? '크루' : r === 'client' ? '주최사' : '운영진'}
                 </button>
               ))}
             </div>
@@ -240,7 +270,7 @@ export function AppShell({ children, initialRole = 'crew' }: AppShellProps) {
           {sessionUser ? (
             <div className="flex items-center justify-between w-full">
               <div className="flex items-center gap-2.5 min-w-0">
-                <AccountMenu user={sessionUser} />
+                <AccountMenu user={sessionUser} activeRole={role} />
                 <div className="min-w-0">
                   <div className="font-semibold text-ink truncate text-xs">{sessionUser.fullName}</div>
                   <div className="text-[10px] text-muted truncate">{NAV_CONFIG[role].title}</div>
@@ -265,11 +295,18 @@ export function AppShell({ children, initialRole = 'crew' }: AppShellProps) {
 
       {/* Mobile Top Header */}
       <header className="md:hidden h-14 bg-surface border-b border-border px-4 flex items-center justify-between sticky top-0 z-30">
-        <Link href="/" className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-brand text-inverse flex items-center justify-center font-black text-sm">
-            C
+        <Link href="/" className="flex items-center gap-2 group">
+          <div className="w-7 h-7 rounded-lg overflow-hidden shadow-2xs group-hover:scale-105 transition-transform shrink-0">
+            <Image
+              src="/crewlink_favicon.png"
+              alt="CrewLink Logo"
+              width={28}
+              height={28}
+              className="w-full h-full object-cover"
+              priority
+            />
           </div>
-          <span className="font-bold text-ink tracking-tight">CrewLink</span>
+          <span className="font-extrabold text-ink tracking-tight">CrewLink</span>
           <span className="text-xs px-2 py-0.5 rounded-full bg-brand-subtle text-brand font-semibold ml-1">
             {NAV_CONFIG[role].title}
           </span>
@@ -284,19 +321,23 @@ export function AppShell({ children, initialRole = 'crew' }: AppShellProps) {
                   key={r}
                   onClick={() => {
                     setRole(r);
+                    if (typeof window !== 'undefined') {
+                      localStorage.setItem('crewlink_active_role', r);
+                      window.dispatchEvent(new CustomEvent('crewlink:auth-changed'));
+                    }
                     window.location.href = NAV_CONFIG[r].items[0].href;
                   }}
                   className={cn(
-                    'px-2 py-1 text-xs rounded font-medium transition-colors',
+                    'px-2 py-1 text-xs rounded font-medium transition-colors cursor-pointer',
                     role === r ? 'bg-brand text-inverse' : 'text-muted hover:bg-surface-muted'
                   )}
                 >
-                  {r === 'crew' ? '크루' : r === 'client' ? '주최사' : '운영팀'}
+                  {r === 'crew' ? '크루' : r === 'client' ? '주최사' : '운영진'}
                 </button>
               ))}
             </div>
           )}
-          {sessionUser && <AccountMenu user={sessionUser} />}
+          {sessionUser && <AccountMenu user={sessionUser} activeRole={role} />}
         </div>
       </header>
 

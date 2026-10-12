@@ -9,15 +9,23 @@ export async function GET(request: Request) {
       return NextResponse.json({ authenticated: false, roles: [] }, { status: 200 });
     }
 
-    // 크루 프로필 사진 조회
-    const adminClient = createAdminClient();
-    const { data: profile } = await adminClient
-      .from('crew_profiles')
-      .select('profile_image_url, profile_photo_url')
-      .eq('person_id', authContext.personId)
-      .maybeSingle();
+    // 크루 프로필 사진 조회 (크루 역할일 때만 프로필 사진 제공)
+    const isCrew =
+      authContext.roles.includes('crew') &&
+      !authContext.roles.includes('client') &&
+      !authContext.roles.includes('ops');
 
-    const profileImageUrl = profile?.profile_image_url || profile?.profile_photo_url || null;
+    let profileImageUrl: string | null = null;
+    if (isCrew) {
+      const adminClient = createAdminClient();
+      const { data: profile } = await adminClient
+        .from('crew_profiles')
+        .select('profile_image_url, profile_photo_url')
+        .eq('person_id', authContext.personId)
+        .maybeSingle();
+
+      profileImageUrl = profile?.profile_image_url || profile?.profile_photo_url || null;
+    }
 
     return NextResponse.json({
       authenticated: true,

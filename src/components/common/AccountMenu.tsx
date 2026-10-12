@@ -22,10 +22,11 @@ export interface AccountMenuProps {
     roles: string[];
     profileImageUrl?: string | null;
   };
+  activeRole?: 'crew' | 'client' | 'ops';
   onLogout?: () => void;
 }
 
-export function AccountMenu({ user, onLogout }: AccountMenuProps) {
+export function AccountMenu({ user, activeRole, onLogout }: AccountMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -71,37 +72,62 @@ export function AccountMenu({ user, onLogout }: AccountMenuProps) {
   };
 
   // Determine primary display mode
-  const isClient = user.roles.includes('client');
-  const roleBadge = isClient ? '주최사' : '크루';
+  const isClient = activeRole === 'client' || (!activeRole && user.roles.includes('client'));
+  const isOps = activeRole === 'ops' || (!activeRole && user.roles.includes('ops'));
+  const isCrew = (activeRole ? activeRole === 'crew' : user.roles.includes('crew')) && !isClient && !isOps;
+  const roleBadge = isClient ? '주최사' : isOps ? '운영진' : '크루';
 
   return (
     <div ref={menuRef} className="relative inline-block text-left">
-      <button
-        type="button"
-        id="account-menu-button"
-        aria-haspopup="true"
-        aria-expanded={isOpen}
-        onClick={() => setIsOpen((prev) => !prev)}
-        className={cn(
-          'p-0 rounded-full transition-transform active:scale-95 cursor-pointer focus:outline-hidden relative',
-          isOpen && 'ring-2 ring-brand ring-offset-2'
-        )}
-        title={user.fullName}
-      >
-        <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full overflow-hidden bg-brand-soft text-brand-strong font-bold text-sm relative flex items-center justify-center shrink-0 shadow-xs hover:ring-2 hover:ring-brand/30 transition-all">
-          {user.profileImageUrl ? (
-            <Image
-              src={user.profileImageUrl}
-              alt={user.fullName}
-              fill
-              className="object-cover"
-              unoptimized
-            />
-          ) : (
-            <span>{user.fullName.slice(0, 1) || '크'}</span>
+      {isCrew ? (
+        <button
+          type="button"
+          id="account-menu-button"
+          aria-haspopup="true"
+          aria-expanded={isOpen}
+          onClick={() => setIsOpen((prev) => !prev)}
+          className={cn(
+            'p-0 rounded-full transition-transform active:scale-95 cursor-pointer focus:outline-hidden relative',
+            isOpen && 'ring-2 ring-brand ring-offset-2'
           )}
-        </div>
-      </button>
+          title={user.fullName}
+        >
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full overflow-hidden bg-brand-soft text-brand-strong font-bold text-sm relative flex items-center justify-center shrink-0 shadow-xs hover:ring-2 hover:ring-brand/30 transition-all">
+            {user.profileImageUrl ? (
+              <Image
+                src={user.profileImageUrl}
+                alt={user.fullName}
+                fill
+                className="object-cover"
+                unoptimized
+              />
+            ) : (
+              <span>{user.fullName.slice(0, 1) || '크'}</span>
+            )}
+          </div>
+        </button>
+      ) : (
+        <button
+          type="button"
+          id="account-menu-button"
+          aria-haspopup="true"
+          aria-expanded={isOpen}
+          onClick={() => setIsOpen((prev) => !prev)}
+          className={cn(
+            'flex items-center gap-2 py-1.5 px-2.5 rounded-full border border-border bg-surface hover:bg-canvas text-xs font-bold text-ink transition-colors cursor-pointer shadow-2xs',
+            isOpen && 'border-brand ring-2 ring-brand/10'
+          )}
+          title={user.fullName}
+        >
+          <div className="w-6 h-6 rounded-full overflow-hidden bg-brand-soft text-brand-strong font-black text-xs relative flex items-center justify-center shrink-0 border border-border">
+            <span>{isClient ? '주' : '운'}</span>
+          </div>
+          <span className="max-w-[85px] truncate hidden sm:inline">{user.fullName}</span>
+          <span className="text-[10px] font-semibold text-brand bg-brand-subtle px-1.5 py-0.5 rounded-md border border-brand-border">
+            {roleBadge}
+          </span>
+        </button>
+      )}
 
       {/* Dropdown Menu */}
       <div
@@ -118,7 +144,7 @@ export function AccountMenu({ user, onLogout }: AccountMenuProps) {
         {/* User Info Header */}
         <div className="px-3 py-2.5 border-b border-border-subtle mb-1 flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-full overflow-hidden bg-brand-soft text-brand-strong font-bold text-xs relative flex items-center justify-center shrink-0 border border-border">
-            {user.profileImageUrl ? (
+            {isCrew && user.profileImageUrl ? (
               <Image
                 src={user.profileImageUrl}
                 alt={user.fullName}
@@ -127,7 +153,7 @@ export function AccountMenu({ user, onLogout }: AccountMenuProps) {
                 unoptimized
               />
             ) : (
-              <span>{user.fullName.slice(0, 1) || '크'}</span>
+              <span>{isClient ? '주' : isOps ? '운' : user.fullName.slice(0, 1) || '크'}</span>
             )}
           </div>
           <div className="min-w-0 flex-1">
@@ -136,7 +162,7 @@ export function AccountMenu({ user, onLogout }: AccountMenuProps) {
               <p className="text-[11px] text-muted truncate mt-0.5">{user.email}</p>
             )}
             <span className="inline-block mt-0.5 text-[10px] font-semibold text-brand bg-brand-soft px-1.5 py-0.5 rounded border border-brand-border">
-              {isClient ? '주최사 파트너' : '크루 멤버'}
+              {isClient ? '주최사 파트너' : isOps ? '운영진 마스터' : '크루 멤버'}
             </span>
           </div>
         </div>
