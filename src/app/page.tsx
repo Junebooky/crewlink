@@ -15,6 +15,8 @@ import {
   RotateCcw,
   X,
   CalendarRange,
+  Heart,
+  MapPin,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PublicHeader } from '@/components/common/PublicHeader';
@@ -71,6 +73,56 @@ export const ROLLING_PLACEHOLDERS = [
 export const ROLLING_INTERVAL_MS = 3600;
 export const ROLLING_DURATION_MS = 450;
 
+/**
+ * 카테고리별 고화질 Unsplash fallback 이미지 매핑
+ */
+export function getCategoryFallbackImage(category?: string | null, title?: string): string {
+  const normalizedCat = (category || '').toLowerCase();
+  const normalizedTitle = (title || '').toLowerCase();
+
+  if (
+    normalizedCat === 'festival' ||
+    normalizedCat === 'concert' ||
+    normalizedTitle.includes('페스티벌') ||
+    normalizedTitle.includes('콘서트') ||
+    normalizedTitle.includes('뮤직')
+  ) {
+    return 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&auto=format&fit=crop&q=80';
+  }
+
+  if (
+    normalizedCat === 'conference' ||
+    normalizedCat === 'seminar' ||
+    normalizedTitle.includes('컨퍼런스') ||
+    normalizedTitle.includes('세미나') ||
+    normalizedTitle.includes('ai')
+  ) {
+    return 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=500&auto=format&fit=crop&q=80';
+  }
+
+  if (
+    normalizedCat === 'expo' ||
+    normalizedCat === 'exhibition' ||
+    normalizedTitle.includes('전시') ||
+    normalizedTitle.includes('박람회') ||
+    normalizedTitle.includes('모빌리티')
+  ) {
+    return 'https://images.unsplash.com/photo-1531058020387-3be344556be6?w=500&auto=format&fit=crop&q=80';
+  }
+
+  if (
+    normalizedCat === 'popup' ||
+    normalizedCat === 'brand' ||
+    normalizedCat === 'event' ||
+    normalizedTitle.includes('팝업') ||
+    normalizedTitle.includes('스토어')
+  ) {
+    return 'https://images.unsplash.com/photo-1511578314322-379afb476865?w=500&auto=format&fit=crop&q=80';
+  }
+
+  return 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=500&auto=format&fit=crop&q=80';
+}
+
 export default function HomePage() {
   const [events, setEvents] = useState<EventItem[]>(() => getPublicEvents());
 
@@ -91,7 +143,7 @@ export default function HomePage() {
     loadEvents();
   }, []);
 
-  // KST dynamic date state - initialized with stable base date during SSR, hydrated in useEffect
+  // KST dynamic date state
   const [currentKST, setCurrentKST] = useState<string>('2026-10-12');
 
   useEffect(() => {
@@ -109,6 +161,16 @@ export default function HomePage() {
   const sortDropdownRef = useRef<HTMLDivElement>(null);
   const [searchKeyword, setSearchKeyword] = useState('');
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
+  const [favorites, setFavorites] = useState<Record<string, boolean>>({});
+
+  const toggleFavorite = (e: React.MouseEvent, eventId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setFavorites((prev) => ({
+      ...prev,
+      [eventId]: !prev[eventId],
+    }));
+  };
 
   // 토스 스타일 부드러운 슬라이드 다운 롤링 플레이스홀더 (3.6초 주기 순환, 450ms 감속 이징)
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
@@ -194,7 +256,6 @@ export default function HomePage() {
         const matchCat = selectedCategory === 'all' || item.category === selectedCategory;
         const matchReg = selectedRegion === 'all' || item.regionId === selectedRegion;
 
-        // 날짜 조건 일치 확인
         let matchDate = true;
         if (activeDateRange) {
           matchDate = checkDateOverlap(
@@ -228,6 +289,11 @@ export default function HomePage() {
       });
   }, [events, selectedCategory, selectedRegion, activeDateRange, sortOrder, searchKeyword]);
 
+  // 1. 지금 핫한 공고 (상위 4개 슬라이스)
+  const hotEvents = useMemo(() => {
+    return events.slice(0, 4);
+  }, [events]);
+
   const handleResetFilters = () => {
     setSelectedCategory('all');
     setSelectedRegion('all');
@@ -241,27 +307,42 @@ export default function HomePage() {
   const currentSortLabel = SORT_OPTIONS.find((opt) => opt.id === sortOrder)?.label || '최신순';
 
   return (
-    <div className="min-h-screen bg-canvas text-ink flex flex-col pb-[calc(76px+env(safe-area-inset-bottom,0px))] md:pb-12">
+    <div className="min-h-screen bg-[#E8F3FE] text-ink flex flex-col pb-[calc(76px+env(safe-area-inset-bottom,0px))] md:pb-12">
       {/* 1. 크루 중심 퍼블릭 헤더 */}
-      <PublicHeader />
+      <PublicHeader className="bg-[#E8F3FE]/90 border-b border-[#D4E8FC] backdrop-blur-md" />
 
-      {/* 2. 상단 타이틀 & 검색 바 */}
-      <section className="bg-surface border-b border-border-subtle pt-6 pb-5 px-4 sm:px-6">
+      {/* 2. 상단 히어로 섹션 (3D 에셋 hero.png + 텍스트 + 검색창 + 필터) */}
+      <section className="pt-6 sm:pt-8 pb-5 px-4 sm:px-6">
         <div className="max-w-4xl mx-auto space-y-4">
-          <div>
-            <p className="text-xs font-bold text-muted tracking-wider uppercase mb-1">
-              지금 모집 중인 현황
-            </p>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-ink tracking-tight">
-              어떤 현장으로 가볼까요?
-            </h1>
-            <p className="text-sm text-muted mt-1 break-keep">
-              날짜와 장소만 고르면 딱 맞는 일이 기다려요.
-            </p>
+          {/* 텍스트 카피 & 3D 히어로 일러스트 반응형 2단 배치 */}
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex-1 min-w-0">
+              <p className="text-xs sm:text-sm font-bold text-brand tracking-tight mb-1">
+                지금, 새로운 현장이 기다려요
+              </p>
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-ink tracking-tight leading-tight">
+                좋은 사람들과<br />
+                멋진 현장을 만들어봐요
+              </h1>
+              <p className="text-xs sm:text-sm text-muted mt-1.5 sm:mt-2 break-keep font-medium leading-relaxed">
+                행사·전시·콘서트·페스티벌까지<br className="sm:hidden" /> 다양한 크루 공고를 한눈에!
+              </p>
+            </div>
+            {/* 3D 히어로 일러스트 에셋 (/assets/clay/hero.png) */}
+            <div className="w-36 sm:w-52 md:w-64 shrink-0 relative flex justify-end">
+              <Image
+                src="/assets/clay/hero.png"
+                alt="CrewLink 3D Hero"
+                width={320}
+                height={260}
+                className="w-36 sm:w-52 md:w-64 h-auto object-contain select-none pointer-events-none drop-shadow-sm"
+                priority
+              />
+            </div>
           </div>
 
           {/* 52px 높이 표준 검색 인풋 */}
-          <div className="relative">
+          <div className="relative pt-1">
             <label htmlFor="event-search-input" className="sr-only">
               행사, 지역, 업무 검색
             </label>
@@ -273,9 +354,9 @@ export default function HomePage() {
               onChange={(e) => setSearchKeyword(e.target.value)}
               placeholder=""
               aria-label="행사, 지역, 업무 검색"
-              className="w-full h-[52px] pl-11 pr-4 rounded-2xl border border-border bg-surface text-ink text-base focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-xs transition-colors"
+              className="w-full h-[52px] pl-11 pr-4 rounded-2xl border border-white/80 bg-white/95 text-ink text-base focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-xs transition-colors backdrop-blur-xs"
             />
-            {/* 토스 스타일 부드러운 슬라이드 다운 롤링 플레이스홀더 (검색창이 비어 있을 때만 렌더링) */}
+            {/* 토스 스타일 부드러운 슬라이드 다운 롤링 플레이스홀더 */}
             {searchKeyword.length === 0 && (
               <div
                 aria-hidden="true"
@@ -301,7 +382,7 @@ export default function HomePage() {
             )}
           </div>
 
-          {/* 2. 날짜 퀵 필터 바 (한 손 조작 최적화) */}
+          {/* 날짜 퀵 필터 바 */}
           <div className="space-y-1.5 pt-1">
             <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
               {[
@@ -323,8 +404,8 @@ export default function HomePage() {
                     className={cn(
                       'min-h-[38px] px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-semibold shrink-0 transition-colors cursor-pointer border flex items-center gap-1',
                       isSelected
-                        ? 'bg-brand text-inverse border-brand shadow-xs'
-                        : 'bg-surface text-muted border-border hover:border-brand-border'
+                        ? 'bg-brand text-white border-brand shadow-xs'
+                        : 'bg-white/80 text-muted border-white/60 hover:border-brand/40 shadow-2xs'
                     )}
                   >
                     {isSelected && <Check className="w-3 h-3 shrink-0" />}
@@ -340,8 +421,8 @@ export default function HomePage() {
                 className={cn(
                   'min-h-[38px] px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-semibold shrink-0 transition-colors cursor-pointer border flex items-center gap-1.5',
                   datePreset === 'custom'
-                    ? 'bg-brand text-inverse border-brand shadow-xs'
-                    : 'bg-surface text-muted border-border hover:border-brand-border'
+                    ? 'bg-brand text-white border-brand shadow-xs'
+                    : 'bg-white/80 text-muted border-white/60 hover:border-brand/40 shadow-2xs'
                 )}
               >
                 <CalendarRange className="w-3.5 h-3.5" />
@@ -349,15 +430,15 @@ export default function HomePage() {
               </button>
             </div>
 
-            {/* 날짜 직접 선택 인라인 패널 (아코디언 토글) */}
+            {/* 날짜 직접 선택 인라인 패널 */}
             {isDatePickerOpen && (
-              <div className="p-4 rounded-2xl bg-surface border border-brand-border shadow-xs mt-2 space-y-3 animate-in fade-in duration-200">
+              <div className="p-4 rounded-2xl bg-white border border-brand/30 shadow-xs mt-2 space-y-3 animate-in fade-in duration-200">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-ink">근무 희망 기간 설정</span>
                   <button
                     type="button"
                     onClick={() => setIsDatePickerOpen(false)}
-                    className="text-xs text-muted hover:text-ink"
+                    className="text-xs text-muted hover:text-ink cursor-pointer"
                   >
                     닫기
                   </button>
@@ -389,7 +470,7 @@ export default function HomePage() {
                     setDatePreset('custom');
                     setIsDatePickerOpen(false);
                   }}
-                  className="w-full h-10 rounded-xl bg-brand hover:bg-brand-hover disabled:bg-disabled text-inverse font-bold text-xs transition-colors cursor-pointer"
+                  className="w-full h-10 rounded-xl bg-brand hover:bg-brand-hover disabled:bg-disabled text-white font-bold text-xs transition-colors cursor-pointer"
                 >
                   이 기간으로 검색하기
                 </button>
@@ -397,7 +478,7 @@ export default function HomePage() {
             )}
           </div>
 
-          {/* 3. 행사 종류 칩 & 지역 칩 */}
+          {/* 행사 종류 칩 & 지역 칩 */}
           <div className="space-y-1.5 pt-1">
             <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
               {CATEGORY_OPTIONS.map((cat) => {
@@ -411,8 +492,8 @@ export default function HomePage() {
                     className={cn(
                       'min-h-[36px] px-3.5 py-1 rounded-full text-xs font-semibold shrink-0 transition-colors cursor-pointer border flex items-center gap-1',
                       isSelected
-                        ? 'bg-brand-soft text-brand-strong border-brand-border'
-                        : 'bg-surface text-muted border-border hover:border-brand-border'
+                        ? 'bg-brand text-white border-brand shadow-xs'
+                        : 'bg-white/80 text-muted border-white/60 hover:border-brand/40 shadow-2xs'
                     )}
                   >
                     {isSelected && <Check className="w-3 h-3 shrink-0" />}
@@ -434,8 +515,8 @@ export default function HomePage() {
                     className={cn(
                       'min-h-[36px] px-3.5 py-1 rounded-full text-xs font-semibold shrink-0 transition-colors cursor-pointer border flex items-center gap-1',
                       isSelected
-                        ? 'bg-brand-soft text-brand-strong border-brand-border'
-                        : 'bg-surface text-muted border-border hover:border-brand-border'
+                        ? 'bg-brand text-white border-brand shadow-xs'
+                        : 'bg-white/80 text-muted border-white/60 hover:border-brand/40 shadow-2xs'
                     )}
                   >
                     {isSelected && <Check className="w-3 h-3 shrink-0" />}
@@ -448,33 +529,139 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 4. 활성 필터 태그 & 커스텀 정렬 드롭다운 헤더 */}
-      <section className="max-w-4xl w-full mx-auto px-4 sm:px-6 pt-5 pb-2">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          {/* 활성 필터 리셋 & 칩 표시 */}
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-xs font-bold text-muted mr-1">
-              총 <span className="text-brand font-black">{filteredAndSortedEvents.length}</span>개의 현장
-            </span>
+      {/* 3. 섹션 1: 🔥 지금 핫한 공고 (가로 스크롤 카드 형태) */}
+      <section className="max-w-4xl w-full mx-auto px-4 sm:px-6 pt-4 pb-2">
+        <div className="flex items-center justify-between mb-3 px-1">
+          <div className="flex items-center gap-1.5">
+            <span className="text-xl">🔥</span>
+            <h2 className="text-lg font-extrabold text-ink tracking-tight">지금 핫한 공고</h2>
+          </div>
+          <button
+            type="button"
+            onClick={handleResetFilters}
+            className="text-xs font-semibold text-muted hover:text-ink flex items-center gap-0.5 cursor-pointer"
+          >
+            <span>전체보기</span>
+            <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
 
+        {/* 가로 스크롤 스냅 카드 컨테이너 */}
+        <div className="flex gap-3 overflow-x-auto no-scrollbar snap-x pb-2 pt-1 -mx-4 px-4 sm:mx-0 sm:px-0">
+          {hotEvents.map((item, idx) => {
+            const isFav = !!favorites[item.id];
+            const badgeText =
+              idx === 0 ? '지금 모집중' : idx === 1 ? '인기 공고' : idx === 2 ? '신규 오픈' : 'HOT';
+
+            return (
+              <Link
+                key={`hot-${item.id}`}
+                href={`/events/${item.id}`}
+                className="min-w-[240px] max-w-[260px] snap-start bg-white rounded-2xl shadow-2xs overflow-hidden flex flex-col justify-between shrink-0 transition-transform duration-200 hover:-translate-y-0.5 group border border-transparent hover:border-brand-border/40"
+              >
+                {/* 상단 썸네일 */}
+                <div className="h-28 w-full relative overflow-hidden bg-slate-100">
+                  <Image
+                    src={getCategoryFallbackImage(item.category, item.title)}
+                    alt={item.title}
+                    fill
+                    unoptimized
+                    className="object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                  {/* 좌측 상단 뱃지 */}
+                  <div className="absolute top-2.5 left-2.5 z-10">
+                    <span className="px-2.5 py-0.5 rounded-full bg-white/95 backdrop-blur-xs text-brand font-extrabold text-[11px] shadow-2xs">
+                      {badgeText}
+                    </span>
+                  </div>
+                  {/* 우측 상단 찜하기 버튼 */}
+                  <button
+                    type="button"
+                    onClick={(e) => toggleFavorite(e, item.id)}
+                    className="absolute top-2.5 right-2.5 z-10 w-7 h-7 rounded-full bg-black/25 backdrop-blur-xs flex items-center justify-center text-white hover:text-error transition-colors cursor-pointer"
+                    aria-label="찜하기"
+                  >
+                    <Heart
+                      className={cn(
+                        'w-4 h-4',
+                        isFav ? 'fill-red-500 text-red-500' : 'fill-none text-white stroke-[2.2]'
+                      )}
+                    />
+                  </button>
+                </div>
+
+                {/* 하단 본문 */}
+                <div className="p-3.5 flex flex-col justify-between flex-1">
+                  <div>
+                    <h3 className="font-bold text-ink text-sm truncate group-hover:text-brand transition-colors">
+                      {item.displayTitle}
+                    </h3>
+                    <div className="flex items-center gap-2 text-xs text-muted mt-1 truncate">
+                      <span className="flex items-center gap-1 shrink-0">
+                        <CalendarIcon className="w-3 h-3 text-muted shrink-0" />
+                        <span>{item.startDate.slice(5).replace('-', '.')}</span>
+                      </span>
+                      <span className="flex items-center gap-1 truncate">
+                        <MapPin className="w-3 h-3 text-muted shrink-0" />
+                        <span className="truncate">{item.regionLabel}</span>
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* 하루 일당 표시 (3D 코인 /assets/clay/coin.png + 볼드 금액) */}
+                  <div className="mt-3 flex items-center gap-1.5 pt-2 border-t border-border-subtle">
+                    <Image
+                      src="/assets/clay/coin.png"
+                      alt="하루 일당"
+                      width={20}
+                      height={20}
+                      className="w-5 h-5 object-contain shrink-0"
+                    />
+                    <span className="text-base sm:text-lg font-black text-brand tabular-nums">
+                      {item.dailyWageWon.toLocaleString()}
+                    </span>
+                    <span className="text-xs font-bold text-brand">원</span>
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+
+        {/* 하단 페이지 인디케이터 도트 */}
+        <div className="flex items-center justify-center gap-1.5 mt-2.5 mb-5">
+          <div className="w-1.5 h-1.5 rounded-full bg-brand" />
+          <div className="w-1.5 h-1.5 rounded-full bg-brand/30" />
+          <div className="w-1.5 h-1.5 rounded-full bg-brand/30" />
+        </div>
+      </section>
+
+      {/* 4. 섹션 2: 방금 올라왔어요 (헤더 & 필터 & 정렬 & 세로 피드 리스트) */}
+      <section className="max-w-4xl w-full mx-auto px-4 sm:px-6 pt-2 pb-2">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+          {/* 좌측 타이틀 & 총 개수 */}
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-extrabold text-ink tracking-tight">방금 올라왔어요</h2>
+            <span className="text-xs font-bold text-muted">
+              총 <span className="text-brand font-black">{filteredAndSortedEvents.length}</span>개
+            </span>
             {/* 필터 활성화 시 리셋 버튼 */}
             {(selectedCategory !== 'all' ||
               selectedRegion !== 'all' ||
               datePreset !== 'all' ||
               searchKeyword) && (
-                <button
-                  type="button"
-                  onClick={handleResetFilters}
-                  className="h-7 px-2.5 rounded-full bg-surface-muted hover:bg-border text-muted hover:text-ink text-xs font-medium flex items-center gap-1 transition-colors cursor-pointer"
-                >
-                  <RotateCcw className="w-3 h-3" />
-                  <span>초기화</span>
-                </button>
-              )}
-
+              <button
+                type="button"
+                onClick={handleResetFilters}
+                className="h-6 px-2 rounded-full bg-white text-muted hover:text-ink text-[11px] font-medium flex items-center gap-1 transition-colors cursor-pointer shadow-2xs"
+              >
+                <RotateCcw className="w-3 h-3" />
+                <span>초기화</span>
+              </button>
+            )}
             {/* 활성 날짜 뱃지 */}
             {activeDateRange && (
-              <span className="h-7 px-2.5 rounded-full bg-brand-soft text-brand-strong border border-brand-border text-xs font-semibold flex items-center gap-1">
+              <span className="h-6 px-2 rounded-full bg-brand-soft text-brand-strong border border-brand-border text-[11px] font-semibold flex items-center gap-1">
                 <span>{activeDateRange.label}</span>
                 <button
                   type="button"
@@ -482,21 +669,20 @@ export default function HomePage() {
                   className="hover:text-ink cursor-pointer"
                   aria-label="날짜 필터 제거"
                 >
-                  <X className="w-3 h-3" />
+                  <X className="w-2.5 h-2.5" />
                 </button>
               </span>
             )}
           </div>
 
-          {/* Task 1 & Task 4: 보기 모드 전환 토글 & 커스텀 정렬 드롭다운 헤더 */}
+          {/* 우측 정렬 드롭다운 & 보기 모드 전환 토글 */}
           <div className="flex items-center gap-2 shrink-0 ml-auto">
-            {/* 보기 모드 전환 토글 탭 [ 목록형 | 지도형 ] - 슬라이딩 인디케이터 */}
+            {/* 보기 모드 전환 [ 목록형 | 지도형 ] */}
             <div
               role="tablist"
               aria-label="공고 보기 방식 선택"
-              className="relative flex items-center p-1 bg-white/90 rounded-2xl border border-border-subtle select-none h-9"
+              className="relative flex items-center p-1 bg-white/90 rounded-2xl border border-white/60 select-none h-9 shadow-2xs"
             >
-              {/* 브랜드 색상 및 round 곡선이 적용된 슬라이딩 인디케이터 */}
               <div
                 className="absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-full bg-brand shadow-xs transition-transform duration-300 ease-out will-change-transform"
                 style={{
@@ -530,14 +716,14 @@ export default function HomePage() {
               </button>
             </div>
 
-            {/* 커스텀 정렬 드롭다운 (플로팅 메뉴) - 목록형/지도형과 텍스트 사이즈(text-xs font-bold) 및 높이(h-9) 일치 */}
+            {/* 정렬 드롭다운 */}
             <div ref={sortDropdownRef} className="relative">
               <button
                 type="button"
                 aria-haspopup="listbox"
                 aria-expanded={isSortDropdownOpen}
                 onClick={() => setIsSortDropdownOpen((prev) => !prev)}
-                className="h-9 px-3 rounded-2xl border border-border bg-surface text-xs font-bold text-ink flex items-center gap-1.5 shadow-2xs hover:border-brand-border cursor-pointer transition-colors select-none"
+                className="h-9 px-3 rounded-2xl border border-white/60 bg-white/90 text-xs font-bold text-ink flex items-center gap-1.5 shadow-2xs hover:border-brand-border cursor-pointer transition-colors select-none"
               >
                 <ArrowUpDown className="w-3.5 h-3.5 text-muted shrink-0" />
                 <span>{currentSortLabel}</span>
@@ -552,7 +738,7 @@ export default function HomePage() {
               {isSortDropdownOpen && (
                 <div
                   role="listbox"
-                  className="absolute right-0 top-full mt-1.5 z-30 w-36 p-1.5 rounded-2xl border border-border bg-surface shadow-lg animate-in fade-in zoom-in-95 duration-150"
+                  className="absolute right-0 top-full mt-1.5 z-30 w-36 p-1.5 rounded-2xl border border-border bg-white shadow-lg animate-in fade-in zoom-in-95 duration-150"
                 >
                   {SORT_OPTIONS.map((opt) => {
                     const isSelected = sortOrder === opt.id;
@@ -585,16 +771,13 @@ export default function HomePage() {
 
       {/* 5. 공고 콘텐츠 영역 (목록형 or 지도형) */}
       {viewMode === 'map' ? (
-        <main className="max-w-6xl w-full mx-auto px-4 sm:px-6 pt-3 flex-1">
-          <EventMapExplorer
-            events={filteredAndSortedEvents}
-            currentKST={currentKST}
-          />
+        <main className="max-w-6xl w-full mx-auto px-4 sm:px-6 pt-2 flex-1">
+          <EventMapExplorer events={filteredAndSortedEvents} currentKST={currentKST} />
         </main>
       ) : (
-        <main className="max-w-4xl w-full mx-auto px-4 sm:px-6 pt-3 flex-1">
+        <main className="max-w-4xl w-full mx-auto px-4 sm:px-6 pt-1 flex-1">
           {filteredAndSortedEvents.length === 0 ? (
-            <div className="py-20 text-center rounded-3xl bg-surface border border-border space-y-3">
+            <div className="py-20 text-center rounded-3xl bg-white border border-white/60 space-y-3 shadow-2xs">
               <p className="text-base font-bold text-ink">선택한 조건의 모집 공고가 없어요</p>
               <p className="text-xs text-muted break-keep">
                 날짜나 지역, 검색어 조건을 변경하거나 필터를 초기화해 보세요.
@@ -602,72 +785,80 @@ export default function HomePage() {
               <button
                 type="button"
                 onClick={handleResetFilters}
-                className="h-10 px-5 rounded-2xl bg-brand text-inverse text-xs font-bold hover:bg-brand-hover transition-colors shadow-2xs cursor-pointer inline-flex items-center gap-1.5"
+                className="h-10 px-5 rounded-2xl bg-brand text-white text-xs font-bold hover:bg-brand-hover transition-colors shadow-2xs cursor-pointer inline-flex items-center gap-1.5"
               >
                 <RotateCcw className="w-3 h-3" />
                 <span>전체 공고 보기</span>
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {filteredAndSortedEvents.map((item) => {
+            <div className="space-y-3">
+              {filteredAndSortedEvents.map((item, idx) => {
                 const deadlineInfo = getDeadlineInfo(item.deadlineDate, currentKST);
+                const isFav = !!favorites[item.id];
 
                 return (
                   <Link
                     key={item.id}
                     href={`/events/${item.id}`}
-                    className="group bg-surface rounded-3xl border border-border hover:border-brand-border transition-all duration-180 p-5 flex flex-col justify-between cursor-pointer shadow-2xs hover:shadow-xs"
+                    className="bg-white rounded-2xl shadow-2xs hover:shadow-xs p-3.5 sm:p-4 flex gap-3.5 sm:gap-4 items-center transition-all group border border-transparent hover:border-brand-border/40"
                   >
-                    <div>
-                      {/* 카드 상단: 카테고리/지역 & 2단 지원 마감 배지 */}
-                      <div className="flex items-start justify-between gap-2 mb-2.5">
-                        <div className="flex items-center gap-1.5 text-xs text-muted font-medium truncate pt-1">
-                          <span>{item.categoryLabel}</span>
-                          <span className="text-border-subtle">·</span>
-                          <span className="text-ink font-semibold">{item.regionLabel}</span>
-                          {item.stationInfo && (
-                            <>
-                              <span className="text-border-subtle">·</span>
-                              <span className="truncate">{item.stationInfo}</span>
-                            </>
+                    {/* 좌측: 라운드 썸네일 */}
+                    <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden relative shrink-0 bg-slate-100">
+                      <Image
+                        src={getCategoryFallbackImage(item.category, item.title)}
+                        alt={item.title}
+                        fill
+                        unoptimized
+                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                      {/* 미니 뱃지 */}
+                      <div className="absolute top-1.5 left-1.5 z-10">
+                        <span
+                          className={cn(
+                            'px-1.5 py-0.5 rounded-md text-[10px] font-extrabold shadow-2xs',
+                            idx % 3 === 0
+                              ? 'bg-brand text-white'
+                              : idx % 3 === 1
+                              ? 'bg-emerald-500 text-white'
+                              : 'bg-brand-soft text-brand-strong'
                           )}
-                        </div>
+                        >
+                          {deadlineInfo.dDayLabel || '신규'}
+                        </span>
+                      </div>
+                    </div>
 
-                        {/* 2단(상/하) 지원 마감 배지 컨테이너 */}
-                        <div className="flex flex-col items-end shrink-0 text-right rounded-xl px-2.5 py-1">
-                          <span className="text-[12px] font-bold text-brand leading-tight">
-                            {deadlineInfo.dateLabel}
-                          </span>
-                          <span className="text-xs font-bold text-brand leading-tight mt-0.5">
-                            {deadlineInfo.dDayLabel}
-                          </span>
-                        </div>
+                    {/* 중앙: 정보 영역 */}
+                    <div className="min-w-0 flex-1">
+                      {/* 1줄: [카테고리] · [지역] · [주최사] */}
+                      <div className="text-[11px] text-muted flex items-center gap-1 truncate font-medium">
+                        <span>{item.categoryLabel}</span>
+                        <span>·</span>
+                        <span className="text-ink font-semibold">{item.regionLabel}</span>
+                        <span>·</span>
+                        <span className="truncate">{item.hostName}</span>
                       </div>
 
-                      {/* 공고 제목 */}
-                      <h2 className="text-base sm:text-lg font-bold text-ink leading-snug group-hover:text-brand-strong transition-colors line-clamp-2 break-keep mb-3">
+                      {/* 2줄: 행사 타이틀 */}
+                      <h3 className="text-sm sm:text-base font-bold text-ink truncate mt-0.5 group-hover:text-brand transition-colors">
                         {item.displayTitle}
-                      </h2>
+                      </h3>
 
-                      {/* 일시 및 시간 */}
-                      <div className="space-y-1.5 text-xs text-muted mb-3.5">
-                        <div className="flex items-center gap-1.5">
-                          <CalendarIcon className="w-3.5 h-3.5 text-muted shrink-0" />
-                          <span className="font-medium text-ink">{item.dateRangeLabel}</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <Clock className="w-3.5 h-3.5 text-muted shrink-0" />
-                          <span>{item.workHoursLabel}</span>
-                        </div>
+                      {/* 3줄: 행사 일정 및 시간 */}
+                      <div className="text-xs text-muted mt-1 flex items-center gap-1.5 truncate">
+                        <CalendarIcon className="w-3 h-3 text-muted shrink-0" />
+                        <span className="truncate font-medium text-ink">{item.dateRangeLabel}</span>
+                        <Clock className="w-3 h-3 text-muted shrink-0 ml-1" />
+                        <span className="truncate">{item.workHoursLabel}</span>
                       </div>
 
-                      {/* 주요 업무 태그 */}
-                      <div className="flex flex-wrap gap-1 mb-4">
-                        {item.primaryRoles.map((role) => (
+                      {/* 4줄: 역할/조건 태그 칩 */}
+                      <div className="flex flex-wrap gap-1 mt-1.5">
+                        {item.primaryRoles.slice(0, 3).map((role) => (
                           <span
                             key={role}
-                            className="px-2 py-0.5 rounded-md bg-brand text-white text-xs font-bold"
+                            className="bg-brand-soft/40 text-brand-strong text-[11px] font-semibold px-2 py-0.5 rounded-md"
                           >
                             {role}
                           </span>
@@ -675,36 +866,40 @@ export default function HomePage() {
                       </div>
                     </div>
 
-                    {/* 카드 하단: 하루 보수 (오픈형 3D 클레이 코인 좌측 인라인 배치) & 주최사 정보 */}
-                    <div className="pt-3 border-t border-border-subtle flex items-end justify-between">
-                      <div>
-                        <p className="text-xs text-muted">하루 보수 · 세전</p>
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          {/* 3D 클레이 코인 에셋 (/assets/clay/coin.png) 하루 일당 좌측 배치 */}
-                          <div className="w-5 h-5 sm:w-6 sm:h-6 shrink-0 relative flex items-center justify-center">
-                            <Image
-                              src="/assets/clay/coin.png"
-                              alt="하루 일당"
-                              width={24}
-                              height={24}
-                              className="w-5 h-5 sm:w-6 sm:h-6 object-contain"
-                            />
-                          </div>
-                          <span className="text-lg sm:text-xl font-extrabold text-ink tabular-nums">
-                            {item.dailyWageWon.toLocaleString()}
-                          </span>
-                          <span className="text-xs font-bold text-ink">원</span>
-                        </div>
+                    {/* 우측: 마감 D-day + 하트 & 하루 일당 */}
+                    <div className="flex flex-col items-end justify-between self-stretch shrink-0 py-0.5">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[11px] font-bold text-brand">
+                          {deadlineInfo.dDayLabel}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={(e) => toggleFavorite(e, item.id)}
+                          className="w-7 h-7 rounded-full hover:bg-surface-muted flex items-center justify-center text-muted hover:text-error transition-colors cursor-pointer"
+                          aria-label="찜하기"
+                        >
+                          <Heart
+                            className={cn(
+                              'w-4 h-4',
+                              isFav ? 'fill-red-500 text-red-500' : 'fill-none text-muted'
+                            )}
+                          />
+                        </button>
                       </div>
 
-                      <div className="text-right">
-                        <p className="text-xs text-muted truncate max-w-[120px] sm:max-w-[150px]">
-                          {item.hostName}
-                        </p>
-                        <span className="inline-flex items-center gap-0.5 text-xs font-bold text-brand group-hover:text-brand-strong mt-0.5">
-                          <span>상세보기</span>
-                          <ChevronRight className="w-3 h-3" />
+                      {/* 하루 일당 표시 (3D 코인 /assets/clay/coin.png + 볼드 금액) */}
+                      <div className="flex items-center gap-1 mt-auto">
+                        <Image
+                          src="/assets/clay/coin.png"
+                          alt="하루 일당"
+                          width={24}
+                          height={24}
+                          className="w-5 h-5 sm:w-6 sm:h-6 object-contain"
+                        />
+                        <span className="text-base sm:text-lg font-black text-ink tabular-nums">
+                          {item.dailyWageWon.toLocaleString()}
                         </span>
+                        <span className="text-xs font-bold text-ink">원</span>
                       </div>
                     </div>
                   </Link>
@@ -717,15 +912,11 @@ export default function HomePage() {
 
       {/* 6. 이용 안내 배너 & 푸터 */}
       <div className="max-w-4xl w-full mx-auto px-4 sm:px-6">
-
-        {/* 6. 이용 안내 배너 */}
-        <section className="mt-10 p-5 rounded-3xl bg-surface border border-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <section className="mt-10 p-5 rounded-3xl bg-white border border-white/60 shadow-2xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-start gap-3">
             <ShieldCheck className="w-6 h-6 text-brand shrink-0 mt-0.5" />
             <div>
-              <p className="font-bold text-sm text-ink">
-                지원부터 정산까지, 흐름을 확인해요
-              </p>
+              <p className="font-bold text-sm text-ink">지원부터 정산까지, 흐름을 확인해요</p>
               <p className="text-xs text-muted mt-0.5 break-keep">
                 업무와 보수는 계약에서, 공제 내역은 정산 화면에서 투명하게 확인해요.
               </p>
@@ -740,7 +931,6 @@ export default function HomePage() {
           </Link>
         </section>
 
-        {/* 7. 전략 A 반영 푸터 (주최사 B2B 진입로 작게 배치) */}
         <footer className="mt-12 pt-6 border-t border-border-subtle flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted">
           <p>© 2026 CrewLink. 행사와 크루를 잇다.</p>
           <Link
@@ -752,7 +942,7 @@ export default function HomePage() {
         </footer>
       </div>
 
-      {/* 8. 모바일 4탭 하단 내비게이션 바 */}
+      {/* 7. 모바일 4탭 하단 내비게이션 바 */}
       <MobileBottomNav />
     </div>
   );
