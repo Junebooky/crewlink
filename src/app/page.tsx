@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   Calendar as CalendarIcon,
   Clock,
@@ -18,7 +19,6 @@ import {
 import { cn } from '@/lib/utils';
 import { PublicHeader } from '@/components/common/PublicHeader';
 import { MobileBottomNav } from '@/components/common/MobileBottomNav';
-import { FloatingClayCoin3D } from '@/components/assets/FloatingClayCoin3D';
 import { EventMapExplorer } from '@/components/explore/EventMapExplorer';
 import {
   getPublicEvents,
@@ -680,8 +680,16 @@ export default function HomePage() {
                       <div>
                         <p className="text-xs text-muted">하루 보수 · 세전</p>
                         <div className="flex items-center gap-1.5 mt-0.5">
-                          {/* Task 2: 오픈형 3D 클레이 코인 금액 좌측 인라인 배치 */}
-                          <FloatingClayCoin3D className="w-6 h-6 shrink-0" />
+                          {/* 3D 클레이 코인 에셋 (/assets/clay/coin.png) 하루 일당 좌측 배치 */}
+                          <div className="w-5 h-5 sm:w-6 sm:h-6 shrink-0 relative flex items-center justify-center">
+                            <Image
+                              src="/assets/clay/coin.png"
+                              alt="하루 일당"
+                              width={24}
+                              height={24}
+                              className="w-5 h-5 sm:w-6 sm:h-6 object-contain"
+                            />
+                          </div>
                           <span className="text-lg sm:text-xl font-extrabold text-ink tabular-nums">
                             {item.dailyWageWon.toLocaleString()}
                           </span>

@@ -11,17 +11,13 @@ import {
   PlusCircle,
   ShieldCheck,
   User,
-  Sparkles,
-  Phone,
-  Check,
   X,
   Loader2,
   ChevronRight,
   MapPin,
-  Clock,
-  Languages,
+  Check,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { ApplicantReviewCard } from '@/components/client/ApplicantReviewCard';
 
 interface ClientProject {
   id: string;
@@ -420,7 +416,7 @@ export default function ClientDashboardPage() {
                       </div>
 
                       {/* Prominent Event Schedule Box */}
-                      <div className="mt-3.5 p-3 rounded-2xl bg-canvas border border-border-subtle flex items-center gap-3">
+                      <div className="mt-3.5 p-3 rounded-2xl bg-white border border-border-subtle flex items-center gap-3">
                         <div className="w-8 h-8 rounded-xl bg-surface border border-border flex items-center justify-center shrink-0 text-brand">
                           <Calendar className="w-4 h-4" />
                         </div>
@@ -467,7 +463,7 @@ export default function ClientDashboardPage() {
         </div>
 
         {/* Support Banner */}
-        <div className="p-4 bg-canvas border border-border rounded-2xl flex items-start gap-3 text-xs text-muted">
+        <div className="p-4 bg-white border border-border rounded-2xl flex items-start gap-3 text-xs text-muted">
           <ShieldCheck className="w-5 h-5 text-brand shrink-0 mt-0.5" />
           <div className="leading-relaxed">
             <strong className="text-ink">크루링크 안심 선발 프로세스:</strong> 주최사가 승인(합격)한 크루에게만 확정 알림이 발송되며, 실시간 출결 트래킹 및 전자 도급 계약서가 자동으로 체결됩니다.
@@ -534,141 +530,15 @@ export default function ClientDashboardPage() {
                   </p>
                 </div>
               ) : (
-                applicants.map((app) => {
-                  const isApproved = app.status === 'approved' || app.status === 'accepted';
-                  const isProcessing = approvingId === app.id || cancellingId === app.id;
-                  const crew = app.crew;
-
-                  return (
-                    <div
-                      key={app.id}
-                      className={cn(
-                        'p-4 sm:p-5 rounded-2xl border transition-all flex flex-col sm:flex-row items-start gap-4 sm:gap-5',
-                        isApproved
-                          ? 'bg-brand-soft/20 border-brand/30'
-                          : 'bg-surface border-border hover:border-brand/40 shadow-xs'
-                      )}
-                    >
-                      {/* Left: Upper Body Visual Profile Frame (w-28 h-36 Photo Card Frame) */}
-                      <div className="w-28 h-36 rounded-2xl overflow-hidden border border-border bg-surface-muted shadow-2xs relative shrink-0">
-                        {crew.profileImageUrl ? (
-                          <Image
-                            src={crew.profileImageUrl}
-                            alt={crew.fullName}
-                            fill
-                            className="object-cover"
-                            unoptimized
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-surface-muted flex flex-col items-center justify-center text-muted/60 gap-1.5 select-none p-2 text-center">
-                            <User className="w-9 h-9 text-muted/50" />
-                            <span className="text-[10px] font-semibold text-muted/70">
-                              프로필 미등록
-                            </span>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Center & Right: Details and Action */}
-                      <div className="min-w-0 flex-1 flex flex-col justify-between self-stretch">
-                        <div>
-                          {/* Name, Contact & Status */}
-                          <div className="flex items-center justify-between gap-2 flex-wrap">
-                            <div className="flex items-center gap-2">
-                              <h4 className="font-extrabold text-ink text-base">
-                                {crew.fullName}
-                              </h4>
-                              <span className="text-xs text-muted flex items-center gap-1 font-medium">
-                                <Phone className="w-3 h-3 text-muted/70" />
-                                {crew.phone}
-                              </span>
-                            </div>
-
-                            {/* Status Badge */}
-                            {isApproved ? (
-                              <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-brand-soft text-brand-strong border border-brand/20 flex items-center gap-1">
-                                <Check className="w-3.5 h-3.5" />
-                                선발 완료
-                              </span>
-                            ) : (
-                              <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-surface-muted text-muted border border-border">
-                                심사 대기
-                              </span>
-                            )}
-                          </div>
-
-                          {/* Physical Specs & Experience Chips */}
-                          <div className="mt-2.5 flex items-center gap-1.5 flex-wrap text-[11px]">
-                            <span className="px-2 py-0.5 rounded-md bg-surface-muted font-medium text-ink border border-border/50">
-                              키 {crew.heightCm ? `${crew.heightCm}cm` : '176cm'}
-                            </span>
-                            <span className="px-2 py-0.5 rounded-md bg-surface-muted font-medium text-ink border border-border/50">
-                              상/하의 {crew.topSize || 'L'} / {crew.bottomSize || '32'}
-                            </span>
-                            <span className="px-2 py-0.5 rounded-md bg-surface-muted font-medium text-ink border border-border/50">
-                              신발 {crew.shoeSizeMm ? `${crew.shoeSizeMm}mm` : '270mm'}
-                            </span>
-                            <span className="px-2 py-0.5 rounded-md bg-brand-soft text-brand-strong font-bold border border-brand/20">
-                              경력 {crew.experienceYears}년 ({crew.totalShiftsCompleted}회)
-                            </span>
-                            <span className="px-2 py-0.5 rounded-md bg-surface-muted text-ink font-bold border border-border/50">
-                              ★ {crew.ratingAvg}
-                            </span>
-                          </div>
-
-                          {/* One-line Bio */}
-                          <p className="text-xs text-muted mt-2 leading-relaxed">
-                            "{crew.bio}"
-                          </p>
-
-                          {/* Languages */}
-                          {crew.hasLanguages && (
-                            <div className="mt-1.5 flex items-center gap-1 text-[11px] text-brand-strong font-medium">
-                              <Languages className="w-3.5 h-3.5" />
-                              <span>외국어 가능: {crew.languages.join(', ')}</span>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Action Area: Clear & Non-Redundant */}
-                        <div className="mt-4 pt-3 border-t border-border-subtle flex items-center justify-end">
-                          {isApproved ? (
-                            <div className="flex items-center gap-3">
-                              <span className="text-xs text-muted">선발 완료된 크루입니다</span>
-                              <button
-                                type="button"
-                                onClick={() => handleCancelApplicant(app.id)}
-                                disabled={isProcessing}
-                                className="text-xs text-muted hover:text-ink underline underline-offset-2 transition-colors cursor-pointer"
-                              >
-                                {cancellingId === app.id ? '취소 중...' : '배정 취소'}
-                              </button>
-                            </div>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={() => handleApproveApplicant(app.id)}
-                              disabled={isProcessing}
-                              className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-brand hover:bg-brand-hover text-inverse text-xs sm:text-sm font-bold shadow-xs active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-1.5"
-                            >
-                              {approvingId === app.id ? (
-                                <>
-                                  <Loader2 className="w-4 h-4 animate-spin" />
-                                  <span>선발 처리 중...</span>
-                                </>
-                              ) : (
-                                <>
-                                  <Sparkles className="w-4 h-4 text-white" />
-                                  <span>이 크루 선발하기</span>
-                                </>
-                              )}
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })
+                applicants.map((app) => (
+                  <ApplicantReviewCard
+                    key={app.id}
+                    application={app}
+                    isProcessing={approvingId === app.id || cancellingId === app.id}
+                    onApprove={handleApproveApplicant}
+                    onCancel={handleCancelApplicant}
+                  />
+                ))
               )}
             </div>
 
