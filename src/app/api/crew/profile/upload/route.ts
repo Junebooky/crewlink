@@ -29,9 +29,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: '이미지 용량은 5MB 이하만 가능합니다.' }, { status: 400 });
     }
 
-    // 파일 MIME 타입 검증
-    const validMimes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-    if (!validMimes.includes(file.type)) {
+    // 1. 보안 검증: image/svg+xml 등 스크립트 실행이 가능한 벡터 파일 즉시 차단 (XSS 방어)
+    const fileNameLower = file.name.toLowerCase();
+    if (file.type === 'image/svg+xml' || fileNameLower.endsWith('.svg')) {
+      return NextResponse.json(
+        { message: 'SVG 파일은 보안상 업로드할 수 없습니다. (XSS 방어)' },
+        { status: 400 }
+      );
+    }
+
+    // 2. 허용 MIME 타입 화이트리스트 검증 (JPEG, PNG, WebP)
+    const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!ALLOWED_MIME_TYPES.includes(file.type)) {
       return NextResponse.json(
         { message: 'JPG, PNG, WebP 형식의 이미지만 업로드 가능합니다.' },
         { status: 400 }
@@ -39,8 +48,24 @@ export async function POST(request: Request) {
     }
 
     const fileBuffer = Buffer.from(await file.arrayBuffer());
-    const ext = file.name.split('.').pop() || 'jpg';
-    const fileName = `${type}_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${ext}`;
+
+    // 3. 파일 바이너리 헤더 검사로 위장된 SVG/XML 차단
+    const headerSnippet = fileBuffer.slice(0, 120).toString('utf-8').toLowerCase();
+    if (headerSnippet.includes('<svg') || headerSnippet.includes('<?xml')) {
+      return NextResponse.json(
+        { message: 'SVG 파일은 보안상 업로드할 수 없습니다.' },
+        { status: 400 }
+      );
+    }
+
+    // 4. 안전한 확장자 매핑 및 파일 경로 sanitize
+    const MIME_TO_EXT: Record<string, string> = {
+      'image/jpeg': 'jpg',
+      'image/png': 'png',
+      'image/webp': 'webp',
+    };
+    const safeExt = MIME_TO_EXT[file.type] || 'jpg';
+    const fileName = `${type}_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${safeExt}`;
     const filePath = `${authContext.personId}/${fileName}`;
 
     const adminClient = createAdminClient();

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Image from 'next/image';
 import { AppShell } from '@/components/common/AppShell';
 import {
@@ -15,22 +15,214 @@ import {
   CheckCircle2,
   AlertCircle,
   Loader2,
-  UploadCloud,
-  FileCheck2,
+  ChevronDown,
+  Check,
   Trash2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+// 유니폼 규격 상수
 const TOP_SIZES = ['S', 'M', 'L', 'XL', '2XL'];
 const BOTTOM_SIZES = ['26', '28', '30', '32', '34', '36', '38'];
+const BOTTOM_SIZE_OPTIONS = BOTTOM_SIZES.map((size) => ({
+  value: size,
+  label: `${size}인치`,
+}));
+
 const SHOE_SIZES = [230, 235, 240, 245, 250, 255, 260, 265, 270, 275, 280, 285, 290];
-const AVAILABLE_LANGUAGES = ['한국어', '영어', '일본어', '중국어'];
+const SHOE_SIZE_OPTIONS = SHOE_SIZES.map((sz) => ({
+  value: sz,
+  label: `${sz} mm`,
+}));
+
+const EXPERIENCE_OPTIONS = [
+  { value: 0, label: '신입 (행사 경험 없음)' },
+  { value: 0.5, label: '6개월 미만' },
+  { value: 1, label: '1년차' },
+  { value: 2, label: '2년차' },
+  { value: 3, label: '3년 이상 프로페셔널' },
+];
+
+/**
+ * 브라우저 HTML5 Canvas 기반 가로 최대 1,200px 비율 리사이징 & JPEG (quality: 0.82) 압축 함수
+ * HEIC/고해상도 사진을 웹 표준 JPEG로 사전 정규화하여 300KB~600KB 수준으로 최적화 업로드
+ */
+async function optimizeImageFile(file: File): Promise<File> {
+  return new Promise((resolve) => {
+    if (file.type === 'image/svg+xml' || file.name.toLowerCase().endsWith('.svg')) {
+      resolve(file);
+      return;
+    }
+
+    const img = new window.Image();
+    const objectUrl = URL.createObjectURL(file);
+
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      const maxWidth = 1200;
+      let { width, height } = img;
+
+      // 가로 최대 1,200px 기준 비율 리사이징
+      if (width > maxWidth) {
+        height = Math.round((height * maxWidth) / width);
+        width = maxWidth;
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+
+      if (!ctx) {
+        resolve(file);
+        return;
+      }
+
+      ctx.drawImage(img, 0, 0, width, height);
+
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) {
+            resolve(file);
+            return;
+          }
+          const baseName = file.name.replace(/\.[^/.]+$/, '');
+          const optimizedFile = new File([blob], `${baseName}.jpg`, {
+            type: 'image/jpeg',
+            lastModified: Date.now(),
+          });
+          resolve(optimizedFile);
+        },
+        'image/jpeg',
+        0.82
+      );
+    };
+
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      // 브라우저 렌더링 불가 시 원본 파일 fallback
+      resolve(file);
+    };
+
+    img.src = objectUrl;
+  });
+}
+
+// 외국어 응대 옵션 (한국어 제외, 기본 선택 강제 해제)
+const AVAILABLE_LANGUAGES = ['영어', '일본어', '중국어', '기타 외국어'];
+
+/**
+ * 크루링크 전용 커스텀 플로팅 드롭다운 (네이티브 <select> 대체)
+ */
+interface CustomSelectOption<T extends string | number> {
+  value: T;
+  label: string;
+}
+
+interface CustomSelectProps<T extends string | number> {
+  id?: string;
+  value: T;
+  options: CustomSelectOption<T>[];
+  onChange: (value: T) => void;
+  placeholder?: string;
+  className?: string;
+}
+
+function CustomSelect<T extends string | number>({
+  id,
+  value,
+  options,
+  onChange,
+  placeholder = '선택해 주세요',
+  className = '',
+}: CustomSelectProps<T>) {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const selectedOption = options.find((opt) => opt.value === value);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen]);
+
+  return (
+    <div ref={containerRef} className={cn('relative w-full', className)}>
+      <button
+        id={id}
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        onClick={() => setIsOpen((prev) => !prev)}
+        className="w-full h-12 px-4 rounded-xl border border-border bg-white text-sm font-semibold text-ink flex items-center justify-between shadow-2xs hover:border-brand-border cursor-pointer transition-colors focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand"
+      >
+        <span className={cn('truncate', !selectedOption && 'text-muted font-normal')}>
+          {selectedOption ? selectedOption.label : placeholder}
+        </span>
+        <ChevronDown
+          className={cn(
+            'w-4 h-4 text-muted transition-transform duration-200 shrink-0 ml-2',
+            isOpen && 'rotate-180 text-brand'
+          )}
+        />
+      </button>
+
+      {isOpen && (
+        <div
+          role="listbox"
+          className="absolute left-0 right-0 top-full mt-1.5 z-30 max-h-56 overflow-y-auto p-1.5 rounded-2xl border border-border bg-white shadow-lg animate-in fade-in zoom-in-95 duration-150 scrollbar-none"
+        >
+          {options.map((opt) => {
+            const isSelected = opt.value === value;
+            return (
+              <button
+                key={String(opt.value)}
+                type="button"
+                role="option"
+                aria-selected={isSelected}
+                onClick={() => {
+                  onChange(opt.value);
+                  setIsOpen(false);
+                }}
+                className={cn(
+                  'w-full px-3.5 py-2.5 rounded-xl text-sm font-medium text-ink hover:bg-brand-soft hover:text-brand-strong cursor-pointer flex items-center justify-between transition-colors',
+                  isSelected && 'bg-brand-soft text-brand-strong font-semibold'
+                )}
+              >
+                <span className="truncate">{opt.label}</span>
+                {isSelected && <Check className="w-4 h-4 text-brand shrink-0 ml-2" />}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function CrewProfilePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
-  const [uploadingFullBody, setUploadingFullBody] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(
     null
   );
@@ -40,19 +232,15 @@ export default function CrewProfilePage() {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [email, setEmail] = useState('');
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
-  const [fullBodyImageUrl, setFullBodyImageUrl] = useState<string | null>(null);
   const [heightCm, setHeightCm] = useState<number | string>('');
   const [topSize, setTopSize] = useState('L');
   const [bottomSize, setBottomSize] = useState('30');
   const [shoeSizeMm, setShoeSizeMm] = useState<number | string>(265);
   const [experienceYears, setExperienceYears] = useState<number | string>(1);
   const [bio, setBio] = useState('');
-  const [languages, setLanguages] = useState<string[]>(['한국어']);
-  const [ratingAvg, setRatingAvg] = useState(5.0);
-  const [totalShiftsCompleted, setTotalShiftsCompleted] = useState(0);
+  const [languages, setLanguages] = useState<string[]>([]);
 
   const avatarInputRef = useRef<HTMLInputElement>(null);
-  const fullBodyInputRef = useRef<HTMLInputElement>(null);
 
   // Load profile from API on mount
   useEffect(() => {
@@ -67,16 +255,17 @@ export default function CrewProfilePage() {
             setPhoneNumber(data.phoneNumber || '');
             setEmail(data.email || '');
             setProfileImageUrl(data.profile.profileImageUrl || null);
-            setFullBodyImageUrl(data.profile.fullBodyImageUrl || null);
             setHeightCm(data.profile.heightCm || '');
             setTopSize(data.profile.topSize || 'L');
             setBottomSize(data.profile.bottomSize || '30');
             setShoeSizeMm(data.profile.shoeSizeMm || 265);
             setExperienceYears(data.profile.experienceYears ?? 1);
             setBio(data.profile.bio || '');
-            setLanguages(data.profile.languages || ['한국어']);
-            setRatingAvg(data.profile.ratingAvg ?? 5.0);
-            setTotalShiftsCompleted(data.profile.totalShiftsCompleted ?? 0);
+            // 한국어 제외하여 초기화
+            const existingLanguages = (data.profile.languages || []).filter(
+              (l: string) => l !== '한국어'
+            );
+            setLanguages(existingLanguages);
           }
         }
       } catch (err) {
@@ -88,7 +277,7 @@ export default function CrewProfilePage() {
     fetchProfile();
   }, []);
 
-  // Handle phone formatting
+  // Handle phone formatting (010-XXXX-XXXX)
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value.replace(/[^0-9]/g, '').slice(0, 11);
     if (raw.length <= 3) {
@@ -100,16 +289,34 @@ export default function CrewProfilePage() {
     }
   };
 
-  // Upload photo handler
-  const handleUploadPhoto = async (file: File, type: 'avatar' | 'full_body') => {
-    if (type === 'avatar') setUploadingAvatar(true);
-    else setUploadingFullBody(true);
+  // 사진 선택 시 즉각 로컬 미리보기 생성, HTML5 Canvas 최적화(최대 1200px, JPEG 0.82) 및 Supabase Storage 업로드
+  const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawFile = e.target.files?.[0];
+    if (!rawFile) return;
+
+    // SVG 파일 등 스크립트 실행 벡터 파일 사전 차단
+    if (rawFile.type === 'image/svg+xml' || rawFile.name.toLowerCase().endsWith('.svg')) {
+      setFeedback({
+        type: 'error',
+        message: 'SVG 이미지는 보안상 업로드할 수 없습니다. JPG 또는 PNG 사진을 선택해 주세요.',
+      });
+      if (avatarInputRef.current) avatarInputRef.current.value = '';
+      return;
+    }
+
+    // 1. 브라우저 로컬 미리보기 즉각 생성
+    const localUrl = URL.createObjectURL(rawFile);
+    setPreviewUrl(localUrl);
+    setUploadingAvatar(true);
     setFeedback(null);
 
+    // 2. 가로 최대 1,200px 기준 비율 리사이징 + JPEG(quality: 0.82) 압축 변환 후 Storage 업로드
     try {
+      const optimizedFile = await optimizeImageFile(rawFile);
+
       const formData = new FormData();
-      formData.append('file', file);
-      formData.append('type', type);
+      formData.append('file', optimizedFile);
+      formData.append('type', 'avatar');
 
       const res = await fetch('/api/crew/profile/upload', {
         method: 'POST',
@@ -121,37 +328,56 @@ export default function CrewProfilePage() {
         throw new Error(data.message || '사진 업로드에 실패했습니다.');
       }
 
-      if (type === 'avatar') {
-        setProfileImageUrl(data.url);
-      } else {
-        setFullBodyImageUrl(data.url);
-      }
-      setFeedback({ type: 'success', message: '사진이 성공적으로 업로드되었습니다.' });
+      setProfileImageUrl(data.url);
+      setFeedback({ type: 'success', message: '프로필 사진이 안전하게 등록되었습니다.' });
     } catch (err: unknown) {
       setFeedback({
         type: 'error',
         message: (err as Error).message || '사진 업로드 중 오류가 발생했습니다.',
       });
+      setPreviewUrl(null);
     } finally {
-      if (type === 'avatar') setUploadingAvatar(false);
-      else setUploadingFullBody(false);
+      setUploadingAvatar(false);
+      if (avatarInputRef.current) {
+        avatarInputRef.current.value = '';
+      }
     }
   };
 
-  // Language toggle
+  // 사진 제거
+  const handleRemovePhoto = () => {
+    setProfileImageUrl(null);
+    setPreviewUrl(null);
+    if (avatarInputRef.current) {
+      avatarInputRef.current.value = '';
+    }
+  };
+
+  // Language toggle (0개 선택도 허용)
   const toggleLanguage = (lang: string) => {
     setLanguages((prev) =>
-      prev.includes(lang)
-        ? prev.length > 1
-          ? prev.filter((l) => l !== lang)
-          : prev
-        : [...prev, lang]
+      prev.includes(lang) ? prev.filter((l) => l !== lang) : [...prev, lang]
     );
   };
+
+  // 경력 옵션 목록 구성 (기존 값이 리스트에 없을 경우 자동 포함)
+  const experienceOptions = useMemo(() => {
+    const numericExp = Number(experienceYears);
+    const exists = EXPERIENCE_OPTIONS.some((o) => o.value === numericExp);
+    if (!exists && experienceYears !== '') {
+      return [
+        ...EXPERIENCE_OPTIONS,
+        { value: numericExp, label: `${numericExp}년차` },
+      ].sort((a, b) => a.value - b.value);
+    }
+    return EXPERIENCE_OPTIONS;
+  }, [experienceYears]);
 
   // Submit form handler
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!fullName.trim()) return;
+
     setSaving(true);
     setFeedback(null);
 
@@ -160,10 +386,9 @@ export default function CrewProfilePage() {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          fullName,
+          fullName: fullName.trim(),
           phoneNumber,
           profileImageUrl,
-          fullBodyImageUrl,
           heightCm: heightCm ? Number(heightCm) : null,
           topSize,
           bottomSize,
@@ -190,363 +415,330 @@ export default function CrewProfilePage() {
     }
   };
 
+  const isFormDisabled = saving || uploadingAvatar;
+  const currentPhoto = previewUrl || profileImageUrl;
+
   return (
     <AppShell initialRole="crew">
-      <div className="max-w-2xl mx-auto px-4 py-6 w-full space-y-6 pb-24">
-        {/* 1. Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-border pb-4">
-          <div>
-            <h1 className="text-xl sm:text-2xl font-extrabold text-ink tracking-tight">
-              크루 프로필 & 신체 스펙
+      <div className="w-full bg-white min-h-full">
+        <div className="max-w-xl mx-auto px-4 sm:px-6 py-6 sm:py-8 w-full space-y-7 pb-28">
+          {/* 1. 토스풍(Toss-style) 대화형 메인 타이틀 */}
+          <div className="space-y-1.5 pt-1">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-ink tracking-tight">
+              어떤 크루인지 알려주세요
             </h1>
-            <p className="text-xs text-muted mt-1 break-keep">
-              주최사가 행사 배정 시 검토하는 공식 프로필입니다. 단정한 착장 사진과 정확한 스펙을 입력해 주세요.
+            <p className="text-sm text-muted break-keep">
+              프로필이 탄탄할수록 주최사의 선택을 더 빠르게 받아요.
             </p>
           </div>
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-soft border border-brand-border text-brand-strong text-xs font-semibold shrink-0 self-start sm:self-auto">
-            <CheckCircle2 className="w-3.5 h-3.5" />
-            <span>주최사 검토용 공식 프로필</span>
-          </div>
-        </div>
 
-        {/* Feedback Alert */}
-        {feedback && (
-          <div
-            className={cn(
-              'p-3.5 rounded-2xl border text-xs flex items-start gap-2.5 animate-in fade-in duration-200',
-              feedback.type === 'success'
-                ? 'bg-brand-soft border-brand-border text-brand-strong font-medium'
-                : 'bg-surface border-border text-ink'
-            )}
-          >
-            {feedback.type === 'success' ? (
-              <CheckCircle2 className="w-4 h-4 text-brand shrink-0 mt-0.5" />
-            ) : (
-              <AlertCircle className="w-4 h-4 text-muted shrink-0 mt-0.5" />
-            )}
-            <span className="leading-relaxed">{feedback.message}</span>
-          </div>
-        )}
+          {/* 피드백 알림 배너 */}
+          {feedback && (
+            <div
+              className={cn(
+                'p-4 rounded-2xl border text-xs flex items-start gap-2.5 animate-in fade-in duration-200',
+                feedback.type === 'success'
+                  ? 'bg-brand-soft border-brand-border text-brand-strong font-medium'
+                  : 'bg-white border-border text-ink'
+              )}
+            >
+              {feedback.type === 'success' ? (
+                <CheckCircle2 className="w-4 h-4 text-brand shrink-0 mt-0.5" />
+              ) : (
+                <AlertCircle className="w-4 h-4 text-muted shrink-0 mt-0.5" />
+              )}
+              <span className="leading-relaxed">{feedback.message}</span>
+            </div>
+          )}
 
-        {loading ? (
-          <div className="py-20 text-center space-y-3">
-            <Loader2 className="w-7 h-7 text-brand animate-spin mx-auto" />
-            <p className="text-xs text-muted">프로필 정보를 불러오는 중입니다…</p>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* 2. Visual Profile Media Section */}
-            <section className="bg-surface border border-border rounded-3xl p-5 sm:p-6 space-y-5 shadow-2xs">
-              <div className="flex items-center justify-between">
+          {loading ? (
+            <div className="py-20 text-center space-y-3">
+              <Loader2 className="w-7 h-7 text-brand animate-spin mx-auto" />
+              <p className="text-xs text-muted">프로필 정보를 불러오는 중입니다…</p>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-7">
+              {/* 2. 프로필 사진 영역 (상반신 1장 단일화) */}
+              <section className="bg-white rounded-3xl border border-border-subtle p-5 sm:p-6 space-y-4 shadow-2xs">
                 <div>
-                  <h2 className="text-sm font-bold text-ink">공식 착장 & 프로필 사진</h2>
-                  <p className="text-xs text-muted mt-0.5">
-                    행사 유니폼 배정과 주최사 적합도 확인에 사용됩니다.
-                  </p>
-                </div>
-                <span className="text-[11px] text-muted font-medium bg-canvas px-2.5 py-1 rounded-lg border border-border">
-                  최대 5MB
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* 상반신 프로필 사진 */}
-                <div className="bg-canvas border border-border/80 rounded-2xl p-4 flex flex-col items-center text-center space-y-3">
-                  <span className="text-xs font-bold text-ink">1. 상반신 프로필</span>
-                  <div className="relative w-24 h-24 rounded-full overflow-hidden bg-surface border-2 border-border shadow-xs group">
-                    {profileImageUrl ? (
-                      <Image
-                        src={profileImageUrl}
-                        alt="상반신 프로필"
-                        fill
-                        className="object-cover"
-                        unoptimized
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-brand-soft text-brand-strong">
-                        <User className="w-10 h-10 stroke-[1.5]" />
-                      </div>
-                    )}
-
-                    {uploadingAvatar && (
-                      <div className="absolute inset-0 bg-ink/50 backdrop-blur-2xs flex items-center justify-center text-white">
-                        <Loader2 className="w-6 h-6 animate-spin" />
-                      </div>
-                    )}
-                  </div>
-
-                  <input
-                    ref={avatarInputRef}
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) handleUploadPhoto(file, 'avatar');
-                    }}
-                  />
-
-                  <button
-                    type="button"
-                    disabled={uploadingAvatar}
-                    onClick={() => avatarInputRef.current?.click()}
-                    className="h-8 px-3.5 rounded-xl border border-border bg-surface hover:border-brand-border text-xs font-semibold text-ink flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
-                  >
-                    <Camera className="w-3.5 h-3.5 text-muted" />
-                    <span>{profileImageUrl ? '사진 변경' : '상반신 사진 등록'}</span>
-                  </button>
-                  <p className="text-[11px] text-muted break-keep">
-                    얼굴이 밝고 선명하게 나온 사진
+                  <h2 className="text-base font-bold text-ink">프로필 사진</h2>
+                  <p className="text-xs text-muted mt-0.5 break-keep">
+                    얼굴이 잘 보이는 밝은 인상의 사진을 올려주세요.
                   </p>
                 </div>
 
-                {/* 단정한 착장 전신 사진 */}
-                <div className="bg-canvas border border-border/80 rounded-2xl p-4 flex flex-col items-center text-center space-y-3">
-                  <div className="flex items-center gap-1 text-xs font-bold text-ink">
-                    <span>2. 단정한 착장 전신 사진</span>
-                    <span className="text-brand">*</span>
-                  </div>
-
-                  <div className="relative w-28 h-36 rounded-2xl overflow-hidden bg-surface border-2 border-dashed border-border flex items-center justify-center shadow-xs">
-                    {fullBodyImageUrl ? (
-                      <>
+                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 pt-1">
+                  {/* 프로필 이미지 원형 미리보기 */}
+                  <div className="relative group shrink-0">
+                    <div
+                      onClick={() => !uploadingAvatar && avatarInputRef.current?.click()}
+                      className="w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden bg-white border-2 border-border shadow-xs relative flex items-center justify-center cursor-pointer hover:border-brand-border transition-colors"
+                    >
+                      {currentPhoto ? (
                         <Image
-                          src={fullBodyImageUrl}
-                          alt="전신 착장 사진"
+                          src={currentPhoto}
+                          alt="프로필 사진"
                           fill
                           className="object-cover"
                           unoptimized
                         />
+                      ) : (
+                        <User className="w-12 h-12 text-muted/60 stroke-[1.5]" />
+                      )}
+
+                      {/* 업로드 중 로딩 오버레이 */}
+                      {uploadingAvatar && (
+                        <div className="absolute inset-0 bg-black/40 backdrop-blur-2xs flex items-center justify-center text-white z-10">
+                          <Loader2 className="w-6 h-6 animate-spin" />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 카메라 플로팅 뱃지 */}
+                    <button
+                      type="button"
+                      disabled={uploadingAvatar}
+                      onClick={() => avatarInputRef.current?.click()}
+                      className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-brand text-white flex items-center justify-center shadow-md border-2 border-white cursor-pointer hover:bg-brand-hover transition-colors"
+                      aria-label="사진 등록/변경"
+                    >
+                      <Camera className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  {/* 사진 선택 액션 */}
+                  <div className="flex flex-col items-center sm:items-start space-y-2 text-center sm:text-left">
+                    <input
+                      ref={avatarInputRef}
+                      type="file"
+                      accept="image/png, image/jpeg, image/jpg, image/webp, image/heic, image/heif"
+                      className="hidden"
+                      onChange={handlePhotoSelect}
+                    />
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        disabled={uploadingAvatar}
+                        onClick={() => avatarInputRef.current?.click()}
+                        className="h-10 px-4 rounded-xl border border-border bg-white hover:border-brand-border text-xs font-bold text-ink inline-flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+                      >
+                        <Camera className="w-3.5 h-3.5 text-muted" />
+                        <span>{currentPhoto ? '사진 변경하기' : '사진 등록하기'}</span>
+                      </button>
+
+                      {currentPhoto && (
                         <button
                           type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setFullBodyImageUrl(null);
-                          }}
-                          className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-ink/60 text-white flex items-center justify-center hover:bg-ink transition-colors cursor-pointer"
-                          aria-label="사진 삭제"
+                          disabled={uploadingAvatar}
+                          onClick={handleRemovePhoto}
+                          className="h-10 px-3 rounded-xl border border-transparent text-muted hover:text-danger text-xs font-semibold inline-flex items-center gap-1 transition-colors cursor-pointer"
                         >
-                          <Trash2 className="w-3 h-3" />
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>삭제</span>
                         </button>
-                      </>
-                    ) : (
-                      <div className="p-3 text-center space-y-1 text-muted">
-                        <UploadCloud className="w-7 h-7 mx-auto stroke-[1.5] text-brand" />
-                        <span className="text-[11px] block leading-tight font-medium">
-                          전신 착장 미등록
-                        </span>
-                      </div>
-                    )}
+                      )}
+                    </div>
 
-                    {uploadingFullBody && (
-                      <div className="absolute inset-0 bg-ink/50 backdrop-blur-2xs flex items-center justify-center text-white">
-                        <Loader2 className="w-6 h-6 animate-spin" />
-                      </div>
-                    )}
+                    <p className="text-[11px] text-muted">
+                      선명한 셀카 또는 증명사진을 추천해요
+                    </p>
                   </div>
+                </div>
+              </section>
 
-                  <input
-                    ref={fullBodyInputRef}
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) handleUploadPhoto(file, 'full_body');
-                    }}
-                  />
-
-                  <button
-                    type="button"
-                    disabled={uploadingFullBody}
-                    onClick={() => fullBodyInputRef.current?.click()}
-                    className="h-8 px-3.5 rounded-xl border border-border bg-surface hover:border-brand-border text-xs font-semibold text-ink flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
-                  >
-                    <Camera className="w-3.5 h-3.5 text-muted" />
-                    <span>{fullBodyImageUrl ? '전신 사진 변경' : '전신 착장 사진 등록'}</span>
-                  </button>
-                  <p className="text-[11px] text-muted break-keep">
-                    단정한 블랙 정장 또는 슬랙스 착장 추천
+              {/* 3. 기본 정보 (이름, 연락처) */}
+              <section className="bg-white rounded-3xl border border-border-subtle p-5 sm:p-6 space-y-4 shadow-2xs">
+                <div>
+                  <h2 className="text-base font-bold text-ink">기본 정보</h2>
+                  <p className="text-xs text-muted mt-0.5">
+                    근무 배정 확인 및 계약서 작성에 활용돼요.
                   </p>
                 </div>
-              </div>
-            </section>
 
-            {/* 3. 기본 인적사항 섹션 */}
-            <section className="bg-surface border border-border rounded-3xl p-5 sm:p-6 space-y-4 shadow-2xs">
-              <h2 className="text-sm font-bold text-ink">기본 인적사항</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                <div className="space-y-1.5">
-                  <label htmlFor="crew-fullname" className="font-semibold text-ink">
-                    이름 <span className="text-brand">*</span>
-                  </label>
-                  <input
-                    id="crew-fullname"
-                    type="text"
-                    required
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    placeholder="실명을 입력해 주세요"
-                    className="w-full h-11 px-3.5 rounded-xl border border-border bg-canvas text-ink text-sm font-medium focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-colors"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label htmlFor="crew-phone" className="font-semibold text-ink">
-                    연락처 <span className="text-brand">*</span>
-                  </label>
-                  <input
-                    id="crew-phone"
-                    type="tel"
-                    required
-                    maxLength={13}
-                    value={phoneNumber}
-                    onChange={handlePhoneChange}
-                    placeholder="010-0000-0000"
-                    className="w-full h-11 px-3.5 rounded-xl border border-border bg-canvas text-ink text-sm font-mono focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-colors"
-                  />
-                </div>
-              </div>
-
-              {email && (
-                <div className="pt-2 border-t border-border-subtle flex items-center justify-between text-xs text-muted">
-                  <span>로그인 계정 이메일</span>
-                  <span className="font-mono text-ink font-medium">{email}</span>
-                </div>
-              )}
-            </section>
-
-            {/* 4. 신체 스펙 및 유니폼 사이즈 섹션 */}
-            <section className="bg-surface border border-border rounded-3xl p-5 sm:p-6 space-y-5 shadow-2xs">
-              <div>
-                <h2 className="text-sm font-bold text-ink">신체 스펙 & 유니폼 규격</h2>
-                <p className="text-xs text-muted mt-0.5">
-                  현장 행사 맞춤 단체복/명찰 및 근무 동선 배정에 필수적으로 사용됩니다.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                {/* 키 (cm) */}
-                <div className="space-y-1.5">
-                  <label htmlFor="crew-height" className="font-semibold text-ink flex items-center gap-1.5">
-                    <Ruler className="w-3.5 h-3.5 text-brand" />
-                    <span>키 (cm)</span>
-                  </label>
-                  <div className="relative">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                  <div className="space-y-1.5">
+                    <label htmlFor="crew-fullname" className="font-semibold text-ink">
+                      이름 <span className="text-brand">*</span>
+                    </label>
                     <input
-                      id="crew-height"
-                      type="number"
-                      min={140}
-                      max={210}
-                      value={heightCm}
-                      onChange={(e) => setHeightCm(e.target.value)}
-                      placeholder="예: 175"
-                      className="w-full h-11 px-3.5 pr-10 rounded-xl border border-border bg-canvas text-ink text-sm font-semibold focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-colors"
+                      id="crew-fullname"
+                      type="text"
+                      required
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      placeholder="실명을 입력해 주세요"
+                      className="w-full h-12 px-4 rounded-xl border border-border bg-white text-ink text-sm font-semibold focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-colors"
                     />
-                    <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted font-bold text-xs pointer-events-none">
-                      cm
-                    </span>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label htmlFor="crew-phone" className="font-semibold text-ink">
+                      연락처 <span className="text-brand">*</span>
+                    </label>
+                    <input
+                      id="crew-phone"
+                      type="tel"
+                      required
+                      maxLength={13}
+                      value={phoneNumber}
+                      onChange={handlePhoneChange}
+                      placeholder="010-0000-0000"
+                      className="w-full h-12 px-4 rounded-xl border border-border bg-white text-ink text-sm font-mono font-semibold focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-colors"
+                    />
                   </div>
                 </div>
 
-                {/* 하의 치수 (Bottom) */}
-                <div className="space-y-1.5">
-                  <label htmlFor="crew-bottom" className="font-semibold text-ink flex items-center gap-1.5">
-                    <Shirt className="w-3.5 h-3.5 text-brand" />
-                    <span>하의 슬랙스/허리 사이즈 (inch)</span>
-                  </label>
-                  <select
-                    id="crew-bottom"
-                    value={bottomSize}
-                    onChange={(e) => setBottomSize(e.target.value)}
-                    className="w-full h-11 px-3.5 rounded-xl border border-border bg-canvas text-ink text-sm font-semibold focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-colors cursor-pointer"
-                  >
-                    {BOTTOM_SIZES.map((size) => (
-                      <option key={size} value={size}>
-                        {size} 인치 (슬랙스)
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
+                {email && (
+                  <div className="pt-2 border-t border-border-subtle flex items-center justify-between text-xs text-muted">
+                    <span>로그인 계정</span>
+                    <span className="font-mono text-ink font-medium">{email}</span>
+                  </div>
+                )}
+              </section>
 
-              {/* 상의 유니폼 사이즈 (Top Size 칩) */}
-              <div className="space-y-2 text-xs">
-                <span className="font-semibold text-ink flex items-center gap-1.5">
-                  <Shirt className="w-3.5 h-3.5 text-brand" />
-                  <span>상의 유니폼 사이즈 (Top)</span>
-                </span>
-                <div className="grid grid-cols-5 gap-2">
-                  {TOP_SIZES.map((size) => {
-                    const isSelected = topSize === size;
-                    return (
-                      <button
-                        key={size}
-                        type="button"
-                        onClick={() => setTopSize(size)}
-                        className={cn(
-                          'h-10 rounded-xl border text-center font-bold text-xs transition-colors cursor-pointer flex items-center justify-center',
-                          isSelected
-                            ? 'bg-brand text-inverse border-brand shadow-xs'
-                            : 'bg-canvas text-muted border-border hover:border-brand-border'
-                        )}
-                      >
-                        {size}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* 신발 사이즈 & 경력 */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                {/* 신발 사이즈 */}
-                <div className="space-y-1.5">
-                  <label htmlFor="crew-shoes" className="font-semibold text-ink flex items-center gap-1.5">
-                    <Footprints className="w-3.5 h-3.5 text-brand" />
-                    <span>신발 치수 (단화/운동화)</span>
-                  </label>
-                  <select
-                    id="crew-shoes"
-                    value={shoeSizeMm}
-                    onChange={(e) => setShoeSizeMm(Number(e.target.value))}
-                    className="w-full h-11 px-3.5 rounded-xl border border-border bg-canvas text-ink text-sm font-semibold focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-colors cursor-pointer"
-                  >
-                    {SHOE_SIZES.map((sz) => (
-                      <option key={sz} value={sz}>
-                        {sz} mm
-                      </option>
-                    ))}
-                  </select>
+              {/* 4. 유니폼 영역 ("유니폼 핏을 맞춰볼까요?") */}
+              <section className="bg-white rounded-3xl border border-border-subtle p-5 sm:p-6 space-y-5 shadow-2xs">
+                <div>
+                  <h2 className="text-base font-bold text-ink">유니폼 핏을 맞춰볼까요?</h2>
+                  <p className="text-xs text-muted mt-0.5 break-keep">
+                    행사 당일 딱 맞는 근무복을 준비해 드릴게요.
+                  </p>
                 </div>
 
-                {/* 현장 경력 연수 */}
-                <div className="space-y-1.5">
-                  <label htmlFor="crew-exp" className="font-semibold text-ink flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5 text-brand" />
-                    <span>행사 스태프 경력 (년)</span>
-                  </label>
-                  <input
-                    id="crew-exp"
-                    type="number"
-                    step="0.5"
-                    min="0"
-                    max="15"
-                    value={experienceYears}
-                    onChange={(e) => setExperienceYears(e.target.value)}
-                    placeholder="예: 1.5"
-                    className="w-full h-11 px-3.5 rounded-xl border border-border bg-canvas text-ink text-sm font-semibold focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-colors"
-                  />
-                </div>
-              </div>
+                <div className="space-y-4">
+                  {/* 키 (cm) */}
+                  <div className="space-y-1.5 text-xs">
+                    <label htmlFor="crew-height" className="font-semibold text-ink flex items-center gap-1.5">
+                      <Ruler className="w-3.5 h-3.5 text-brand" />
+                      <span>키 (cm)</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        id="crew-height"
+                        type="number"
+                        min={140}
+                        max={210}
+                        value={heightCm}
+                        onChange={(e) => setHeightCm(e.target.value)}
+                        placeholder="예: 175"
+                        className="w-full h-12 px-4 pr-11 rounded-xl border border-border bg-white text-ink text-sm font-semibold focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-colors"
+                      />
+                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted font-bold text-xs pointer-events-none">
+                        cm
+                      </span>
+                    </div>
+                  </div>
 
-              {/* 외국어 구사 능력 */}
-              <div className="space-y-2 text-xs">
-                <span className="font-semibold text-ink flex items-center gap-1.5">
-                  <Globe2 className="w-3.5 h-3.5 text-brand" />
-                  <span>외국어 응대 가능 여부</span>
-                </span>
-                <div className="flex flex-wrap gap-2">
+                  {/* 상의 유니폼 사이즈 (Top Size 칩) */}
+                  <div className="space-y-2 text-xs">
+                    <span className="font-semibold text-ink flex items-center gap-1.5">
+                      <Shirt className="w-3.5 h-3.5 text-brand" />
+                      <span>상의 유니폼 사이즈 (Top)</span>
+                    </span>
+                    <div className="grid grid-cols-5 gap-2">
+                      {TOP_SIZES.map((size) => {
+                        const isSelected = topSize === size;
+                        return (
+                          <button
+                            key={size}
+                            type="button"
+                            onClick={() => setTopSize(size)}
+                            className={cn(
+                              'h-11 rounded-xl border text-center font-bold text-xs transition-colors cursor-pointer flex items-center justify-center',
+                              isSelected
+                                ? 'bg-brand text-white border-brand shadow-xs'
+                                : 'bg-white text-ink border-border hover:border-brand-border'
+                            )}
+                          >
+                            {size}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* 하의 사이즈 (CustomSelect 적용) */}
+                  <div className="space-y-1.5 text-xs">
+                    <label htmlFor="crew-bottom" className="font-semibold text-ink flex items-center gap-1.5">
+                      <Shirt className="w-3.5 h-3.5 text-brand" />
+                      <span>하의 사이즈 (허리)</span>
+                    </label>
+                    <CustomSelect
+                      id="crew-bottom"
+                      value={bottomSize}
+                      options={BOTTOM_SIZE_OPTIONS}
+                      onChange={(val) => setBottomSize(val)}
+                    />
+                  </div>
+
+                  {/* 신발 사이즈 (CustomSelect 적용) */}
+                  <div className="space-y-1.5 text-xs">
+                    <label htmlFor="crew-shoes" className="font-semibold text-ink flex items-center gap-1.5">
+                      <Footprints className="w-3.5 h-3.5 text-brand" />
+                      <span>신발 사이즈 (단화/운동화)</span>
+                    </label>
+                    <CustomSelect
+                      id="crew-shoes"
+                      value={Number(shoeSizeMm)}
+                      options={SHOE_SIZE_OPTIONS}
+                      onChange={(val) => setShoeSizeMm(val)}
+                    />
+                  </div>
+                </div>
+              </section>
+
+              {/* 5. 경력/소개 ("현장 경험이 있다면 알려주세요") */}
+              <section className="bg-white rounded-3xl border border-border-subtle p-5 sm:p-6 space-y-4 shadow-2xs">
+                <div>
+                  <h2 className="text-base font-bold text-ink">현장 경험이 있다면 알려주세요</h2>
+                  <p className="text-xs text-muted mt-0.5 break-keep">
+                    솔직한 소개는 주최사의 매칭 신뢰도를 높여줘요.
+                  </p>
+                </div>
+
+                <div className="space-y-4 text-xs">
+                  {/* 행사 스태프 경력 (CustomSelect 적용) */}
+                  <div className="space-y-1.5">
+                    <label htmlFor="crew-exp" className="font-semibold text-ink flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-brand" />
+                      <span>행사 스태프 경력</span>
+                    </label>
+                    <CustomSelect
+                      id="crew-exp"
+                      value={Number(experienceYears)}
+                      options={experienceOptions}
+                      onChange={(val) => setExperienceYears(val)}
+                    />
+                  </div>
+
+                  {/* 한 줄 소개 및 각오 (Bio) */}
+                  <div className="space-y-1.5">
+                    <label htmlFor="crew-bio" className="font-semibold text-ink">
+                      한 줄 소개 및 각오
+                    </label>
+                    <textarea
+                      id="crew-bio"
+                      rows={3}
+                      value={bio}
+                      onChange={(e) => setBio(e.target.value)}
+                      placeholder="예: 밝은 미소와 신속한 응대로 행사의 품격을 높이는 크루입니다."
+                      className="w-full p-4 rounded-xl border border-border bg-white text-ink text-sm leading-relaxed focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-colors resize-none"
+                    />
+                  </div>
+                </div>
+              </section>
+
+              {/* 6. 외국어 영역 ("외국어 응대가 가능한가요? (선택)") */}
+              <section className="bg-white rounded-3xl border border-border-subtle p-5 sm:p-6 space-y-3.5 shadow-2xs">
+                <div>
+                  <h2 className="text-base font-bold text-ink">외국어 응대가 가능한가요? (선택)</h2>
+                  <p className="text-xs text-muted mt-0.5 break-keep">
+                    글로벌 팝업이나 전시 박람회에 우선 배정될 수 있어요.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap gap-2 pt-1">
                   {AVAILABLE_LANGUAGES.map((lang) => {
                     const isSelected = languages.includes(lang);
                     return (
@@ -555,66 +747,54 @@ export default function CrewProfilePage() {
                         type="button"
                         onClick={() => toggleLanguage(lang)}
                         className={cn(
-                          'h-9 px-3.5 rounded-full border text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1.5',
+                          'h-10 px-4 rounded-full border text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5',
                           isSelected
-                            ? 'bg-brand text-inverse border-brand shadow-xs'
-                            : 'bg-canvas text-muted border-border hover:border-brand-border'
+                            ? 'bg-brand text-white border-brand shadow-xs'
+                            : 'bg-white text-ink border-border hover:border-brand-border'
                         )}
                       >
-                        {isSelected && <CheckCircle2 className="w-3.5 h-3.5" />}
+                        {isSelected && <Check className="w-3.5 h-3.5 text-white shrink-0" />}
                         <span>{lang}</span>
                       </button>
                     );
                   })}
                 </div>
+              </section>
+
+              {/* 7. 저장 버튼 */}
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  disabled={isFormDisabled || !fullName.trim()}
+                  className={cn(
+                    'w-full h-[52px] rounded-2xl bg-brand hover:bg-brand-hover text-white font-bold text-base shadow-sm transition-all active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer',
+                    (isFormDisabled || !fullName.trim()) && 'opacity-60 cursor-not-allowed'
+                  )}
+                >
+                  {saving ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <span>프로필 저장하는 중…</span>
+                    </>
+                  ) : (
+                    <span>프로필 저장하기</span>
+                  )}
+                </button>
               </div>
-            </section>
 
-            {/* 5. 한 줄 소개 및 각오 (Bio) */}
-            <section className="bg-surface border border-border rounded-3xl p-5 sm:p-6 space-y-3 shadow-2xs">
-              <label htmlFor="crew-bio" className="block text-sm font-bold text-ink">
-                한 줄 소개 및 현장 각오
-              </label>
-              <textarea
-                id="crew-bio"
-                rows={3}
-                value={bio}
-                onChange={(e) => setBio(e.target.value)}
-                placeholder="예: 밝은 미소와 신속한 응대로 행사의 품격을 높이는 크루입니다."
-                className="w-full p-3.5 rounded-xl border border-border bg-canvas text-ink text-xs leading-relaxed focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-colors resize-none"
-              />
-            </section>
-
-            {/* 6. 저장 버튼 */}
-            <div className="pt-2">
-              <button
-                type="submit"
-                disabled={saving || !fullName.trim()}
-                className="w-full h-12 rounded-2xl bg-brand hover:bg-brand-hover disabled:bg-surface-muted disabled:text-muted disabled:border disabled:border-border text-white font-bold text-sm shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed active:scale-[0.99]"
-              >
-                {saving ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>프로필 저장 중…</span>
-                  </>
-                ) : (
-                  <span>프로필 정보 저장하기</span>
-                )}
-              </button>
-            </div>
-
-            {/* 7. 보안 및 개인정보 분리 안내 카드 */}
-            <div className="p-4 rounded-2xl bg-canvas border border-border text-xs space-y-2">
-              <div className="flex items-center gap-2 font-bold text-ink">
-                <Lock className="w-3.5 h-3.5 text-brand" />
-                <span>개인정보 분리 보관 원칙</span>
+              {/* 8. 보안 및 개인정보 분리 보관 안내 */}
+              <div className="p-4 rounded-2xl bg-white border border-border-subtle text-xs space-y-1.5">
+                <div className="flex items-center gap-1.5 font-bold text-ink">
+                  <Lock className="w-3.5 h-3.5 text-brand" />
+                  <span>개인정보 분리 보관 원칙</span>
+                </div>
+                <p className="text-[11px] text-muted leading-relaxed break-keep">
+                  크루링크는 주민등록번호 원문을 데이터베이스에 보관하지 않으며, 공인 세무 파트너사의 암호화 식별키를 통해 안전하게 3.3% 원천징수 정산을 처리합니다.
+                </p>
               </div>
-              <p className="text-[11px] text-muted leading-relaxed break-keep">
-                크루링크는 주민등록번호 원문을 데이터베이스에 보관하지 않으며, 공인 세무 파트너사의 암호화 식별키를 통해 안전하게 3.3% 원천징수 정산을 처리합니다.
-              </p>
-            </div>
-          </form>
-        )}
+            </form>
+          )}
+        </div>
       </div>
     </AppShell>
   );
