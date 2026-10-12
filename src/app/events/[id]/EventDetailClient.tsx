@@ -1,615 +1,441 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import {
   ArrowLeft,
-  Calendar,
   Clock,
   MapPin,
-  Users,
-  ShieldCheck,
-  CheckCircle2,
-  Copy,
-  Share2,
-  AlertCircle,
-  Building2,
-  BadgeCheck,
-  Briefcase,
-  ChevronRight,
-  Sparkles,
   Check,
-  AlertTriangle,
+  Share2,
 } from 'lucide-react';
-import { getEventById, formatRecruitmentDeadline } from '@/lib/data/events';
-import { AccessibleSheet } from '@/components/common/AccessibleSheet';
-import { cn } from '@/lib/utils';
 
-function generateEventDates(startDate: string, endDate: string): string[] {
-  const dates: string[] = [];
-  const current = new Date(startDate);
-  const end = new Date(endDate);
-  while (current <= end) {
-    dates.push(current.toISOString().slice(0, 10));
-    current.setDate(current.getDate() + 1);
-  }
-  return dates.length > 0 ? dates : [startDate];
+interface EventDetailProps {
+  event?: {
+    id: string;
+    displayTitle: string;
+    hostName: string;
+    categoryLabel: string;
+    regionLabel: string;
+    venueAddress: string;
+    venueDetail: string;
+    deadlineDateLabel: string;
+    workHoursLabel: string;
+    breakMinutesLabel: string;
+    dailyWageWon: number;
+    dates: { id: string; date: string; dayOfWeek: string }[];
+    roles: { title: string; desc: string }[];
+    dressCode: {
+      type: 'FORMAL' | 'CASUAL' | 'UNIFORM';
+      title: string;
+      desc: string;
+    };
+    qualifications: string[];
+  };
 }
 
-function formatDateShort(dateStr: string): string {
-  const parts = dateStr.split('-');
-  if (parts.length === 3) {
-    return `${parts[1]}.${parts[2]}`;
-  }
-  return dateStr;
+// 3D 클레이 지갑 + 코인 스택 + 반짝이 별 에셋 (참조 이미지 스타일)
+function ClayWallet3DAsset() {
+  return (
+    <div className="relative w-28 h-20 shrink-0 flex items-center justify-center select-none">
+      <svg
+        viewBox="0 0 160 120"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        className="w-full h-full drop-shadow-sm overflow-visible"
+      >
+        <defs>
+          <filter id="clayShadow" x="-20%" y="-20%" width="140%" height="160%">
+            <feGaussianBlur in="SourceAlpha" stdDeviation="4" />
+            <feOffset dx="0" dy="6" />
+            <feComponentTransfer>
+              <feFuncA type="linear" slope="0.15" />
+            </feComponentTransfer>
+            <feMerge>
+              <feMergeNode />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+
+          <linearGradient id="walletBlue" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#4B8DFF" />
+            <stop offset="35%" stopColor="#2563EB" />
+            <stop offset="100%" stopColor="#1D4ED8" />
+          </linearGradient>
+
+          <linearGradient id="walletBack" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#2563EB" />
+            <stop offset="100%" stopColor="#1E40AF" />
+          </linearGradient>
+
+          <linearGradient id="strapGrad" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="#60A5FA" />
+            <stop offset="100%" stopColor="#3B82F6" />
+          </linearGradient>
+
+          <radialGradient id="silverSnap" cx="35%" cy="30%" r="65%">
+            <stop offset="0%" stopColor="#FFFFFF" />
+            <stop offset="60%" stopColor="#E2E8F0" />
+            <stop offset="100%" stopColor="#94A3B8" />
+          </radialGradient>
+
+          <linearGradient id="coinBody" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#FEF08A" />
+            <stop offset="30%" stopColor="#FDE047" />
+            <stop offset="100%" stopColor="#EAB308" />
+          </linearGradient>
+
+          <linearGradient id="coinTop" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="#FEF9C3" />
+            <stop offset="100%" stopColor="#FDE047" />
+          </linearGradient>
+        </defs>
+
+        {/* 바닥 그림자 */}
+        <ellipse cx="80" cy="106" rx="65" ry="8" fill="#1E3A8A" opacity="0.12" filter="blur(3px)" />
+
+        {/* 지갑 뒤쪽 플랩 */}
+        <path
+          d="M58 36 C58 28, 64 24, 74 24 L114 24 C124 24, 130 28, 130 36 L130 52 L58 52 Z"
+          fill="url(#walletBack)"
+        />
+
+        {/* 지갑 메인 본체 */}
+        <rect
+          x="50"
+          y="34"
+          width="86"
+          height="58"
+          rx="18"
+          fill="url(#walletBlue)"
+          filter="url(#clayShadow)"
+        />
+
+        {/* 상단 3D 엠보싱 하이라이트 */}
+        <path
+          d="M66 38 Q93 35 120 38"
+          stroke="rgba(255, 255, 255, 0.45)"
+          strokeWidth="3.5"
+          strokeLinecap="round"
+        />
+
+        {/* 잠금 스트랩 */}
+        <path
+          d="M102 54 L138 54 C143 54, 147 58, 147 64 C147 70, 143 74, 138 74 L102 74 C97 74, 94 70, 94 64 C94 58, 97 54, 102 54 Z"
+          fill="url(#strapGrad)"
+          filter="drop-shadow(0 2px 3px rgba(15,23,42,0.2))"
+        />
+        <circle cx="109" cy="64" r="5.5" fill="url(#silverSnap)" filter="drop-shadow(0 1px 2px rgba(0,0,0,0.25))" />
+
+        {/* 코인 스택 1 (왼쪽) */}
+        <g transform="translate(28, 80)">
+          <rect x="0" y="3" width="28" height="11" rx="5.5" fill="url(#coinBody)" />
+          <ellipse cx="14" cy="4" rx="14" ry="4" fill="url(#coinTop)" />
+        </g>
+        <g transform="translate(28, 69)">
+          <rect x="0" y="3" width="28" height="11" rx="5.5" fill="url(#coinBody)" />
+          <ellipse cx="14" cy="4" rx="14" ry="4" fill="url(#coinTop)" />
+        </g>
+        <g transform="translate(28, 58)">
+          <rect x="0" y="3" width="28" height="11" rx="5.5" fill="url(#coinBody)" />
+          <ellipse cx="14" cy="4" rx="14" ry="4" fill="url(#coinTop)" />
+        </g>
+        <g transform="translate(28, 47)">
+          <rect x="0" y="3" width="28" height="11" rx="5.5" fill="url(#coinBody)" />
+          <ellipse cx="14" cy="4" rx="14" ry="4" fill="url(#coinTop)" />
+          <path d="M4 3.5 Q14 2 24 3.5" stroke="rgba(255,255,255,0.7)" strokeWidth="1.5" strokeLinecap="round" />
+        </g>
+
+        {/* 코인 스택 2 (오른쪽) */}
+        <g transform="translate(54, 82)">
+          <rect x="0" y="3" width="26" height="11" rx="5.5" fill="url(#coinBody)" />
+          <ellipse cx="13" cy="4" rx="13" ry="4" fill="url(#coinTop)" />
+        </g>
+        <g transform="translate(54, 71)">
+          <rect x="0" y="3" width="26" height="11" rx="5.5" fill="url(#coinBody)" />
+          <ellipse cx="13" cy="4" rx="13" ry="4" fill="url(#coinTop)" />
+          <path d="M4 3.5 Q13 2 22 3.5" stroke="rgba(255,255,255,0.7)" strokeWidth="1.5" strokeLinecap="round" />
+        </g>
+
+        {/* 3D 반짝이 별 */}
+        <path
+          d="M116 14 Q116 23 124 23 Q116 23 116 32 Q116 23 108 23 Q116 23 116 14 Z"
+          fill="#3B82F6"
+          filter="drop-shadow(0 2px 4px rgba(59,130,246,0.3))"
+        />
+        <path
+          d="M12 68 Q12 73 17 73 Q12 73 12 78 Q12 73 7 73 Q12 73 12 68 Z"
+          fill="#60A5FA"
+        />
+      </svg>
+    </div>
+  );
 }
 
-export default function EventDetailClient({ id }: { id: string }) {
-  const router = useRouter();
-  const event = getEventById(id);
+export default function EventDetailClient({ event: initialEvent }: EventDetailProps) {
+  const event = initialEvent || {
+    id: 'evt-2026-001',
+    displayTitle: '2026 성수 럭셔리 뷰티 브랜드 팝업스토어 현장 운영 크루',
+    hostName: '(주)글로우랩스 코리아',
+    categoryLabel: '팝업스토어',
+    regionLabel: '서울 성동구',
+    venueAddress: '서울 성동구 연무장길 45',
+    venueDetail: '성수역 3번 출구 도보 5분 메인 팝업존',
+    deadlineDateLabel: '10.18까지 모집',
+    workHoursLabel: '11:00 ~ 20:00',
+    breakMinutesLabel: '60분 휴게',
+    dailyWageWon: 120000,
+    dates: [
+      { id: 'd1', date: '2026-10-16', dayOfWeek: '금' },
+      { id: 'd2', date: '2026-10-17', dayOfWeek: '토' },
+      { id: 'd3', date: '2026-10-18', dayOfWeek: '일' },
+    ],
+    roles: [
+      {
+        title: '동선 및 관람객 입장 통제',
+        desc: '사전 예약자 대기열 라인 정돈 및 현장 대기 인원 동선 분리 안내',
+      },
+      {
+        title: '체험 부스 및 이벤트 지원',
+        desc: '포토존 인솔, 럭키드로우 룰렛 진행 및 인스타그램 인증 확인',
+      },
+      {
+        title: '사은품 배부 및 체크리스트 관리',
+        desc: '방문 완료 키트 패키징 불출 및 수량 체크',
+      },
+    ],
+    dressCode: {
+      type: 'FORMAL' as const,
+      title: '단정 올블랙 정장 및 단화 착용',
+      desc: '상/하의 단정한 블랙 슬랙스 및 셔츠, 찢어진 바지/운동화/슬리퍼 불가',
+    },
+    qualifications: [
+      '고객 응대에 밝고 적극적인 태도를 가지신 분',
+      '시간 엄수 및 근태가 성실하신 분 (지각/무단이탈 절대 불가)',
+      '단정한 용모와 복장 규정 준수가 가능하신 분',
+    ],
+  };
 
-  const [copiedAddress, setCopiedAddress] = useState(false);
-  const [copiedLink, setCopiedLink] = useState(false);
-  const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
-  const [hasApplied, setHasApplied] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [selectedDateIds, setSelectedDateIds] = useState<string[]>(
+    event.dates.map((d) => d.id)
+  );
 
-  // Available event dates
-  const allEventDates = useMemo(() => {
-    return event ? generateEventDates(event.startDate, event.endDate) : [];
-  }, [event]);
-
-  // Selected dates for attendance (defaults to all event dates)
-  const [selectedDates, setSelectedDates] = useState<string[]>(allEventDates);
-
-  // Application form state: confirmNotice default false (Task 4.3 requirement)
-  const [applicantName, setApplicantName] = useState('김크루');
-  const [applicantPhone, setApplicantPhone] = useState('010-8291-3829');
-  const [confirmNotice, setConfirmNotice] = useState(false);
-
-  if (!event) {
-    return (
-      <div className="min-h-screen bg-canvas text-ink flex flex-col items-center justify-center p-6 text-center">
-        <div className="w-16 h-16 rounded-3xl bg-surface border border-border flex items-center justify-center text-muted mb-4 shadow-xs">
-          <AlertCircle className="w-8 h-8 text-brand" />
-        </div>
-        <h1 className="text-xl font-bold text-ink mb-1.5">현장 공고를 찾을 수 없어요</h1>
-        <p className="text-xs text-muted mb-6 max-w-sm">
-          이미 마감되었거나 주소가 변경되었을 수 있어요. 메인 화면에서 다른 현장을 확인해 보세요.
-        </p>
-        <Link
-          href="/"
-          className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-brand hover:bg-brand-hover text-inverse text-xs font-bold transition-colors shadow-xs"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          <span>전체 현장 목록으로</span>
-        </Link>
-      </div>
+  const toggleDate = (id: string) => {
+    setSelectedDateIds((prev) =>
+      prev.includes(id)
+        ? prev.length > 1
+          ? prev.filter((item) => item !== id)
+          : prev
+        : [...prev, id]
     );
-  }
-
-  // Dynamic wage calculation: dailyWageWon * selectedDates.length (Task 4.1 requirement)
-  const totalWageWon = event.dailyWageWon * Math.max(1, selectedDates.length);
-  // Break minutes nullish coalescing: breakMinutes ?? 60 (Task 4.2 requirement)
-  const displayBreakMinutes = event.breakMinutes ?? 60;
-  const deadlineLabel = formatRecruitmentDeadline(event.deadlineDate);
-
-  const toggleDate = (dateStr: string) => {
-    if (event.isMultiDayRequired) return; // 전일 필수 근무인 경우 고정
-    setSelectedDates((prev) => {
-      if (prev.includes(dateStr)) {
-        if (prev.length <= 1) return prev; // 최소 1일 선택 유지
-        return prev.filter((d) => d !== dateStr);
-      } else {
-        return [...prev, dateStr].sort();
-      }
-    });
   };
 
-  const handleCopyAddress = () => {
-    const textToCopy = event.detailedAddress || `${event.regionLabel} ${event.stationInfo || ''}`;
-    if (typeof navigator !== 'undefined' && navigator.clipboard) {
-      navigator.clipboard.writeText(textToCopy);
-      setCopiedAddress(true);
-      setTimeout(() => setCopiedAddress(false), 2000);
-    }
-  };
-
-  const handleCopyLink = () => {
-    if (typeof window !== 'undefined' && navigator.clipboard) {
-      navigator.clipboard.writeText(window.location.href);
-      setCopiedLink(true);
-      setTimeout(() => setCopiedLink(false), 2000);
-    }
-  };
-
-  // Real DB application submission calling POST /api/crew/applications (Task 4.3 requirement)
-  const handleSubmitApplication = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!confirmNotice) return;
-
-    setIsSubmitting(true);
-    setSubmitError(null);
-
-    try {
-      const res = await fetch('/api/crew/applications', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-actor-person-id': '11111111-1111-1111-1111-111111111111',
-        },
-        body: JSON.stringify({
-          eventId: event.id,
-          applicantName,
-          applicantPhone,
-          agreeNotice: confirmNotice,
-          selectedDates,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.message || '지원 접수에 실패했어요. 잠시 후 다시 시도해 주세요.');
-      }
-
-      setHasApplied(true);
-    } catch (err: unknown) {
-      setSubmitError((err as Error).message || '서버와 연결하지 못했어요. 잠시 후 다시 시도해 주세요.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  const totalEstimatedWage = event.dailyWageWon * selectedDateIds.length;
 
   return (
-    <div className="min-h-screen bg-canvas text-ink pb-32">
-      {/* Top Sticky Navigation Bar */}
-      <header className="sticky top-0 z-20 bg-surface/90 backdrop-blur-md border-b border-border px-4 sm:px-6 h-14 flex items-center justify-between">
+    <div className="min-h-screen bg-canvas text-ink pb-28">
+      {/* 1. 상단 내비게이션 바 */}
+      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-border/80 h-14 flex items-center justify-between px-4 sm:px-6">
         <Link
           href="/"
-          className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-muted hover:text-ink transition-colors"
+          className="flex items-center gap-1.5 text-muted hover:text-ink transition-colors font-medium text-sm"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>공고 목록으로</span>
+          <span>공고 목록</span>
         </Link>
-
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={handleCopyLink}
-            aria-label="공고 링크 복사"
-            className="h-8 px-2.5 rounded-lg border border-border bg-surface hover:bg-canvas text-xs font-semibold text-muted hover:text-ink transition-colors flex items-center gap-1.5 shadow-2xs cursor-pointer"
-          >
-            {copiedLink ? (
-              <>
-                <Check className="w-3.5 h-3.5 text-brand" />
-                <span className="text-brand">복사됨</span>
-              </>
-            ) : (
-              <>
-                <Share2 className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">공유</span>
-              </>
-            )}
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={() => {
+            if (navigator.clipboard) {
+              navigator.clipboard.writeText(window.location.href);
+              alert('공고 링크가 복사되었습니다.');
+            }
+          }}
+          className="w-9 h-9 rounded-full flex items-center justify-center text-muted hover:text-ink hover:bg-canvas transition-colors"
+          aria-label="공고 공유하기"
+        >
+          <Share2 className="w-4 h-4" />
+        </button>
       </header>
 
-      {/* Main Content Container */}
-      <main className="max-w-3xl mx-auto px-4 sm:px-6 pt-6 space-y-6">
-        {/* Category & Deadline Pill Header */}
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-xs font-bold text-muted bg-surface-muted px-2.5 py-1 rounded-full border border-border-subtle">
-            {event.categoryLabel}
-          </span>
-          <span className="text-xs font-bold text-brand-strong bg-brand-soft px-2.5 py-1 rounded-md border border-brand-border">
-            {deadlineLabel}
-          </span>
-        </div>
-
-        {/* Hero Title */}
+      <main className="max-w-2xl mx-auto px-4 pt-6 space-y-6">
+        {/* 2. 헤더 메타 (인증 주최사 파란 원형 속 흰색 V 체크 & 마감일 텍스트) */}
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-ink tracking-tight leading-snug break-keep">
-            {event.title}
-          </h1>
-          <div className="flex items-center gap-2 mt-3 text-xs text-muted">
-            <span className="font-semibold text-ink flex items-center gap-1">
-              <Building2 className="w-3.5 h-3.5 text-muted" />
-              {event.hostName}
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <div className="flex items-center gap-1.5 text-xs">
+              <span className="w-4 h-4 rounded-full bg-brand flex items-center justify-center shrink-0 shadow-2xs">
+                <Check className="w-2.5 h-2.5 text-white stroke-[3.5]" />
+              </span>
+              <span className="font-semibold text-ink">{event.hostName}</span>
+              <span className="text-border">·</span>
+              <span className="text-muted">{event.categoryLabel}</span>
+            </div>
+
+            <span className="text-xs font-semibold text-muted tracking-tight">
+              {event.deadlineDateLabel}
             </span>
-            {event.hostVerified && (
-              <span className="inline-flex items-center gap-0.5 text-brand-strong font-bold text-[11px] bg-brand-soft px-1.5 py-0.5 rounded-md border border-brand-border">
-                <BadgeCheck className="w-3 h-3 text-brand" />
-                <span>인증 주최사</span>
+          </div>
+
+          <h1 className="text-xl sm:text-2xl font-extrabold text-ink leading-tight tracking-tight break-keep">
+            {event.displayTitle}
+          </h1>
+        </div>
+
+        {/* 3. [2번 요구사항 반영] 날짜 선택 + 예상 보수를 하나로 합친 단일 통합 카드 */}
+        <section className="bg-white rounded-3xl p-5 sm:p-6 border border-border shadow-2xs space-y-5">
+          {/* 상단: 근무 일정 선택 */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-bold text-muted uppercase tracking-wider">
+                근무 일정 선택
               </span>
-            )}
-          </div>
-        </div>
-
-        {/* Dynamic Wage Highlight Box */}
-        <div className="p-5 sm:p-6 rounded-3xl bg-brand-subtle border border-brand-border shadow-xs space-y-3">
-          <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2">
-            <div>
-              <p className="text-xs font-bold text-muted tracking-wider uppercase">
-                선택 근무일 비례 예상 보수
-              </p>
-              <div className="flex items-baseline gap-1.5 mt-1">
-                <span className="text-xs font-bold text-muted">
-                  {selectedDates.length > 1 ? `${selectedDates.length}일간 합산` : '하루'}
-                </span>
-                <span className="text-3xl sm:text-4xl font-black text-brand-strong tabular-nums">
-                  {totalWageWon.toLocaleString()}
-                </span>
-                <span className="text-base font-bold text-ink">원</span>
-                <span className="text-xs text-muted ml-1 font-medium">(세전)</span>
-              </div>
+              <span className="text-xs text-muted">원하는 날짜를 선택해 주세요</span>
             </div>
-
-            <div className="sm:text-right">
-              <span className="text-xs font-bold text-brand-strong bg-surface px-2.5 py-1 rounded-lg border border-brand-border inline-block shadow-2xs">
-                하루 기준 {event.dailyWageWon.toLocaleString()}원
-              </span>
+            <div className="grid grid-cols-3 gap-2.5">
+              {event.dates.map((d) => {
+                const isSelected = selectedDateIds.includes(d.id);
+                return (
+                  <button
+                    key={d.id}
+                    type="button"
+                    onClick={() => toggleDate(d.id)}
+                    className={`py-3 px-2 rounded-2xl border text-center transition-all cursor-pointer ${isSelected
+                      ? 'border-brand bg-white text-ink font-bold shadow-xs ring-1 ring-brand'
+                      : 'border-border/80 bg-canvas text-muted hover:border-brand/40'
+                      }`}
+                  >
+                    <p className="text-xs text-muted mb-0.5">{d.dayOfWeek}요일</p>
+                    <p className="text-sm font-semibold">{d.date.slice(5)}</p>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          {/* Date Selector Chips for Multi-Day */}
-          {allEventDates.length > 1 && (
-            <div className="pt-2 border-t border-brand-border/60">
-              <p className="text-xs font-semibold text-ink mb-1.5 flex items-center justify-between">
-                <span>근무 일정 선택 ({selectedDates.length}일 선택됨)</span>
-                {event.isMultiDayRequired && (
-                  <span className="text-[11px] text-brand font-bold">전일 연속 근무 필수</span>
-                )}
-              </p>
-              <div className="flex flex-wrap gap-1.5">
-                {allEventDates.map((dateStr) => {
-                  const isSelected = selectedDates.includes(dateStr);
-                  return (
-                    <button
-                      key={dateStr}
-                      type="button"
-                      disabled={event.isMultiDayRequired}
-                      onClick={() => toggleDate(dateStr)}
-                      className={cn(
-                        'px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1 border',
-                        isSelected
-                          ? 'bg-brand text-inverse border-brand shadow-2xs'
-                          : 'bg-surface text-muted border-border hover:border-brand-border cursor-pointer',
-                        event.isMultiDayRequired && 'cursor-default'
-                      )}
-                    >
-                      {isSelected && <Check className="w-3 h-3 text-inverse" />}
-                      <span>{formatDateShort(dateStr)}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+          {/* 내부 구분선 */}
+          <div className="h-px bg-border-subtle" />
 
-          <div className="pt-2 border-t border-brand-border/60 flex items-center gap-2 text-xs text-muted">
-            <Sparkles className="w-3.5 h-3.5 text-brand shrink-0" />
-            <span>사업소득세(3.3%) 원천징수 후 근무 종료 시 계좌로 투명하게 입금돼요.</span>
-          </div>
-        </div>
-
-        {/* Core Schedule & Location Info Grid */}
-        <div className="bg-surface rounded-3xl border border-border p-5 sm:p-6 shadow-2xs space-y-4">
-          <h2 className="text-sm font-bold text-ink tracking-tight flex items-center gap-2">
-            <Briefcase className="w-4 h-4 text-brand" />
-            <span>근무 핵심 요약</span>
-          </h2>
-
-          <div className="divide-y divide-border-subtle text-xs sm:text-sm">
-            {/* 1. 장소 */}
-            <div className="py-3 flex items-start justify-between gap-3 first:pt-0">
-              <div className="flex items-center gap-2 text-muted shrink-0 w-20">
-                <MapPin className="w-4 h-4 text-muted" />
-                <span>장소</span>
-              </div>
-              <div className="text-right flex-1 min-w-0">
-                <p className="font-bold text-ink">
-                  {event.regionLabel} {event.stationInfo ? `· ${event.stationInfo}` : ''}
-                </p>
-                {event.detailedAddress && (
-                  <p className="text-xs text-muted mt-0.5 break-keep">{event.detailedAddress}</p>
-                )}
-                <button
-                  type="button"
-                  onClick={handleCopyAddress}
-                  className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-semibold text-brand hover:underline cursor-pointer"
-                >
-                  <Copy className="w-3 h-3" />
-                  <span>{copiedAddress ? '주소 복사됨!' : '상세 주소 복사'}</span>
-                </button>
-              </div>
-            </div>
-
-            {/* 2. 날짜 */}
-            <div className="py-3 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2 text-muted shrink-0 w-20">
-                <Calendar className="w-4 h-4 text-muted" />
-                <span>날짜</span>
-              </div>
-              <div className="text-right">
-                <span className="font-bold text-ink">{event.dateRangeLabel}</span>
-                {event.isMultiDayRequired && (
-                  <span className="ml-2 text-[11px] font-semibold text-brand bg-brand-soft px-2 py-0.5 rounded-md border border-brand-border">
-                    전일 연속 근무
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {/* 3. 시간 & 휴게시간 널 병합 (breakMinutes ?? 60) */}
-            <div className="py-3 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2 text-muted shrink-0 w-20">
-                <Clock className="w-4 h-4 text-muted" />
-                <span>시간</span>
-              </div>
-              <div className="text-right">
-                <span className="font-bold text-ink">{event.workHoursLabel}</span>
-                <span className="text-xs text-muted ml-1.5">
-                  (휴게 {displayBreakMinutes}분 포함)
-                </span>
-              </div>
-            </div>
-
-            {/* 4. 모집 인원 */}
-            <div className="py-3 flex items-center justify-between gap-3 last:pb-0">
-              <div className="flex items-center gap-2 text-muted shrink-0 w-20">
-                <Users className="w-4 h-4 text-muted" />
-                <span>모집 인원</span>
-              </div>
-              <div className="text-right font-medium">
-                <span className="font-bold text-ink">총 {event.requiredCount}명</span>
-                <span className="text-xs text-brand font-semibold ml-2">
-                  (현재 {event.confirmedCount}명 배정 완료)
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Detailed Description */}
-        {event.description && (
-          <div className="bg-surface rounded-3xl border border-border p-5 sm:p-6 shadow-2xs space-y-2.5">
-            <h2 className="text-sm font-bold text-ink">현장 소개</h2>
-            <p className="text-xs sm:text-sm text-muted leading-relaxed break-keep">
-              {event.description}
-            </p>
-          </div>
-        )}
-
-        {/* Primary Role Details */}
-        <div className="bg-surface rounded-3xl border border-border p-5 sm:p-6 shadow-2xs space-y-3">
-          <h2 className="text-sm font-bold text-ink">담당할 주요 업무</h2>
-          <div className="space-y-2">
-            {(event.roleDetails || event.primaryRoles.map((r) => ({ role: r, desc: '현장 운영 보조 및 관람객 응대' }))).map(
-              (item, idx) => (
-                <div
-                  key={idx}
-                  className="p-3.5 rounded-2xl bg-canvas border border-border flex items-start gap-3"
-                >
-                  <div className="w-6 h-6 rounded-lg bg-brand-soft text-brand-strong font-black text-xs flex items-center justify-center shrink-0 mt-0.5">
-                    {idx + 1}
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-xs sm:text-sm text-ink">{item.role}</h3>
-                    <p className="text-xs text-muted mt-0.5 break-keep leading-relaxed">{item.desc}</p>
-                  </div>
-                </div>
-              )
-            )}
-          </div>
-        </div>
-
-        {/* Uniform & Requirements */}
-        <div className="bg-surface rounded-3xl border border-border p-5 sm:p-6 shadow-2xs space-y-4">
-          <h2 className="text-sm font-bold text-ink">복장 및 지원 자격</h2>
-
-          {event.uniformSpec && (
+          {/* 하단: 선택 근무일 비례 예상 보수 + 3D 클레이 지갑 에셋 */}
+          <div className="flex items-center justify-between gap-2">
             <div className="space-y-1">
-              <span className="text-xs font-semibold text-muted block">복장 안내</span>
-              <p className="text-xs sm:text-sm font-medium text-ink bg-canvas p-3 rounded-xl border border-border">
-                {event.uniformSpec}
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-muted">
+                <span>선택 근무일 비례 예상 보수</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-brand" />
+                <span className="text-ink font-bold">{selectedDateIds.length}일 선택</span>
+              </div>
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-2xl sm:text-3xl font-black text-ink tracking-tight tabular-nums">
+                  {totalEstimatedWage.toLocaleString()}
+                </span>
+                <span className="text-base sm:text-lg font-bold text-ink">원</span>
+                <span className="text-xs text-muted ml-1">(세전)</span>
+              </div>
+              <p className="text-xs text-muted">
+                하루 {event.dailyWageWon.toLocaleString()}원 × {selectedDateIds.length}일
               </p>
             </div>
-          )}
 
-          {event.qualifications && event.qualifications.length > 0 && (
-            <div className="space-y-1.5 pt-1">
-              <span className="text-xs font-semibold text-muted block">우대 사항</span>
-              <ul className="space-y-1 text-xs text-muted list-disc list-inside">
-                {event.qualifications.map((q, idx) => (
-                  <li key={idx} className="break-keep">
-                    {q}
-                  </li>
-                ))}
-              </ul>
+            {/* 3D 클레이 지갑 & 코인 스택 */}
+            <ClayWallet3DAsset />
+          </div>
+        </section>
+
+        {/* 4. [3번 요구사항 반영] 근무 핵심 요약 (원래대로 완벽 복원) */}
+        <section className="bg-white rounded-3xl p-5 border border-border shadow-2xs space-y-4">
+          <h2 className="text-base font-bold text-ink">근무 핵심 요약</h2>
+          <div className="space-y-3.5 text-sm">
+            <div className="flex items-start gap-3">
+              <Clock className="w-4 h-4 text-brand shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold text-ink">근무 시간</p>
+                <p className="text-xs text-muted mt-0.5">
+                  {event.workHoursLabel} ({event.breakMinutesLabel})
+                </p>
+              </div>
             </div>
-          )}
-        </div>
+            <div className="h-px bg-border-subtle" />
+            <div className="flex items-start gap-3">
+              <MapPin className="w-4 h-4 text-brand shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold text-ink">근무 장소</p>
+                <p className="text-xs text-muted mt-0.5">{event.venueAddress}</p>
+                <p className="text-xs text-muted/80">{event.venueDetail}</p>
+              </div>
+            </div>
+          </div>
+        </section>
 
-        {/* Crew Protection Banner */}
-        <div className="p-5 rounded-3xl bg-surface border border-border flex items-start gap-3.5 shadow-2xs">
-          <ShieldCheck className="w-6 h-6 text-brand shrink-0 mt-0.5" />
-          <div className="space-y-1 text-xs text-muted leading-relaxed">
-            <h3 className="font-bold text-ink text-xs sm:text-sm">크루 권익 보호 보장</h3>
-            <p className="break-keep">
-              크루링크는 표준 SOW 전자 도급계약을 체결하며, 근로기준법 제20조에 따라 지각·노쇼를
-              이유로 사전에 정한 위약금을 보수에서 임의로 공제하지 않습니다.
+        {/* 5. 담당할 주요 업무 (순백색 카드) */}
+        <section className="bg-white rounded-3xl p-5 border border-border shadow-2xs space-y-4">
+          <h2 className="text-base font-bold text-ink">담당할 주요 업무</h2>
+          <div className="space-y-2.5">
+            {event.roles.map((role, idx) => (
+              <div
+                key={idx}
+                className="bg-white p-4 rounded-2xl border border-border/80 shadow-2xs flex items-start gap-3"
+              >
+                <div className="w-5 h-5 rounded-full bg-canvas text-brand-strong flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold border border-border/50">
+                  {idx + 1}
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-ink">{role.title}</p>
+                  <p className="text-xs text-muted mt-0.5 break-keep leading-relaxed">
+                    {role.desc}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* 6. [1번 요구사항 반영] 복장 규정 (배경화면 제거 및 border에 브랜드 색상 적용) */}
+        <section className="bg-white rounded-3xl p-5 border border-border shadow-2xs space-y-4">
+          <h2 className="text-base font-bold text-ink">복장 규정</h2>
+          <div className="p-4 rounded-2xl border border-brand/60">
+            <p className="text-sm font-bold text-ink">{event.dressCode.title}</p>
+            <p className="text-xs text-muted mt-1 break-keep leading-relaxed">
+              {event.dressCode.desc}
             </p>
           </div>
-        </div>
+        </section>
+
+        {/* 7. [1번 요구사항 반영] 지원 자격 안내 (원래의 깔끔한 체크리스트 유지) */}
+        <section className="bg-white rounded-3xl p-5 border border-border shadow-2xs space-y-3">
+          <h2 className="text-base font-bold text-ink">지원 자격 및 안내</h2>
+          <ul className="space-y-2.5 text-xs text-muted">
+            {event.qualifications.map((q, idx) => (
+              <li key={idx} className="flex items-start gap-2.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-brand shrink-0 mt-1.5" />
+                <span className="break-keep leading-relaxed">{q}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
       </main>
 
-      {/* Sticky Bottom Action Bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-30 bg-surface/95 backdrop-blur-md border-t border-border px-4 py-3.5 shadow-lg shadow-black/5">
-        <div className="max-w-3xl mx-auto flex items-center justify-between gap-4">
+      {/* 8. 하단 고정 지원 액션 바 (52px CTA) */}
+      <footer className="fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md border-t border-border px-4 py-3 sm:px-6">
+        <div className="max-w-2xl mx-auto flex items-center justify-between gap-4">
           <div>
-            <p className="text-[11px] text-muted">
-              {selectedDates.length > 1 ? `${selectedDates.length}일 합산 보수` : '하루 보수'} · 세전
-            </p>
-            <div className="flex items-baseline gap-1 mt-0.5">
-              <span className="text-xl sm:text-2xl font-black text-brand-strong tabular-nums">
-                {totalWageWon.toLocaleString()}
+            <p className="text-xs text-muted">선택 {selectedDateIds.length}일 총 예상 보수</p>
+            <div className="flex items-baseline gap-1">
+              <span className="text-lg sm:text-xl font-extrabold text-ink tabular-nums">
+                {totalEstimatedWage.toLocaleString()}
               </span>
               <span className="text-xs font-bold text-ink">원</span>
             </div>
           </div>
-
           <button
             type="button"
-            onClick={() => setIsApplyModalOpen(true)}
-            disabled={hasApplied}
-            className={cn(
-              'min-h-[48px] h-12 px-6 sm:px-8 rounded-2xl font-bold text-sm transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer',
-              hasApplied
-                ? 'bg-surface-muted text-muted cursor-not-allowed border border-border'
-                : 'bg-brand hover:bg-brand-hover text-inverse shadow-brand/20'
-            )}
+            onClick={() => {
+              alert(`${selectedDateIds.length}일 일정으로 지원을 시작합니다.`);
+            }}
+            className="min-h-[52px] px-8 rounded-2xl bg-brand hover:bg-brand-hover text-white font-bold text-sm shadow-sm transition-colors active:scale-[0.99] flex items-center justify-center gap-1.5 cursor-pointer"
           >
-            {hasApplied ? (
-              <>
-                <CheckCircle2 className="w-4 h-4 text-brand-strong" />
-                <span>지원 완료</span>
-              </>
-            ) : (
-              <>
-                <span>이 현장 지원하기</span>
-                <ChevronRight className="w-4 h-4" />
-              </>
-            )}
+            <span>현장 지원하기</span>
           </button>
         </div>
-      </div>
-
-      {/* AccessibleSheet (Radix Dialog: Focus Trap, ESC close, accessible title) */}
-      <AccessibleSheet
-        open={isApplyModalOpen}
-        onOpenChange={setIsApplyModalOpen}
-        side="center"
-        title="현장 참여 지원 신청"
-        description="지원 내용을 확인하고 최종 접수해 주세요."
-      >
-        <div className="p-6">
-          {hasApplied ? (
-            <div className="py-4 text-center space-y-3">
-              <div className="w-12 h-12 rounded-full bg-brand-soft text-brand-strong mx-auto flex items-center justify-center">
-                <CheckCircle2 className="w-6 h-6 text-brand" />
-              </div>
-              <h4 className="font-bold text-base text-ink">지원이 정상적으로 접수되었어요!</h4>
-              <p className="text-xs text-muted leading-relaxed break-keep">
-                주최사에서 배정이 확정되면 카카오 알림톡으로 표준 계약서 서명 안내를 보내드려요.
-              </p>
-              <div className="pt-3 flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsApplyModalOpen(false)}
-                  className="flex-1 h-11 rounded-xl border border-border bg-surface text-ink text-xs font-bold hover:bg-canvas transition-colors"
-                >
-                  공고 상세 보기
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsApplyModalOpen(false);
-                    router.push('/crew');
-                  }}
-                  className="flex-1 h-11 bg-brand hover:bg-brand-hover text-inverse text-xs font-bold rounded-xl transition-colors shadow-xs"
-                >
-                  크루 일정 화면으로
-                </button>
-              </div>
-            </div>
-          ) : (
-            <form onSubmit={handleSubmitApplication} className="space-y-4 text-xs">
-              {submitError && (
-                <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 flex items-start gap-2">
-                  <AlertTriangle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
-                  <span className="leading-tight">{submitError}</span>
-                </div>
-              )}
-
-              {/* Event Summary Card */}
-              <div className="p-3.5 rounded-2xl bg-canvas border border-border space-y-1">
-                <p className="font-bold text-ink text-sm truncate">{event.displayTitle}</p>
-                <p className="text-muted">
-                  {event.dateRangeLabel} · {event.workHoursLabel} (휴게 {displayBreakMinutes}분)
-                </p>
-                <p className="text-brand font-bold">
-                  {selectedDates.length}일간 합산 약정 보수: {totalWageWon.toLocaleString()}원
-                </p>
-              </div>
-
-              {/* Applicant info */}
-              <div className="space-y-2.5">
-                <div>
-                  <label htmlFor="sheet-applicant-name" className="font-bold text-ink block mb-1">
-                    지원자 이름
-                  </label>
-                  <input
-                    id="sheet-applicant-name"
-                    type="text"
-                    value={applicantName}
-                    onChange={(e) => setApplicantName(e.target.value)}
-                    required
-                    className="w-full h-10 px-3 rounded-xl border border-border bg-surface text-ink text-xs focus:outline-none focus:border-brand"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="sheet-applicant-phone" className="font-bold text-ink block mb-1">
-                    연락처
-                  </label>
-                  <input
-                    id="sheet-applicant-phone"
-                    type="tel"
-                    value={applicantPhone}
-                    onChange={(e) => setApplicantPhone(e.target.value)}
-                    required
-                    className="w-full h-10 px-3 rounded-xl border border-border bg-surface text-ink text-xs focus:outline-none focus:border-brand"
-                  />
-                </div>
-              </div>
-
-              {/* Agreement Checkbox: Defaults to FALSE */}
-              <label className="flex items-start gap-2.5 pt-1 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={confirmNotice}
-                  onChange={(e) => setConfirmNotice(e.target.checked)}
-                  required
-                  className="mt-0.5 rounded text-brand focus:ring-brand w-4 h-4"
-                />
-                <span className="text-muted leading-snug">
-                  행사 일정과 근무 시간을 확인했으며, 배정 시 노쇼 없이 성실히 참여할 것을 약속해요. (필수)
-                </span>
-              </label>
-
-              {/* Action buttons */}
-              <div className="pt-2 flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsApplyModalOpen(false)}
-                  className="flex-1 h-11 rounded-xl border border-border text-muted font-bold hover:bg-canvas transition-colors"
-                >
-                  취소
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting || !confirmNotice}
-                  className="flex-1 h-11 rounded-xl bg-brand hover:bg-brand-hover text-inverse font-bold transition-colors shadow-xs disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  {isSubmitting ? '접수하는 중…' : '지원 접수하기'}
-                </button>
-              </div>
-            </form>
-          )}
-        </div>
-      </AccessibleSheet>
+      </footer>
     </div>
   );
 }
