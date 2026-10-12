@@ -7,26 +7,19 @@ import { AppShell } from '@/components/common/AppShell';
 import {
   Users,
   CheckCircle2,
-  Clock,
-  MapPin,
   Calendar,
-  Building,
   PlusCircle,
   ShieldCheck,
-  Search,
-  Filter,
   User,
   Sparkles,
-  ArrowRight,
   Phone,
-  Ruler,
-  Award,
-  Languages,
   Check,
   X,
   Loader2,
   ChevronRight,
-  AlertCircle,
+  MapPin,
+  Clock,
+  Languages,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -71,6 +64,55 @@ interface ApplicantItem {
   };
 }
 
+function formatRegistrationDate(dateStr: string): string {
+  try {
+    const d = new Date(dateStr);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}.${m}.${day}`;
+  } catch {
+    return dateStr;
+  }
+}
+
+function formatEventSchedule(proj: ClientProject): string {
+  const start = (proj.startDate || '').replace(/-/g, '.');
+  const end = (proj.endDate || '').replace(/-/g, '.');
+  const sow = proj.sowSpec || {};
+  const totalDays = sow.totalDays || (start && end && start !== end ? 2 : 1);
+
+  let datePart = '';
+  if (start && end && start !== end) {
+    datePart = `${start} ~ ${end} (${totalDays}일간)`;
+  } else if (start) {
+    datePart = `${start} (1일간)`;
+  } else {
+    datePart = '일정 미정';
+  }
+
+  // Time part
+  let timePart = '';
+  const firstShift = proj.shifts?.[0];
+  if (firstShift?.start_time && firstShift?.end_time) {
+    try {
+      const s = new Date(firstShift.start_time);
+      const e = new Date(firstShift.end_time);
+      const sH = String(s.getUTCHours()).padStart(2, '0');
+      const sM = String(s.getUTCMinutes()).padStart(2, '0');
+      const eH = String(e.getUTCHours()).padStart(2, '0');
+      const eM = String(e.getUTCMinutes()).padStart(2, '0');
+      timePart = ` · ${sH}:${sM} ~ ${eH}:${eM}`;
+    } catch {
+      // fallback
+    }
+  } else if (sow.startTime && sow.endTime) {
+    timePart = ` · ${sow.startTime} ~ ${sow.endTime}`;
+  }
+
+  return `${datePart}${timePart}`;
+}
+
 export default function ClientDashboardPage() {
   const [projects, setProjects] = useState<ClientProject[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -79,6 +121,7 @@ export default function ClientDashboardPage() {
   const [applicants, setApplicants] = useState<ApplicantItem[]>([]);
   const [isApplicantsLoading, setIsApplicantsLoading] = useState(false);
   const [approvingId, setApprovingId] = useState<string | null>(null);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
 
   // Load client projects from API
@@ -162,12 +205,60 @@ export default function ClientDashboardPage() {
         );
       }
 
-      setActionMessage('크루가 성공적으로 선발(합격)되었습니다!');
+      setActionMessage('크루가 성공적으로 선발되었습니다.');
       setTimeout(() => setActionMessage(null), 3000);
     } catch (err: unknown) {
       alert((err as Error).message || '승인 처리 중 오류가 발생했습니다.');
     } finally {
       setApprovingId(null);
+    }
+  };
+
+  // Cancel approval of an applicant
+  const handleCancelApplicant = async (applicationId: string) => {
+    setCancellingId(applicationId);
+    setActionMessage(null);
+
+    try {
+      const res = await fetch(`/api/client/applications/${applicationId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'applied' }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || '배정 취소 처리에 실패했습니다.');
+      }
+
+      // Update local state immediately
+      setApplicants((prev) =>
+        prev.map((app) =>
+          app.id === applicationId ? { ...app, status: 'applied' } : app
+        )
+      );
+
+      // Update project counters
+      setProjects((prev) =>
+        prev.map((proj) =>
+          proj.id === selectedProject?.id
+            ? { ...proj, approvedCount: Math.max(0, proj.approvedCount - 1) }
+            : proj
+        )
+      );
+
+      if (selectedProject) {
+        setSelectedProject((prev) =>
+          prev ? { ...prev, approvedCount: Math.max(0, prev.approvedCount - 1) } : null
+        );
+      }
+
+      setActionMessage('배정이 취소되었습니다.');
+      setTimeout(() => setActionMessage(null), 3000);
+    } catch (err: unknown) {
+      alert((err as Error).message || '배정 취소 처리 중 오류가 발생했습니다.');
+    } finally {
+      setCancellingId(null);
     }
   };
 
@@ -201,14 +292,14 @@ export default function ClientDashboardPage() {
 
           <Link
             href="/client/request"
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-brand hover:bg-brand-hover active:scale-[0.99] text-inverse text-sm font-bold rounded-xl shadow-xs transition-all shrink-0"
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-brand hover:bg-brand-hover active:scale-[0.99] text-inverse text-sm font-bold rounded-xl shadow-xs transition-all shrink-0 cursor-pointer"
           >
             <PlusCircle className="w-4 h-4" />
             <span>새 행사 요청</span>
           </Link>
         </div>
 
-        {/* Live Metrics Grid */}
+        {/* Live Metrics Grid (Brand Palette Unified) */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <div className="p-4 bg-surface border border-border rounded-2xl shadow-xs">
             <div className="text-xs text-muted font-semibold">발주한 행사</div>
@@ -226,26 +317,26 @@ export default function ClientDashboardPage() {
             <div className="text-[11px] text-muted mt-1">현장 총 모집 목표</div>
           </div>
 
-          <div className="p-4 bg-surface border border-brand-border/60 bg-brand-subtle/30 rounded-2xl shadow-xs">
+          <div className="p-4 bg-surface border border-border rounded-2xl shadow-xs">
             <div className="text-xs text-brand-strong font-bold flex items-center gap-1">
-              <Users className="w-3.5 h-3.5" />
+              <Users className="w-3.5 h-3.5 text-brand" />
               지원한 크루
             </div>
-            <div className="text-2xl font-black text-brand-strong mt-1 tabular-nums">
+            <div className="text-2xl font-black text-brand mt-1 tabular-nums">
               {totalApplicantsCount}명
             </div>
-            <div className="text-[11px] text-brand-strong mt-1">심사 대기 및 승인</div>
+            <div className="text-[11px] text-muted mt-1">심사 대기 및 승인</div>
           </div>
 
-          <div className="p-4 bg-surface border border-emerald-200 bg-emerald-50/40 rounded-2xl shadow-xs">
-            <div className="text-xs text-emerald-700 font-bold flex items-center gap-1">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+          <div className="p-4 bg-surface border border-border rounded-2xl shadow-xs">
+            <div className="text-xs text-brand-strong font-bold flex items-center gap-1">
+              <CheckCircle2 className="w-3.5 h-3.5 text-brand" />
               선발 완료
             </div>
-            <div className="text-2xl font-black text-emerald-700 mt-1 tabular-nums">
+            <div className="text-2xl font-black text-brand-strong mt-1 tabular-nums">
               {totalApprovedCrew}명
             </div>
-            <div className="text-[11px] text-emerald-600 mt-1">배정 확정 인원</div>
+            <div className="text-[11px] text-muted mt-1">배정 확정 인원</div>
           </div>
         </div>
 
@@ -298,38 +389,47 @@ export default function ClientDashboardPage() {
                     className="group bg-surface border border-border hover:border-brand/40 rounded-3xl p-5 shadow-xs hover:shadow-md transition-all cursor-pointer flex flex-col justify-between"
                   >
                     <div>
-                      {/* Card Header */}
+                      {/* Card Header: Standardized Status Badge & Clear Registration Date */}
                       <div className="flex items-center justify-between gap-2 mb-3">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          {isFullyApproved ? (
-                            <span className="text-[11px] font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200">
-                              선발 완료
-                            </span>
-                          ) : hasApplicants ? (
-                            <span className="text-[11px] font-extrabold px-2.5 py-0.5 rounded-full bg-brand-soft text-brand-strong border border-brand/20">
-                              심사 대기중 ({proj.applicantCount}명)
-                            </span>
-                          ) : (
-                            <span className="text-[11px] font-extrabold px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
-                              지원자 모집 중
-                            </span>
-                          )}
-                          <span className="text-[11px] text-muted font-medium">
-                            {proj.startDate}
+                        {isFullyApproved ? (
+                          <span className="bg-brand-soft/40 text-brand-strong font-bold text-xs px-2.5 py-1 rounded-lg border border-brand/20">
+                            선발 완료
                           </span>
-                        </div>
-                        <span className="text-[11px] text-muted font-medium">
-                          {new Date(proj.createdAt).toLocaleDateString()}
+                        ) : hasApplicants ? (
+                          <span className="bg-brand-soft/30 text-brand-strong font-bold text-xs px-2.5 py-1 rounded-lg border border-brand/20">
+                            심사 대기중 ({proj.applicantCount}명)
+                          </span>
+                        ) : (
+                          <span className="bg-surface-muted text-muted font-bold text-xs px-2.5 py-1 rounded-lg border border-border">
+                            모집 중
+                          </span>
+                        )}
+
+                        <span className="text-xs text-muted font-medium">
+                          등록일 {formatRegistrationDate(proj.createdAt)}
                         </span>
                       </div>
 
-                      {/* Title & Venue */}
+                      {/* Project Title & Venue */}
                       <h3 className="font-extrabold text-ink text-base group-hover:text-brand transition-colors line-clamp-1">
                         {proj.title}
                       </h3>
                       <div className="flex items-center gap-1.5 text-xs text-muted mt-1.5">
-                        <MapPin className="w-3.5 h-3.5 shrink-0 text-muted/80" />
+                        <MapPin className="w-3.5 h-3.5 shrink-0 text-muted/70" />
                         <span className="truncate">{proj.venueName || proj.roadAddress}</span>
+                      </div>
+
+                      {/* Prominent Event Schedule Box */}
+                      <div className="mt-3.5 p-3 rounded-2xl bg-canvas border border-border-subtle flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-xl bg-surface border border-border flex items-center justify-center shrink-0 text-brand">
+                          <Calendar className="w-4 h-4" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="text-[11px] font-semibold text-muted">행사 일정</div>
+                          <div className="text-xs sm:text-sm font-bold text-ink truncate">
+                            {formatEventSchedule(proj)}
+                          </div>
+                        </div>
                       </div>
                     </div>
 
@@ -345,12 +445,11 @@ export default function ClientDashboardPage() {
                           </div>
                         </div>
                         <div className="text-xs">
-                          <span className="font-extrabold text-ink">
-                            지원 {proj.applicantCount}명
-                          </span>
+                          <span className="font-medium text-muted">지원 </span>
+                          <span className="text-brand font-extrabold">{proj.applicantCount}명</span>
                           <span className="text-muted"> / 목표 {proj.requiredCount}명</span>
-                          <span className="text-emerald-600 font-bold ml-1">
-                            (선발 {proj.approvedCount}명)
+                          <span className="text-muted font-medium ml-1.5">
+                            · 선발 <span className="text-brand-strong font-bold">{proj.approvedCount}명</span>
                           </span>
                         </div>
                       </div>
@@ -388,7 +487,11 @@ export default function ClientDashboardPage() {
                     지원자 심사
                   </span>
                   <span className="text-xs text-muted">
-                    목표 {selectedProject.requiredCount}명 중 {selectedProject.approvedCount}명 선발 완료
+                    목표 {selectedProject.requiredCount}명 중{' '}
+                    <strong className="text-brand-strong font-bold">
+                      {selectedProject.approvedCount}명
+                    </strong>{' '}
+                    선발 완료
                   </span>
                 </div>
                 <h2 className="text-lg sm:text-xl font-extrabold text-ink line-clamp-1">
@@ -399,14 +502,15 @@ export default function ClientDashboardPage() {
                 type="button"
                 onClick={() => setIsModalOpen(false)}
                 className="w-8 h-8 rounded-full bg-surface-muted hover:bg-canvas text-muted hover:text-ink flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                aria-label="모달 닫기"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Action Alert Banner */}
+            {/* Action Alert Banner (Brand Themed) */}
             {actionMessage && (
-              <div className="bg-emerald-500 text-white px-5 py-2.5 text-xs font-bold flex items-center justify-between shrink-0 animate-in fade-in">
+              <div className="bg-brand text-white px-5 py-2.5 text-xs font-bold flex items-center justify-between shrink-0 animate-in fade-in">
                 <div className="flex items-center gap-2">
                   <Check className="w-4 h-4" />
                   <span>{actionMessage}</span>
@@ -423,7 +527,7 @@ export default function ClientDashboardPage() {
                 </div>
               ) : applicants.length === 0 ? (
                 <div className="py-12 text-center text-muted space-y-2">
-                  <User className="w-10 h-10 mx-auto text-muted/60" />
+                  <User className="w-10 h-10 mx-auto text-muted/50" />
                   <div className="font-bold text-ink text-sm">아직 지원한 크루가 없습니다</div>
                   <p className="text-xs">
                     홈 피드에 공고가 게시되었으며, 크루들의 지원이 접수되면 이곳에 프로필이 노출됩니다.
@@ -432,81 +536,88 @@ export default function ClientDashboardPage() {
               ) : (
                 applicants.map((app) => {
                   const isApproved = app.status === 'approved' || app.status === 'accepted';
-                  const isProcessing = approvingId === app.id;
+                  const isProcessing = approvingId === app.id || cancellingId === app.id;
                   const crew = app.crew;
 
                   return (
                     <div
                       key={app.id}
                       className={cn(
-                        'p-4 sm:p-5 rounded-2xl border transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4',
+                        'p-4 sm:p-5 rounded-2xl border transition-all flex flex-col sm:flex-row items-start gap-4 sm:gap-5',
                         isApproved
-                          ? 'bg-emerald-50/30 border-emerald-200'
+                          ? 'bg-brand-soft/20 border-brand/30'
                           : 'bg-surface border-border hover:border-brand/40 shadow-xs'
                       )}
                     >
-                      {/* Left: Crew Profile Specs */}
-                      <div className="flex items-start gap-3.5 min-w-0 flex-1">
-                        {/* Upper Body Visual Profile Avatar */}
-                        <div className="w-14 h-14 rounded-2xl bg-brand-soft border border-brand/20 overflow-hidden relative shrink-0 flex items-center justify-center shadow-xs">
-                          {crew.profileImageUrl ? (
-                            <Image
-                              src={crew.profileImageUrl}
-                              alt={crew.fullName}
-                              fill
-                              className="object-cover"
-                              unoptimized
-                            />
-                          ) : (
-                            <div className="font-black text-brand-strong text-lg">
-                              {crew.fullName.slice(0, 1)}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Crew Details Info */}
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <h4 className="font-extrabold text-ink text-base">
-                              {crew.fullName}
-                            </h4>
-                            <span className="text-xs text-muted flex items-center gap-1">
-                              <Phone className="w-3 h-3 text-muted" />
-                              {crew.phone}
+                      {/* Left: Upper Body Visual Profile Frame (w-28 h-36 Photo Card Frame) */}
+                      <div className="w-28 h-36 rounded-2xl overflow-hidden border border-border bg-surface-muted shadow-2xs relative shrink-0">
+                        {crew.profileImageUrl ? (
+                          <Image
+                            src={crew.profileImageUrl}
+                            alt={crew.fullName}
+                            fill
+                            className="object-cover"
+                            unoptimized
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-surface-muted flex flex-col items-center justify-center text-muted/60 gap-1.5 select-none p-2 text-center">
+                            <User className="w-9 h-9 text-muted/50" />
+                            <span className="text-[10px] font-semibold text-muted/70">
+                              프로필 미등록
                             </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Center & Right: Details and Action */}
+                      <div className="min-w-0 flex-1 flex flex-col justify-between self-stretch">
+                        <div>
+                          {/* Name, Contact & Status */}
+                          <div className="flex items-center justify-between gap-2 flex-wrap">
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-extrabold text-ink text-base">
+                                {crew.fullName}
+                              </h4>
+                              <span className="text-xs text-muted flex items-center gap-1 font-medium">
+                                <Phone className="w-3 h-3 text-muted/70" />
+                                {crew.phone}
+                              </span>
+                            </div>
+
+                            {/* Status Badge */}
                             {isApproved ? (
-                              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1">
-                                <Check className="w-3 h-3" />
+                              <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-brand-soft text-brand-strong border border-brand/20 flex items-center gap-1">
+                                <Check className="w-3.5 h-3.5" />
                                 선발 완료
                               </span>
                             ) : (
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200">
+                              <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-surface-muted text-muted border border-border">
                                 심사 대기
                               </span>
                             )}
                           </div>
 
                           {/* Physical Specs & Experience Chips */}
-                          <div className="mt-2 flex items-center gap-1.5 flex-wrap text-[11px] text-muted">
-                            <span className="px-2 py-0.5 rounded-md bg-surface-muted font-medium text-ink">
+                          <div className="mt-2.5 flex items-center gap-1.5 flex-wrap text-[11px]">
+                            <span className="px-2 py-0.5 rounded-md bg-surface-muted font-medium text-ink border border-border/50">
                               키 {crew.heightCm ? `${crew.heightCm}cm` : '176cm'}
                             </span>
-                            <span className="px-2 py-0.5 rounded-md bg-surface-muted font-medium text-ink">
+                            <span className="px-2 py-0.5 rounded-md bg-surface-muted font-medium text-ink border border-border/50">
                               상/하의 {crew.topSize || 'L'} / {crew.bottomSize || '32'}
                             </span>
-                            <span className="px-2 py-0.5 rounded-md bg-surface-muted font-medium text-ink">
+                            <span className="px-2 py-0.5 rounded-md bg-surface-muted font-medium text-ink border border-border/50">
                               신발 {crew.shoeSizeMm ? `${crew.shoeSizeMm}mm` : '270mm'}
                             </span>
-                            <span className="px-2 py-0.5 rounded-md bg-brand-soft text-brand-strong font-bold">
+                            <span className="px-2 py-0.5 rounded-md bg-brand-soft text-brand-strong font-bold border border-brand/20">
                               경력 {crew.experienceYears}년 ({crew.totalShiftsCompleted}회)
                             </span>
-                            <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 font-bold">
+                            <span className="px-2 py-0.5 rounded-md bg-surface-muted text-ink font-bold border border-border/50">
                               ★ {crew.ratingAvg}
                             </span>
                           </div>
 
-                          {/* Bio */}
-                          <p className="text-xs text-muted mt-2 line-clamp-1">
+                          {/* One-line Bio */}
+                          <p className="text-xs text-muted mt-2 leading-relaxed">
                             "{crew.bio}"
                           </p>
 
@@ -518,35 +629,42 @@ export default function ClientDashboardPage() {
                             </div>
                           )}
                         </div>
-                      </div>
 
-                      {/* Right: Approval Action */}
-                      <div className="w-full sm:w-auto shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-border-subtle flex justify-end">
-                        {isApproved ? (
-                          <div className="px-4 py-2 rounded-xl bg-emerald-100 text-emerald-800 text-xs font-bold flex items-center gap-1.5">
-                            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                            <span>선발 확정</span>
-                          </div>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => handleApproveApplicant(app.id)}
-                            disabled={isProcessing}
-                            className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-brand hover:bg-brand-hover text-inverse text-xs sm:text-sm font-bold shadow-xs active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-1.5"
-                          >
-                            {isProcessing ? (
-                              <>
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                                <span>선발 처리 중...</span>
-                              </>
-                            ) : (
-                              <>
-                                <Sparkles className="w-4 h-4 text-amber-300" />
-                                <span>승인(합격)</span>
-                              </>
-                            )}
-                          </button>
-                        )}
+                        {/* Action Area: Clear & Non-Redundant */}
+                        <div className="mt-4 pt-3 border-t border-border-subtle flex items-center justify-end">
+                          {isApproved ? (
+                            <div className="flex items-center gap-3">
+                              <span className="text-xs text-muted">선발 완료된 크루입니다</span>
+                              <button
+                                type="button"
+                                onClick={() => handleCancelApplicant(app.id)}
+                                disabled={isProcessing}
+                                className="text-xs text-muted hover:text-ink underline underline-offset-2 transition-colors cursor-pointer"
+                              >
+                                {cancellingId === app.id ? '취소 중...' : '배정 취소'}
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleApproveApplicant(app.id)}
+                              disabled={isProcessing}
+                              className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-brand hover:bg-brand-hover text-inverse text-xs sm:text-sm font-bold shadow-xs active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                            >
+                              {approvingId === app.id ? (
+                                <>
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                  <span>선발 처리 중...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Sparkles className="w-4 h-4 text-white" />
+                                  <span>이 크루 선발하기</span>
+                                </>
+                              )}
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   );
@@ -554,19 +672,12 @@ export default function ClientDashboardPage() {
               )}
             </div>
 
-            {/* Modal Footer */}
-            <div className="p-4 sm:p-5 border-t border-border bg-canvas/60 flex items-center justify-between text-xs text-muted shrink-0">
-              <span className="flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-brand" />
-                선발된 크루에게 즉시 근무 안내 메시지가 발송됩니다.
+            {/* Modal Footer (Clean 1-line guidance banner without cramped close button) */}
+            <div className="px-6 py-4 border-t border-border bg-canvas/80 flex items-center justify-center text-xs text-muted shrink-0">
+              <span className="flex items-center gap-2 font-medium">
+                <ShieldCheck className="w-4 h-4 text-brand shrink-0" />
+                <span>선발된 크루에게 현장 안내 알림이 자동으로 발송됩니다.</span>
               </span>
-              <button
-                type="button"
-                onClick={() => setIsModalOpen(false)}
-                className="px-4 py-2 rounded-xl bg-surface border border-border text-ink font-bold hover:bg-canvas cursor-pointer"
-              >
-                닫기
-              </button>
             </div>
           </div>
         </div>

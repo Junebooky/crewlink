@@ -97,6 +97,24 @@ export async function PATCH(
           console.warn('[PATCH /api/client/applications/[id]] assignment insert notice:', assignError);
         }
       }
+    } else if (validStatus === 'applied') {
+      // Revert assignment and free the slot
+      const { data: assignment } = await supabase
+        .from('assignments')
+        .select('id, shift_slot_id')
+        .eq('shift_id', application.shift_id)
+        .eq('crew_person_id', application.crew_person_id)
+        .maybeSingle();
+
+      if (assignment) {
+        if (assignment.shift_slot_id) {
+          await supabase
+            .from('shift_slots')
+            .update({ status: 'open' })
+            .eq('id', assignment.shift_slot_id);
+        }
+        await supabase.from('assignments').delete().eq('id', assignment.id);
+      }
     }
 
     return NextResponse.json({
