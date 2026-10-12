@@ -19,6 +19,7 @@ export function PublicHeader({ className }: PublicHeaderProps) {
     fullName: string;
     email?: string;
     roles: string[];
+    profileImageUrl?: string | null;
   } | null>(null);
   const [isLoadingSession, setIsLoadingSession] = useState(true);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
@@ -30,7 +31,20 @@ export function PublicHeader({ className }: PublicHeaderProps) {
 
     async function syncAuth() {
       try {
-        const res = await fetch('/api/auth/me', { cache: 'no-store' });
+        const isExplicitlyLoggedOut =
+          typeof window !== 'undefined' && localStorage.getItem('crewlink_logged_out') === 'true';
+
+        // In dev mode, provide fallback dev actor header if not explicitly logged out
+        const headers: Record<string, string> =
+          process.env.NODE_ENV !== 'production' && !isExplicitlyLoggedOut
+            ? { 'x-actor-person-id': '11111111-1111-1111-1111-111111111111' }
+            : {};
+
+        const res = await fetch('/api/auth/me', {
+          cache: 'no-store',
+          headers,
+        });
+
         if (res.ok) {
           const data = await res.json();
           if (isMounted) {
@@ -53,6 +67,10 @@ export function PublicHeader({ className }: PublicHeaderProps) {
     // Initial check
     syncAuth();
 
+    // Listen to custom profile update event (e.g. when crew updates photo)
+    const handleAuthChanged = () => syncAuth();
+    window.addEventListener('crewlink:auth-changed', handleAuthChanged);
+
     // Listen reactively to auth state changes (explicit sign in, sign out)
     const {
       data: { subscription },
@@ -62,12 +80,16 @@ export function PublicHeader({ className }: PublicHeaderProps) {
         setSessionUser(null);
         setIsLoadingSession(false);
       } else if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('crewlink_logged_out');
+        }
         syncAuth();
       }
     });
 
     return () => {
       isMounted = false;
+      window.removeEventListener('crewlink:auth-changed', handleAuthChanged);
       subscription.unsubscribe();
     };
   }, []);
@@ -137,6 +159,9 @@ export function PublicHeader({ className }: PublicHeaderProps) {
           <AccountMenu
             user={sessionUser}
             onLogout={async () => {
+              if (typeof window !== 'undefined') {
+                localStorage.setItem('crewlink_logged_out', 'true');
+              }
               const supabase = createClient();
               await supabase.auth.signOut();
               setSessionUser(null);

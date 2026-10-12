@@ -12,13 +12,11 @@ import {
   Clock,
   Globe2,
   Lock,
-  CheckCircle2,
   AlertCircle,
   Loader2,
   ChevronDown,
   Check,
   Trash2,
-  Move,
   Sparkles,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -394,6 +392,9 @@ export default function CrewProfilePage() {
 
       setProfileImageUrl(data.url);
       setIsCropModalOpen(false);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('crewlink:auth-changed'));
+      }
       // [요구사항 1]: 프로필 사진 등록 시 성공 피드백 팝업창을 띄우지 않음!
     } catch (err: unknown) {
       setFeedback({
@@ -422,6 +423,9 @@ export default function CrewProfilePage() {
     setCropSourceUrl(null);
     if (avatarInputRef.current) {
       avatarInputRef.current.value = '';
+    }
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('crewlink:auth-changed'));
     }
   };
 
@@ -484,14 +488,18 @@ export default function CrewProfilePage() {
         throw new Error(data.message || '프로필 정보 저장에 실패했습니다.');
       }
 
-      // [요구사항 2]: 저장 완료 시 버튼 상태를 '프로필 저장 완료!'로 전환
+      // [요구사항 2]: 저장 완료 시 버튼 상태를 '저장완료'로 전환
       setIsSavedSuccess(true);
       if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
       savedTimerRef.current = setTimeout(() => {
         setIsSavedSuccess(false);
       }, 2500);
 
-      setFeedback({ type: 'success', message: '프로필 정보가 안전하게 저장되었습니다.' });
+      // 네브바 프로필 동기화
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('crewlink:auth-changed'));
+      }
+      // [요구사항 4]: "프로필 정보가 안전하게 저장되었습니다" 메세지 카드 섹션 아예 삭제 (setFeedback 호출 제거)
     } catch (err: unknown) {
       setFeedback({
         type: 'error',
@@ -537,21 +545,10 @@ export default function CrewProfilePage() {
             </div>
           )}
 
-          {/* 피드백 알림 배너 */}
-          {feedback && (
-            <div
-              className={cn(
-                'p-4 rounded-2xl border text-xs flex items-start gap-2.5 animate-in fade-in duration-200',
-                feedback.type === 'success'
-                  ? 'bg-brand-soft border-brand-border text-brand-strong font-medium'
-                  : 'bg-white border-border text-ink'
-              )}
-            >
-              {feedback.type === 'success' ? (
-                <CheckCircle2 className="w-4 h-4 text-brand shrink-0 mt-0.5" />
-              ) : (
-                <AlertCircle className="w-4 h-4 text-muted shrink-0 mt-0.5" />
-              )}
+          {/* [요구사항 4]: 성공 메시지 카드 섹션 완전 삭제 (오류 발생 시에만 최소 에러 배너 표시) */}
+          {feedback && feedback.type === 'error' && (
+            <div className="p-4 rounded-2xl border border-red-200 bg-red-50 text-xs text-red-700 flex items-start gap-2.5 animate-in fade-in duration-200">
+              <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
               <span className="leading-relaxed">{feedback.message}</span>
             </div>
           )}
@@ -642,28 +639,15 @@ export default function CrewProfilePage() {
                       </button>
 
                       {currentPhoto && (
-                        <>
-                          <button
-                            type="button"
-                            disabled={uploadingAvatar}
-                            onClick={handleOpenCropForCurrent}
-                            className="h-10 px-3.5 rounded-xl border border-border bg-white hover:border-brand-border text-xs font-bold text-ink inline-flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
-                            title="원형 안 위치 및 확대 조절"
-                          >
-                            <Move className="w-3.5 h-3.5 text-muted" />
-                            <span>위치 조절</span>
-                          </button>
-
-                          <button
-                            type="button"
-                            disabled={uploadingAvatar}
-                            onClick={handleRemovePhoto}
-                            className="h-10 px-3 rounded-xl border border-transparent text-muted hover:text-danger text-xs font-semibold inline-flex items-center gap-1 transition-colors cursor-pointer"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                            <span>삭제</span>
-                          </button>
-                        </>
+                        <button
+                          type="button"
+                          disabled={uploadingAvatar}
+                          onClick={handleRemovePhoto}
+                          className="h-10 px-3 rounded-xl border border-transparent text-muted hover:text-danger text-xs font-semibold inline-flex items-center gap-1 transition-colors cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>삭제</span>
+                        </button>
                       )}
                     </div>
 
@@ -903,10 +887,7 @@ export default function CrewProfilePage() {
                   type="submit"
                   disabled={isFormDisabled || !fullName.trim()}
                   className={cn(
-                    'w-full h-[52px] rounded-2xl text-white font-bold text-base shadow-sm transition-all active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer',
-                    isSavedSuccess
-                      ? 'bg-emerald-600 hover:bg-emerald-600 shadow-emerald-600/20'
-                      : 'bg-brand hover:bg-brand-hover',
+                    'w-full h-[52px] rounded-2xl text-white font-bold text-base shadow-sm transition-all active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer bg-brand hover:bg-brand-hover',
                     (isFormDisabled || !fullName.trim()) && 'opacity-60 cursor-not-allowed'
                   )}
                 >
@@ -916,9 +897,9 @@ export default function CrewProfilePage() {
                       <span>프로필 저장하는 중…</span>
                     </>
                   ) : isSavedSuccess ? (
-                    <div className="flex items-center gap-2 text-white animate-in zoom-in-95 duration-150">
-                      <CheckCircle2 className="w-5 h-5 text-emerald-200" />
-                      <span>프로필 저장 완료!</span>
+                    <div className="flex items-center gap-1.5 text-white animate-in zoom-in-95 duration-150">
+                      <Check className="w-5 h-5 stroke-[2.5]" />
+                      <span>저장완료</span>
                     </div>
                   ) : (
                     <span>프로필 저장하기</span>

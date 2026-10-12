@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAuthenticatedContext } from '@/lib/auth/serverAuth';
+import { createAdminClient } from '@/lib/supabase/server';
 
 export async function GET(request: Request) {
   try {
@@ -7,6 +8,16 @@ export async function GET(request: Request) {
     if (errorResponse || !authContext) {
       return NextResponse.json({ authenticated: false, roles: [] }, { status: 200 });
     }
+
+    // 크루 프로필 사진 조회
+    const adminClient = createAdminClient();
+    const { data: profile } = await adminClient
+      .from('crew_profiles')
+      .select('profile_image_url, profile_photo_url')
+      .eq('person_id', authContext.personId)
+      .maybeSingle();
+
+    const profileImageUrl = profile?.profile_image_url || profile?.profile_photo_url || null;
 
     return NextResponse.json({
       authenticated: true,
@@ -16,6 +27,7 @@ export async function GET(request: Request) {
         fullName: authContext.fullName,
         email: authContext.email,
         roles: authContext.roles,
+        profileImageUrl,
       },
     });
   } catch {

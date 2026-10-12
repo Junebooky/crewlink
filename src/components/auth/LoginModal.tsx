@@ -57,6 +57,10 @@ export function LoginModal({
       }
 
       // 로그인 성공 처리
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('crewlink_logged_out');
+        window.dispatchEvent(new CustomEvent('crewlink:auth-changed'));
+      }
       onClose();
       if (onSuccess) {
         onSuccess();
@@ -97,6 +101,10 @@ export function LoginModal({
       });
 
       // 로그인 완료
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('crewlink_logged_out');
+        window.dispatchEvent(new CustomEvent('crewlink:auth-changed'));
+      }
       onClose();
       if (onSuccess) {
         onSuccess();

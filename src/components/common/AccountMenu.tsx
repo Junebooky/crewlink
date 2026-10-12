@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   User,
   Calendar,
@@ -20,6 +21,7 @@ export interface AccountMenuProps {
     fullName: string;
     email?: string;
     roles: string[];
+    profileImageUrl?: string | null;
   };
   onLogout?: () => void;
 }
@@ -54,6 +56,9 @@ export function AccountMenu({ user, onLogout }: AccountMenuProps) {
 
   const handleLogout = async () => {
     try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('crewlink_logged_out', 'true');
+      }
       const supabase = createClient();
       await supabase.auth.signOut();
     } catch (e) {
@@ -83,8 +88,18 @@ export function AccountMenu({ user, onLogout }: AccountMenuProps) {
           isOpen && 'border-brand ring-2 ring-brand/10'
         )}
       >
-        <div className="w-7 h-7 rounded-full bg-brand-soft text-brand-strong font-black text-xs flex items-center justify-center">
-          {user.fullName.slice(0, 1) || '크'}
+        <div className="w-7 h-7 rounded-full overflow-hidden bg-brand-soft text-brand-strong font-black text-xs relative flex items-center justify-center shrink-0 border border-border">
+          {user.profileImageUrl ? (
+            <Image
+              src={user.profileImageUrl}
+              alt={user.fullName}
+              fill
+              className="object-cover"
+              unoptimized
+            />
+          ) : (
+            <span>{user.fullName.slice(0, 1) || '크'}</span>
+          )}
         </div>
         <span className="max-w-[80px] truncate hidden sm:inline">{user.fullName}</span>
         <span className="text-[10px] font-semibold text-brand bg-brand-subtle px-1.5 py-0.5 rounded-md border border-brand-border hidden md:inline">
@@ -111,14 +126,29 @@ export function AccountMenu({ user, onLogout }: AccountMenuProps) {
         )}
       >
         {/* User Info Header */}
-        <div className="px-3 py-2.5 border-b border-border-subtle mb-1">
-          <p className="text-xs font-bold text-ink truncate">{user.fullName}</p>
-          {user.email && (
-            <p className="text-[11px] text-muted truncate mt-0.5">{user.email}</p>
-          )}
-          <span className="inline-block mt-1 text-[10px] font-semibold text-brand bg-brand-soft px-1.5 py-0.5 rounded border border-brand-border">
-            {isClient ? '주최사 파트너' : '크루 멤버'}
-          </span>
+        <div className="px-3 py-2.5 border-b border-border-subtle mb-1 flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-full overflow-hidden bg-brand-soft text-brand-strong font-bold text-xs relative flex items-center justify-center shrink-0 border border-border">
+            {user.profileImageUrl ? (
+              <Image
+                src={user.profileImageUrl}
+                alt={user.fullName}
+                fill
+                className="object-cover"
+                unoptimized
+              />
+            ) : (
+              <span>{user.fullName.slice(0, 1) || '크'}</span>
+            )}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-bold text-ink truncate">{user.fullName}</p>
+            {user.email && (
+              <p className="text-[11px] text-muted truncate mt-0.5">{user.email}</p>
+            )}
+            <span className="inline-block mt-0.5 text-[10px] font-semibold text-brand bg-brand-soft px-1.5 py-0.5 rounded border border-brand-border">
+              {isClient ? '주최사 파트너' : '크루 멤버'}
+            </span>
+          </div>
         </div>
 
         {/* Dynamic Items based on verified role */}
