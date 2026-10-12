@@ -5,11 +5,6 @@ import Image from 'next/image';
 import {
   User,
   Camera,
-  Shirt,
-  Ruler,
-  Footprints,
-  Clock,
-  Globe2,
   Lock,
   AlertCircle,
   Loader2,
@@ -558,14 +553,23 @@ export default function CrewProfilePage() {
               <p className="text-xs text-muted">프로필 정보를 불러오는 중입니다…</p>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-7">
+            <form onSubmit={handleSubmit}>
               {/* 2. 프로필 사진 영역 (상반신 1장 단일화) */}
-              <section className="bg-white rounded-3xl border border-border-subtle p-5 sm:p-6 space-y-4 shadow-2xs">
-                <div>
-                  <h2 className="text-base font-bold text-ink">프로필 사진</h2>
-                  <p className="text-xs text-muted mt-0.5 break-keep">
-                    얼굴이 잘 보이는 밝은 인상의 사진을 올려주세요.
-                  </p>
+              <section className="bg-white rounded-3xl p-5 sm:p-6 shadow-[0_8px_24px_rgba(15,23,42,0.08)] hover:shadow-[0_12px_32px_rgba(15,23,42,0.12)] transition-all duration-200 mb-5">
+                <div className="flex items-center gap-2 mb-4 text-left">
+                  <Image
+                    src="/assets/clay/profile.png"
+                    alt="프로필 사진"
+                    width={28}
+                    height={28}
+                    className="w-6 h-6 sm:w-7 sm:h-7 object-contain shrink-0"
+                  />
+                  <div>
+                    <h2 className="text-base font-bold text-ink">프로필 사진</h2>
+                    <p className="text-xs text-muted mt-0.5 break-keep">
+                      얼굴이 잘 보이는 밝은 인상의 사진을 올려주세요.
+                    </p>
+                  </div>
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 pt-1">
@@ -667,12 +671,21 @@ export default function CrewProfilePage() {
               </section>
 
               {/* 3. 기본 정보 (이름, 연락처) */}
-              <section className="bg-white rounded-3xl border border-border-subtle p-5 sm:p-6 space-y-4 shadow-2xs">
-                <div>
-                  <h2 className="text-base font-bold text-ink">기본 정보</h2>
-                  <p className="text-xs text-muted mt-0.5">
-                    근무 배정 확인 및 계약서 작성에 활용돼요.
-                  </p>
+              <section className="bg-white rounded-3xl p-5 sm:p-6 shadow-[0_8px_24px_rgba(15,23,42,0.08)] hover:shadow-[0_12px_32px_rgba(15,23,42,0.12)] transition-all duration-200 mb-5">
+                <div className="flex items-center gap-2 mb-4 text-left">
+                  <Image
+                    src="/assets/clay/phone.png"
+                    alt="기본 정보"
+                    width={28}
+                    height={28}
+                    className="w-6 h-6 sm:w-7 sm:h-7 object-contain shrink-0"
+                  />
+                  <div>
+                    <h2 className="text-base font-bold text-ink">기본 정보</h2>
+                    <p className="text-xs text-muted mt-0.5">
+                      근무 배정 확인 및 계약서 작성에 활용돼요.
+                    </p>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
@@ -717,20 +730,28 @@ export default function CrewProfilePage() {
               </section>
 
               {/* 4. 유니폼 영역 ("유니폼 핏을 맞춰볼까요?") */}
-              <section className="bg-white rounded-3xl border border-border-subtle p-5 sm:p-6 space-y-5 shadow-2xs">
-                <div>
-                  <h2 className="text-base font-bold text-ink">유니폼 핏을 맞춰볼까요?</h2>
-                  <p className="text-xs text-muted mt-0.5 break-keep">
-                    행사 당일 딱 맞는 근무복을 준비해 드릴게요.
-                  </p>
+              <section className="bg-white rounded-3xl p-5 sm:p-6 shadow-[0_8px_24px_rgba(15,23,42,0.08)] hover:shadow-[0_12px_32px_rgba(15,23,42,0.12)] transition-all duration-200 mb-5">
+                <div className="flex items-center gap-2 mb-4 text-left">
+                  <Image
+                    src="/assets/clay/shirt.png"
+                    alt="유니폼 규격"
+                    width={28}
+                    height={28}
+                    className="w-6 h-6 sm:w-7 sm:h-7 object-contain shrink-0"
+                  />
+                  <div>
+                    <h2 className="text-base font-bold text-ink">유니폼 핏을 맞춰볼까요?</h2>
+                    <p className="text-xs text-muted mt-0.5 break-keep">
+                      행사 당일 딱 맞는 근무복을 준비해 드릴게요.
+                    </p>
+                  </div>
                 </div>
 
                 <div className="space-y-4">
                   {/* 키 (cm) */}
                   <div className="space-y-1.5 text-xs">
-                    <label htmlFor="crew-height" className="font-semibold text-ink flex items-center gap-1.5">
-                      <Ruler className="w-3.5 h-3.5 text-brand" />
-                      <span>키 (cm)</span>
+                    <label htmlFor="crew-height" className="font-semibold text-ink">
+                      키 (cm)
                     </label>
                     <div className="relative">
                       <input
@@ -751,9 +772,8 @@ export default function CrewProfilePage() {
 
                   {/* 상의 유니폼 사이즈 (Top Size 칩) */}
                   <div className="space-y-2 text-xs">
-                    <span className="font-semibold text-ink flex items-center gap-1.5">
-                      <Shirt className="w-3.5 h-3.5 text-brand" />
-                      <span>상의 유니폼 사이즈 (Top)</span>
+                    <span className="font-semibold text-ink">
+                      상의 유니폼 사이즈 (Top)
                     </span>
                     <div className="grid grid-cols-5 gap-2">
                       {TOP_SIZES.map((size) => {
@@ -779,9 +799,8 @@ export default function CrewProfilePage() {
 
                   {/* 하의 사이즈 (CustomSelect 적용) */}
                   <div className="space-y-1.5 text-xs">
-                    <label htmlFor="crew-bottom" className="font-semibold text-ink flex items-center gap-1.5">
-                      <Shirt className="w-3.5 h-3.5 text-brand" />
-                      <span>하의 사이즈 (허리)</span>
+                    <label htmlFor="crew-bottom" className="font-semibold text-ink">
+                      하의 사이즈 (허리)
                     </label>
                     <CustomSelect
                       id="crew-bottom"
@@ -793,9 +812,8 @@ export default function CrewProfilePage() {
 
                   {/* 신발 사이즈 (CustomSelect 적용) */}
                   <div className="space-y-1.5 text-xs">
-                    <label htmlFor="crew-shoes" className="font-semibold text-ink flex items-center gap-1.5">
-                      <Footprints className="w-3.5 h-3.5 text-brand" />
-                      <span>신발 사이즈 (단화/운동화)</span>
+                    <label htmlFor="crew-shoes" className="font-semibold text-ink">
+                      신발 사이즈 (단화/운동화)
                     </label>
                     <CustomSelect
                       id="crew-shoes"
@@ -808,20 +826,28 @@ export default function CrewProfilePage() {
               </section>
 
               {/* 5. 경력/소개 ("현장 경험이 있다면 알려주세요") */}
-              <section className="bg-white rounded-3xl border border-border-subtle p-5 sm:p-6 space-y-4 shadow-2xs">
-                <div>
-                  <h2 className="text-base font-bold text-ink">현장 경험이 있다면 알려주세요</h2>
-                  <p className="text-xs text-muted mt-0.5 break-keep">
-                    솔직한 소개는 주최사의 매칭 신뢰도를 높여줘요.
-                  </p>
+              <section className="bg-white rounded-3xl p-5 sm:p-6 shadow-[0_8px_24px_rgba(15,23,42,0.08)] hover:shadow-[0_12px_32px_rgba(15,23,42,0.12)] transition-all duration-200 mb-5">
+                <div className="flex items-center gap-2 mb-4 text-left">
+                  <Image
+                    src="/assets/clay/quote.png"
+                    alt="현장 경험"
+                    width={28}
+                    height={28}
+                    className="w-6 h-6 sm:w-7 sm:h-7 object-contain shrink-0"
+                  />
+                  <div>
+                    <h2 className="text-base font-bold text-ink">현장 경험이 있다면 알려주세요</h2>
+                    <p className="text-xs text-muted mt-0.5 break-keep">
+                      솔직한 소개는 주최사의 매칭 신뢰도를 높여줘요.
+                    </p>
+                  </div>
                 </div>
 
                 <div className="space-y-4 text-xs">
                   {/* 행사 스태프 경력 (CustomSelect 적용) */}
                   <div className="space-y-1.5">
-                    <label htmlFor="crew-exp" className="font-semibold text-ink flex items-center gap-1.5">
-                      <Clock className="w-3.5 h-3.5 text-brand" />
-                      <span>행사 스태프 경력</span>
+                    <label htmlFor="crew-exp" className="font-semibold text-ink">
+                      행사 스태프 경력
                     </label>
                     <CustomSelect
                       id="crew-exp"
@@ -849,12 +875,21 @@ export default function CrewProfilePage() {
               </section>
 
               {/* 6. 외국어 영역 ("외국어 응대가 가능한가요? (선택)") */}
-              <section className="bg-white rounded-3xl border border-border-subtle p-5 sm:p-6 space-y-3.5 shadow-2xs">
-                <div>
-                  <h2 className="text-base font-bold text-ink">외국어 응대가 가능한가요? (선택)</h2>
-                  <p className="text-xs text-muted mt-0.5 break-keep">
-                    글로벌 팝업이나 전시 박람회에 우선 배정될 수 있어요.
-                  </p>
+              <section className="bg-white rounded-3xl p-5 sm:p-6 shadow-[0_8px_24px_rgba(15,23,42,0.08)] hover:shadow-[0_12px_32px_rgba(15,23,42,0.12)] transition-all duration-200 mb-5">
+                <div className="flex items-center gap-2 mb-4 text-left">
+                  <Image
+                    src="/assets/clay/language.png"
+                    alt="외국어 능력"
+                    width={28}
+                    height={28}
+                    className="w-6 h-6 sm:w-7 sm:h-7 object-contain shrink-0"
+                  />
+                  <div>
+                    <h2 className="text-base font-bold text-ink">외국어 응대가 가능한가요? (선택)</h2>
+                    <p className="text-xs text-muted mt-0.5 break-keep">
+                      글로벌 팝업이나 전시 박람회에 우선 배정될 수 있어요.
+                    </p>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-4 gap-1.5 sm:gap-2 pt-1">
@@ -881,7 +916,7 @@ export default function CrewProfilePage() {
               </section>
 
               {/* 7. 저장 버튼 */}
-              <div className="pt-2">
+              <div className="pt-2 mb-5">
                 <button
                   type="submit"
                   disabled={isFormDisabled || !fullName.trim()}
@@ -907,7 +942,7 @@ export default function CrewProfilePage() {
               </div>
 
               {/* 8. 보안 및 개인정보 분리 보관 안내 */}
-              <div className="p-4 rounded-2xl bg-white border border-border-subtle text-xs space-y-1.5">
+              <div className="p-5 rounded-3xl bg-white shadow-[0_8px_24px_rgba(15,23,42,0.08)] hover:shadow-[0_12px_32px_rgba(15,23,42,0.12)] transition-all duration-200 text-xs space-y-1.5">
                 <div className="flex items-center gap-1.5 font-bold text-ink">
                   <Lock className="w-3.5 h-3.5 text-brand" />
                   <span>개인정보 분리 보관 원칙</span>
