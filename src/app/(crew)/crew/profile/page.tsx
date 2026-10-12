@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import Image from 'next/image';
 import { AppShell } from '@/components/common/AppShell';
 import {
@@ -19,9 +19,11 @@ import {
   Check,
   Trash2,
   Move,
+  Sparkles,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AvatarCropModal } from '@/components/profile/AvatarCropModal';
+import { LoginModal } from '@/components/auth/LoginModal';
 
 // 유니폼 규격 상수
 const TOP_SIZES = ['S', 'M', 'L', 'XL', '2XL'];
@@ -220,11 +222,25 @@ function CustomSelect<T extends string | number>({
   );
 }
 
+// 개발/테스트 환경 기본 크루 식별자 (로컬 개발 401 방지)
+const DEV_ACTOR_PERSON_ID = '11111111-1111-1111-1111-111111111111';
+
+function getDevAuthHeaders(): Record<string, string> {
+  if (process.env.NODE_ENV !== 'production') {
+    return { 'x-actor-person-id': DEV_ACTOR_PERSON_ID };
+  }
+  return {};
+}
+
 export default function CrewProfilePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [isSavedSuccess, setIsSavedSuccess] = useState(false);
   const savedTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // 인증 상태 및 로그인 모달 제어
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isUnauthenticated, setIsUnauthenticated] = useState(false);
 
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -258,40 +274,51 @@ export default function CrewProfilePage() {
     };
   }, []);
 
-  // Load profile from API on mount
-  useEffect(() => {
-    async function fetchProfile() {
-      try {
-        setLoading(true);
-        const res = await fetch('/api/crew/profile', { cache: 'no-store' });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.success && data.profile) {
-            setFullName(data.fullName || '');
-            setPhoneNumber(data.phoneNumber || '');
-            setEmail(data.email || '');
-            setProfileImageUrl(data.profile.profileImageUrl || null);
-            setHeightCm(data.profile.heightCm || '');
-            setTopSize(data.profile.topSize || 'L');
-            setBottomSize(data.profile.bottomSize || '30');
-            setShoeSizeMm(data.profile.shoeSizeMm || 265);
-            setExperienceYears(data.profile.experienceYears ?? 1);
-            setBio(data.profile.bio || '');
-            // 한국어 제외하여 초기화
-            const existingLanguages = (data.profile.languages || []).filter(
-              (l: string) => l !== '한국어'
-            );
-            setLanguages(existingLanguages);
-          }
-        }
-      } catch (err) {
-        console.error('[Failed to fetch crew profile]:', err);
-      } finally {
-        setLoading(false);
+  // Load profile from API
+  const fetchProfile = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await fetch('/api/crew/profile', {
+        cache: 'no-store',
+        headers: getDevAuthHeaders(),
+      });
+
+      if (res.status === 401) {
+        setIsUnauthenticated(true);
+        return;
       }
+
+      if (res.ok) {
+        setIsUnauthenticated(false);
+        const data = await res.json();
+        if (data.success && data.profile) {
+          setFullName(data.fullName || '');
+          setPhoneNumber(data.phoneNumber || '');
+          setEmail(data.email || '');
+          setProfileImageUrl(data.profile.profileImageUrl || null);
+          setHeightCm(data.profile.heightCm || '');
+          setTopSize(data.profile.topSize || 'L');
+          setBottomSize(data.profile.bottomSize || '30');
+          setShoeSizeMm(data.profile.shoeSizeMm || 265);
+          setExperienceYears(data.profile.experienceYears ?? 1);
+          setBio(data.profile.bio || '');
+          // 한국어 제외하여 초기화
+          const existingLanguages = (data.profile.languages || []).filter(
+            (l: string) => l !== '한국어'
+          );
+          setLanguages(existingLanguages);
+        }
+      }
+    } catch (err) {
+      console.error('[Failed to fetch crew profile]:', err);
+    } finally {
+      setLoading(false);
     }
-    fetchProfile();
   }, []);
+
+  useEffect(() => {
+    fetchProfile();
+  }, [fetchProfile]);
 
   // Handle phone formatting (010-XXXX-XXXX)
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -351,11 +378,17 @@ export default function CrewProfilePage() {
 
       const res = await fetch('/api/crew/profile/upload', {
         method: 'POST',
+        headers: getDevAuthHeaders(),
         body: formData,
       });
 
       const data = await res.json();
       if (!res.ok) {
+        if (res.status === 401) {
+          setIsUnauthenticated(true);
+          setIsLoginModalOpen(true);
+          throw new Error('로그인이 필요합니다. 로그인 후 다시 사진을 등록해 주세요.');
+        }
         throw new Error(data.message || '사진 업로드에 실패했습니다.');
       }
 
@@ -423,7 +456,10 @@ export default function CrewProfilePage() {
     try {
       const res = await fetch('/api/crew/profile', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...getDevAuthHeaders(),
+        },
         body: JSON.stringify({
           fullName: fullName.trim(),
           phoneNumber,
@@ -440,6 +476,11 @@ export default function CrewProfilePage() {
 
       const data = await res.json();
       if (!res.ok) {
+        if (res.status === 401) {
+          setIsUnauthenticated(true);
+          setIsLoginModalOpen(true);
+          throw new Error('로그인이 필요합니다. 먼저 로그인해 주세요.');
+        }
         throw new Error(data.message || '프로필 정보 저장에 실패했습니다.');
       }
 
@@ -477,6 +518,24 @@ export default function CrewProfilePage() {
               프로필이 탄탄할수록 주최사의 선택을 더 빠르게 받아요.
             </p>
           </div>
+
+          {/* 비로그인 알림 배너 */}
+          {isUnauthenticated && (
+            <div className="p-4 rounded-2xl bg-amber-50/90 border border-amber-200/80 text-xs text-amber-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in duration-200">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                <span>로그인 후 프로필을 안전하게 관리하고 배정을 지원받으세요.</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsLoginModalOpen(true)}
+                className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-600 text-white font-semibold text-xs hover:bg-amber-700 transition-colors shrink-0 cursor-pointer shadow-xs"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>로그인하기</span>
+              </button>
+            </div>
+          )}
 
           {/* 피드백 알림 배너 */}
           {feedback && (
@@ -881,6 +940,14 @@ export default function CrewProfilePage() {
           )}
         </div>
       </div>
+
+      {/* 모바일 퍼스트 로그인 모달 */}
+      <LoginModal
+        isOpen={isLoginModalOpen}
+        onClose={() => setIsLoginModalOpen(false)}
+        redirectTo="/crew/profile"
+        onSuccess={fetchProfile}
+      />
     </AppShell>
   );
 }
