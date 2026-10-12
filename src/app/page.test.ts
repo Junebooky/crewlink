@@ -4,11 +4,11 @@ import path from 'node:path';
 import { getCategoryFallbackImage } from '@/lib/utils/eventImages';
 
 describe('Home Page Revamp Verification', () => {
-  it('히어로 3D 에셋 public/assets/clay/hero.png 파일이 실존해야 한다', () => {
-    const heroPath = path.resolve(process.cwd(), 'public/assets/clay/hero.png');
-    expect(fs.existsSync(heroPath), 'hero.png 에셋이 존재해야 합니다').toBe(true);
+  it('히어로 3D 투명 에셋 public/assets/clay/hero_white.png 파일이 실존해야 한다', () => {
+    const heroPath = path.resolve(process.cwd(), 'public/assets/clay/hero_white.png');
+    expect(fs.existsSync(heroPath), 'hero_white.png 에셋이 존재해야 합니다').toBe(true);
     const stat = fs.statSync(heroPath);
-    expect(stat.size, 'hero.png 크기가 0보다 커야 합니다').toBeGreaterThan(1000);
+    expect(stat.size, 'hero_white.png 크기가 0보다 커야 합니다').toBeGreaterThan(1000);
   });
 
   it('Unsplash 썸네일 fallback 매핑이 명세서 URL과 일치해야 한다', () => {
@@ -47,13 +47,17 @@ describe('Home Page Revamp Verification', () => {
     );
   });
 
-  it('홈 화면 파일에 #EBF5FD 배경색과 핫한 공고 및 방금 올라왔어요 섹션이 포함되어야 한다', () => {
+  it('홈 화면 파일에 순백색 bg-white 배경과 토스풍 카드 엘리베이션 그림자가 포함되어야 한다', () => {
     const pageContent = fs.readFileSync(path.resolve(process.cwd(), 'src/app/page.tsx'), 'utf-8');
-    expect(pageContent).toContain('#EBF5FD');
+    expect(pageContent).toContain('bg-white');
     expect(pageContent).toContain('지금 핫한 공고');
     expect(pageContent).toContain('방금 올라왔어요');
-    expect(pageContent).toContain('/assets/clay/hero.png');
+    expect(pageContent).toContain('/assets/clay/hero_white.png');
     expect(pageContent).toContain('/assets/clay/coin.png');
+    expect(pageContent).toContain('shadow-[0_8px_30px_rgba(0,0,0,0.06)]');
+    expect(pageContent).toContain('shadow-[0_4px_16px_rgba(0,0,0,0.05)]');
+    expect(pageContent).toContain('shadow-[0_4px_16px_rgba(0,0,0,0.04)]');
+    expect(pageContent).toContain('shadow-[0_2px_8px_rgba(0,0,0,0.04)]');
   });
 
   it('공고 리스트 카드가 컴팩트 모바일 4줄 고정 구조 및 썸네일 규격을 따라야 한다', () => {

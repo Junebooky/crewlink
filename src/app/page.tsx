@@ -253,41 +253,41 @@ export default function HomePage() {
   const currentSortLabel = SORT_OPTIONS.find((opt) => opt.id === sortOrder)?.label || '최신순';
 
   return (
-    <div className="min-h-screen bg-[#EBF5FD] text-ink flex flex-col pb-[calc(76px+env(safe-area-inset-bottom,0px))] md:pb-12">
+    <div className="min-h-screen bg-white text-ink flex flex-col pb-[calc(76px+env(safe-area-inset-bottom,0px))] md:pb-12">
       {/* 1. 크루 중심 퍼블릭 헤더 */}
-      <PublicHeader className="bg-[#EBF5FD]/90 border-b border-[#D4E8FC] backdrop-blur-md" />
+      <PublicHeader className="bg-white/95 border-b border-border/40 backdrop-blur-md" />
 
-      {/* 2. 상단 히어로 섹션 (hero.png 배경 일체화 + 검색창 + 필터) */}
-      <section className="pt-6 sm:pt-8 pb-5 px-4 sm:px-6">
-        <div className="max-w-4xl mx-auto space-y-4">
-          {/* 히어로 배경 컨테이너 */}
-          <div className="relative overflow-hidden rounded-3xl min-h-[220px] sm:min-h-[260px] p-6 sm:p-8 flex items-center bg-[#EBF5FD] border border-white/60 shadow-2xs">
-            {/* 히어로 배경 3D 일러스트 */}
-            <div className="absolute inset-0 z-0 pointer-events-none">
-              <Image
-                alt="히어로 배경"
-                className="object-cover object-right select-none pointer-events-none"
-                fill
-                priority
-                src="/assets/clay/hero.png"
-              />
-            </div>
-
-            {/* 히어로 상단 텍스트 & 검색창 (z-10으로 배경 위에 배치) */}
-            <div className="relative z-10 max-w-xl text-left">
+      {/* 2. 상단 히어로 섹션 (16:9 hero_white.png 황금 분할 + 검색창 + 필터) */}
+      <section className="pt-2 sm:pt-4 pb-5 px-4 sm:px-6">
+        <div className="max-w-4xl mx-auto space-y-5">
+          {/* 히어로 배너: 16:9 투명 배경 에셋 (hero_white.png) 황금 분할 배치 */}
+          <section className="relative w-full overflow-hidden bg-white min-h-[220px] sm:min-h-[270px] md:min-h-[300px] flex items-center px-4 sm:px-6 lg:px-8 mb-6">
+            {/* 좌측: 텍스트 영역 (여백 공간 활용) */}
+            <div className="relative z-10 max-w-[58%] sm:max-w-[52%] md:max-w-[48%] py-4 text-left">
               <span className="text-xs sm:text-sm font-bold text-brand tracking-tight">
                 지금, 새로운 현장이 기다려요
               </span>
-              <h1 className="text-2xl sm:text-3xl font-black text-ink tracking-tight mt-1 leading-snug break-keep">
-                좋은 사람들과<br className="hidden sm:block" /> 멋진 현장을 만들어봐요
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-ink tracking-tight mt-1 leading-snug break-keep">
+                좋은 사람들과<br />멋진 현장을 만들어봐요
               </h1>
-              <p className="text-xs sm:text-sm font-medium text-muted mt-2 break-keep">
+              <p className="text-xs sm:text-sm font-medium text-muted mt-2 break-keep line-clamp-2">
                 행사·전시·콘서트·페스티벌까지 다양한 크루 공고를 한눈에!
               </p>
             </div>
-          </div>
 
-          {/* 52px 높이 표준 검색 인풋 */}
+            {/* 우측: 16:9 투명 배경 3D 일러스트 */}
+            <div className="absolute right-[-5%] sm:right-0 top-1/2 -translate-y-1/2 w-[60%] sm:w-[54%] md:w-[50%] max-w-[520px] aspect-[16/9] pointer-events-none z-0">
+              <Image
+                alt="CrewLink 3D Hero"
+                className="object-contain object-right"
+                fill
+                priority
+                src="/assets/clay/hero_white.png"
+              />
+            </div>
+          </section>
+
+          {/* 52px 높이 표준 검색 인풋 (토스풍 입체감 그림자) */}
           <div className="relative pt-1">
             <label htmlFor="event-search-input" className="sr-only">
               행사, 지역, 업무 검색
@@ -300,7 +300,7 @@ export default function HomePage() {
               onChange={(e) => setSearchKeyword(e.target.value)}
               placeholder=""
               aria-label="행사, 지역, 업무 검색"
-              className="w-full h-[52px] pl-11 pr-4 rounded-2xl border border-white/80 bg-white/95 text-ink text-base focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-xs transition-colors backdrop-blur-xs"
+              className="w-full h-[52px] pl-11 pr-4 rounded-2xl bg-white shadow-[0_8px_30px_rgba(0,0,0,0.06)] border border-border/50 text-ink text-base focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all"
             />
             {/* 토스 스타일 부드러운 슬라이드 다운 롤링 플레이스홀더 */}
             {searchKeyword.length === 0 && (
@@ -351,7 +351,7 @@ export default function HomePage() {
                       'min-h-[38px] px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-semibold shrink-0 transition-colors cursor-pointer border flex items-center gap-1',
                       isSelected
                         ? 'bg-brand text-white border-brand shadow-xs'
-                        : 'bg-white/80 text-muted border-white/60 hover:border-brand/40 shadow-2xs'
+                        : 'bg-white text-muted border-border/40 hover:border-brand/40 shadow-[0_2px_8px_rgba(0,0,0,0.04)]'
                     )}
                   >
                     {isSelected && <Check className="w-3 h-3 shrink-0" />}
@@ -368,7 +368,7 @@ export default function HomePage() {
                   'min-h-[38px] px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-semibold shrink-0 transition-colors cursor-pointer border flex items-center gap-1.5',
                   datePreset === 'custom'
                     ? 'bg-brand text-white border-brand shadow-xs'
-                    : 'bg-white/80 text-muted border-white/60 hover:border-brand/40 shadow-2xs'
+                    : 'bg-white text-muted border-border/40 hover:border-brand/40 shadow-[0_2px_8px_rgba(0,0,0,0.04)]'
                 )}
               >
                 <CalendarRange className="w-3.5 h-3.5" />
@@ -378,7 +378,7 @@ export default function HomePage() {
 
             {/* 날짜 직접 선택 인라인 패널 */}
             {isDatePickerOpen && (
-              <div className="p-4 rounded-2xl bg-white border border-brand/30 shadow-xs mt-2 space-y-3 animate-in fade-in duration-200">
+              <div className="p-4 rounded-2xl bg-white border border-border/50 shadow-[0_8px_30px_rgba(0,0,0,0.06)] mt-2 space-y-3 animate-in fade-in duration-200">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-ink">근무 희망 기간 설정</span>
                   <button
@@ -439,7 +439,7 @@ export default function HomePage() {
                       'min-h-[36px] px-3.5 py-1 rounded-full text-xs font-semibold shrink-0 transition-colors cursor-pointer border flex items-center gap-1',
                       isSelected
                         ? 'bg-brand text-white border-brand shadow-xs'
-                        : 'bg-white/80 text-muted border-white/60 hover:border-brand/40 shadow-2xs'
+                        : 'bg-white text-muted border-border/40 hover:border-brand/40 shadow-[0_2px_8px_rgba(0,0,0,0.04)]'
                     )}
                   >
                     {isSelected && <Check className="w-3 h-3 shrink-0" />}
@@ -462,7 +462,7 @@ export default function HomePage() {
                       'min-h-[36px] px-3.5 py-1 rounded-full text-xs font-semibold shrink-0 transition-colors cursor-pointer border flex items-center gap-1',
                       isSelected
                         ? 'bg-brand text-white border-brand shadow-xs'
-                        : 'bg-white/80 text-muted border-white/60 hover:border-brand/40 shadow-2xs'
+                        : 'bg-white text-muted border-border/40 hover:border-brand/40 shadow-[0_2px_8px_rgba(0,0,0,0.04)]'
                     )}
                   >
                     {isSelected && <Check className="w-3 h-3 shrink-0" />}
@@ -503,7 +503,7 @@ export default function HomePage() {
               <Link
                 key={`hot-${item.id}`}
                 href={`/events/${item.id}`}
-                className="min-w-[240px] max-w-[260px] snap-start bg-white rounded-2xl shadow-2xs overflow-hidden flex flex-col justify-between shrink-0 transition-transform duration-200 hover:-translate-y-0.5 group border border-transparent hover:border-brand-border/40"
+                className="min-w-[240px] max-w-[260px] snap-start bg-white rounded-2xl shadow-[0_4px_16px_rgba(0,0,0,0.05)] border border-border/40 hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] overflow-hidden flex flex-col justify-between shrink-0 transition-all duration-200 hover:-translate-y-0.5 group"
               >
                 {/* 상단 썸네일 */}
                 <div className="h-28 w-full relative overflow-hidden bg-slate-100">
@@ -625,7 +625,7 @@ export default function HomePage() {
           </div>
 
           {/* 우측: [최신순 | 지도형 | 추천순 ∨] 통합 필터 탭 */}
-          <div className="flex items-center gap-1 bg-white p-1 rounded-full shadow-2xs border border-border/50 text-xs font-semibold">
+          <div className="flex items-center gap-1 bg-white p-1 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-border/40 text-xs font-semibold">
             <button
               type="button"
               onClick={() => {
@@ -713,7 +713,7 @@ export default function HomePage() {
       ) : (
         <main className="max-w-4xl w-full mx-auto px-4 sm:px-6 pt-1 flex-1">
           {filteredAndSortedEvents.length === 0 ? (
-            <div className="py-20 text-center rounded-3xl bg-white border border-white/60 space-y-3 shadow-2xs">
+            <div className="py-20 text-center rounded-3xl bg-white border border-border/40 space-y-3 shadow-[0_4px_16px_rgba(0,0,0,0.04)]">
               <p className="text-base font-bold text-ink">선택한 조건의 모집 공고가 없어요</p>
               <p className="text-xs text-muted break-keep">
                 날짜나 지역, 검색어 조건을 변경하거나 필터를 초기화해 보세요.
@@ -737,7 +737,7 @@ export default function HomePage() {
                   <Link
                     key={item.id}
                     href={`/events/${item.id}`}
-                    className="w-full flex items-stretch gap-3.5 sm:gap-4 bg-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-4 shadow-2xs hover:shadow-xs mb-3 transition-all group border border-transparent hover:border-brand-border/40"
+                    className="w-full flex items-stretch gap-3.5 sm:gap-4 bg-white rounded-2xl shadow-[0_4px_16px_rgba(0,0,0,0.04)] border border-border/40 hover:shadow-[0_6px_20px_rgba(0,0,0,0.07)] p-3.5 sm:p-4 mb-3 transition-all group"
                   >
                     {/* 좌측 썸네일 (w-24 h-24 sm:w-28 sm:h-28) */}
                     <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden relative shrink-0 bg-slate-100">
@@ -847,7 +847,7 @@ export default function HomePage() {
 
       {/* 6. 이용 안내 배너 & 푸터 */}
       <div className="max-w-4xl w-full mx-auto px-4 sm:px-6">
-        <section className="mt-10 p-5 rounded-3xl bg-white border border-white/60 shadow-2xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <section className="mt-10 p-5 rounded-3xl bg-white border border-border/40 shadow-[0_4px_16px_rgba(0,0,0,0.04)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-start gap-3">
             <ShieldCheck className="w-6 h-6 text-brand shrink-0 mt-0.5" />
             <div>
