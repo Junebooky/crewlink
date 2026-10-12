@@ -563,10 +563,10 @@ export default function HomePage() {
                       height={20}
                       className="w-5 h-5 object-contain shrink-0"
                     />
-                    <span className="text-base sm:text-lg font-black text-brand tabular-nums">
+                    <span className="text-base sm:text-lg font-black text-black tabular-nums">
                       {item.dailyWageWon.toLocaleString()}
                     </span>
-                    <span className="text-xs font-bold text-brand">원</span>
+                    <span className="text-xs font-bold text-black">원</span>
                   </div>
                 </div>
               </Link>
@@ -601,15 +601,15 @@ export default function HomePage() {
               selectedRegion !== 'all' ||
               datePreset !== 'all' ||
               searchKeyword) && (
-              <button
-                type="button"
-                onClick={handleResetFilters}
-                className="h-6 px-2 rounded-full bg-white text-muted hover:text-ink text-[11px] font-medium flex items-center gap-1 transition-colors cursor-pointer shadow-2xs shrink-0"
-              >
-                <RotateCcw className="w-3 h-3" />
-                <span>초기화</span>
-              </button>
-            )}
+                <button
+                  type="button"
+                  onClick={handleResetFilters}
+                  className="h-6 px-2 rounded-full bg-white text-muted hover:text-ink text-[11px] font-medium flex items-center gap-1 transition-colors cursor-pointer shadow-2xs shrink-0"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  <span>초기화</span>
+                </button>
+              )}
             {/* 활성 날짜 뱃지 */}
             {activeDateRange && (
               <span className="h-6 px-2 rounded-full bg-brand-soft text-brand-strong border border-brand-border text-[11px] font-semibold flex items-center gap-1 shrink-0">
