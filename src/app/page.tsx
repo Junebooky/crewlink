@@ -196,11 +196,11 @@ export default function HomePage() {
                   className={cn(
                     'min-h-[40px] px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-semibold shrink-0 transition-colors cursor-pointer border flex items-center gap-1',
                     isSelected
-                      ? 'bg-brand-soft text-brand-strong border-brand-border font-bold'
+                      ? 'bg-brand text-white border-brand font-bold shadow-xs'
                       : 'bg-surface text-muted border-border hover:border-brand-border'
                   )}
                 >
-                  {isSelected && <Check className="w-3.5 h-3.5 shrink-0" />}
+                  {isSelected && <Check className="w-3.5 h-3.5 shrink-0 text-white" />}
                   <span>{cat.label}</span>
                 </button>
               );
@@ -220,7 +220,7 @@ export default function HomePage() {
                   className={cn(
                     'min-h-[36px] px-3 py-1 rounded-lg text-xs font-semibold shrink-0 transition-colors cursor-pointer border',
                     isSelected
-                      ? 'bg-brand-soft text-brand-strong border-brand-border font-bold'
+                      ? 'bg-brand text-white border-brand font-bold shadow-xs'
                       : 'bg-surface text-muted border-border hover:border-brand-border'
                   )}
                 >
@@ -382,19 +382,19 @@ export default function HomePage() {
                   className="group bg-surface rounded-3xl border border-border hover:border-brand-border transition-all duration-200 p-5 flex flex-col justify-between cursor-pointer shadow-2xs hover:shadow-xs"
                 >
                   <div>
-                    {/* 카드 상단: 카테고리 & 브랜드 색상 D-Day 토큰 배지 (brand-soft + brand-strong) */}
-                    <div className="flex items-center justify-between gap-2 mb-2.5">
+                    {/* 카드 상단: 카테고리 & 마감 기한 */}
+                    <div className="flex items-start justify-between gap-2 mb-2.5">
                       <span className="text-xs text-muted font-medium bg-surface-muted px-2 py-0.5 rounded-md border border-border-subtle">
                         {item.categoryLabel}
                       </span>
 
-                      {/* 브랜드 토큰 D-Day 배지: 에러/경고색(Red/Green) 대신 brand-soft + brand-strong 사용 */}
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-bold text-brand-strong bg-brand-soft px-2 py-0.5 rounded-md border border-brand-border">
-                          {dDayLabel}
-                        </span>
-                        <span className="text-xs font-medium text-muted">
+                      {/* '날짜까지 모집' 바로 아래에 박스 없이 D-Day 텍스트만 표시 */}
+                      <div className="flex flex-col items-end text-right">
+                        <span className="text-xs text-muted">
                           {deadlineDateLabel}
+                        </span>
+                        <span className="text-xs font-bold text-brand mt-0.5">
+                          {dDayLabel}
                         </span>
                       </div>
                     </div>
@@ -404,18 +404,18 @@ export default function HomePage() {
                       {item.displayTitle}
                     </h2>
 
-                    {/* 장소 - 날짜 - 시간 순서 */}
+                    {/* 장소 - 날짜 - 시간 순서 (시간 폰트 기준으로 통일: semibold, bold 없이 무난하게) */}
                     <div className="space-y-1.5 text-xs text-muted mb-3.5">
                       <div className="flex items-center gap-1.5">
                         <MapPin className="w-3.5 h-3.5 text-muted shrink-0" />
-                        <span className="font-medium text-ink">
+                        <span>
                           {item.regionLabel}
                           {item.stationInfo ? ` · ${item.stationInfo}` : ''}
                         </span>
                       </div>
                       <div className="flex items-center gap-1.5">
                         <Calendar className="w-3.5 h-3.5 text-muted shrink-0" />
-                        <span className="font-medium text-ink">{item.dateRangeLabel}</span>
+                        <span>{item.dateRangeLabel}</span>
                       </div>
                       <div className="flex items-center gap-1.5">
                         <Clock className="w-3.5 h-3.5 text-muted shrink-0" />
