@@ -341,10 +341,18 @@ export default function ClientRequestWizard() {
                   />
                 </div>
 
-                {/* 1. 진행 일정 유형 선택 세그먼트 탭 */}
+                {/* 1. 진행 일정 유형 선택 - 슬라이딩 인디케이터 */}
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-muted block">행사 진행 유형</label>
-                  <div className="grid grid-cols-2 gap-2 p-1 bg-surface-muted rounded-xl border border-border">
+                  <div className="relative flex items-center p-1 bg-neutral-100/90 rounded-full w-full max-w-[240px] select-none">
+                    {/* 브랜드 색상 및 round 곡선이 적용된 슬라이딩 인디케이터 */}
+                    <div
+                      className="absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-full bg-brand shadow-xs transition-transform duration-300 ease-out will-change-transform"
+                      style={{
+                        transform: isMultiDay ? 'translateX(100%)' : 'translateX(0)',
+                        left: '4px',
+                      }}
+                    />
                     <button
                       type="button"
                       onClick={() => {
@@ -352,13 +360,11 @@ export default function ClientRequestWizard() {
                         setEndDate(startDate);
                       }}
                       className={cn(
-                        'py-2 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer',
-                        !isMultiDay
-                          ? 'bg-white text-brand shadow-xs border border-border/60'
-                          : 'text-muted hover:text-ink'
+                        'relative z-10 flex-1 py-1.5 text-center text-xs font-bold transition-colors duration-200 cursor-pointer rounded-full',
+                        !isMultiDay ? 'text-white' : 'text-muted hover:text-ink'
                       )}
                     >
-                      하루만 진행해요
+                      하루
                     </button>
                     <button
                       type="button"
@@ -369,13 +375,11 @@ export default function ClientRequestWizard() {
                         }
                       }}
                       className={cn(
-                        'py-2 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer',
-                        isMultiDay
-                          ? 'bg-white text-brand shadow-xs border border-border/60'
-                          : 'text-muted hover:text-ink'
+                        'relative z-10 flex-1 py-1.5 text-center text-xs font-bold transition-colors duration-200 cursor-pointer rounded-full',
+                        isMultiDay ? 'text-white' : 'text-muted hover:text-ink'
                       )}
                     >
-                      여러 날 진행해요 (다일간)
+                      여러 날
                     </button>
                   </div>
                 </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Search, MapPin, X, Loader2, Navigation } from 'lucide-react';
+import { Search, MapPin, X, Loader2, ExternalLink } from 'lucide-react';
 import { useKakaoMapLoader } from '@/lib/kakao/useKakaoMapLoader';
 import type { KakaoPlaceItem, KakaoMap, KakaoCustomOverlay } from '@/types/kakao';
 
@@ -44,6 +44,8 @@ export function KakaoPlaceSearchInput({
   const miniMapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<KakaoMap | null>(null);
   const overlayRef = useRef<KakaoCustomOverlay | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // 동기화: 부모의 venueName이 바뀌었을 때 인풋 표시 동기화
   useEffect(() => {
@@ -63,51 +65,91 @@ export function KakaoPlaceSearchInput({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // 장소 키워드 검색 함수 (디바운스)
-  const searchPlaces = useCallback(
-    (searchKeyword: string) => {
-      if (!isLoaded || !window.kakao?.maps?.services) return;
-      if (!searchKeyword.trim() || searchKeyword.trim().length < 2) {
-        setResults([]);
-        setIsOpenDropdown(false);
-        setIsSearching(false);
+  // 서버 API 기반 장소 검색 (카카오 JS SDK 에러나 차단 시에도 100% 작동)
+  const fetchPlaces = useCallback(async (searchKeyword: string) => {
+    const q = searchKeyword.trim();
+    if (!q || q.length < 2) {
+      setResults([]);
+      setIsOpenDropdown(false);
+      setIsSearching(false);
+      return;
+    }
+
+    setIsSearching(true);
+
+    // 1. 카카오 SDK 로컬 서비스 우선 시도 (지원되는 경우)
+    if (window.kakao?.maps?.services?.Places) {
+      try {
+        const ps = new window.kakao.maps.services.Places();
+        ps.keywordSearch(
+          q,
+          async (data, status) => {
+            if (status === window.kakao.maps.services.Status.OK && data && data.length > 0) {
+              setResults(data);
+              setIsOpenDropdown(true);
+              setIsSearching(false);
+              return;
+            }
+            // 카카오 응답이 없으면 서버 API 호출
+            await queryServerApi(q);
+          },
+          { size: 7 }
+        );
         return;
+      } catch {
+        // SDK 에러 시 계속 진행하여 서버 API 호출
       }
+    }
 
-      setIsSearching(true);
-      const ps = new window.kakao.maps.services.Places();
+    // 2. 서버 API 호출
+    await queryServerApi(q);
+  }, []);
 
-      ps.keywordSearch(
-        searchKeyword.trim(),
-        (data, status) => {
-          setIsSearching(false);
-          if (status === window.kakao.maps.services.Status.OK) {
-            setResults(data || []);
-            setIsOpenDropdown(true);
-          } else if (status === window.kakao.maps.services.Status.ZERO_RESULT) {
-            setResults([]);
-            setIsOpenDropdown(true);
-          } else {
-            setResults([]);
-            setIsOpenDropdown(false);
-          }
-        },
-        { size: 7 }
-      );
-    },
-    [isLoaded]
-  );
+  const queryServerApi = async (q: string) => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
 
-  // 인풋 변경 핸들러
+    try {
+      const res = await fetch(`/api/places/search?q=${encodeURIComponent(q)}`, {
+        signal: controller.signal,
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setResults(data.results || []);
+        setIsOpenDropdown(true);
+      } else {
+        setResults([]);
+      }
+    } catch (err: any) {
+      if (err.name !== 'AbortError') {
+        setResults([]);
+      }
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // 인풋 변경 핸들러 (250ms 디바운스)
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setKeyword(val);
 
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
     if (val.trim().length >= 2) {
-      searchPlaces(val);
+      setIsSearching(true);
+      debounceTimerRef.current = setTimeout(() => {
+        fetchPlaces(val);
+      }, 250);
     } else {
       setResults([]);
       setIsOpenDropdown(false);
+      setIsSearching(false);
     }
   };
 
@@ -283,11 +325,12 @@ export function KakaoPlaceSearchInput({
         )}
       </div>
 
-      {/* 3. 선택된 주소 요약 칩 */}
+      {/* 3. 선택된 주소 요약 카드 (다른 카드 섹션과 통일된 UI) */}
       {hasSelectedLocation && venueAddress && (
-        <div className="flex items-center gap-2 p-2.5 rounded-xl bg-brand-subtle/60 border border-brand/20 text-xs text-brand font-medium">
-          <Navigation className="w-3.5 h-3.5 shrink-0" />
-          <span className="truncate">도로명: {venueAddress}</span>
+        <div className="flex items-center gap-2 p-2.5 rounded-xl border border-border bg-surface text-xs shadow-2xs">
+          <MapPin className="w-3.5 h-3.5 text-brand shrink-0" />
+          <span className="text-muted font-normal shrink-0">도로명 주소</span>
+          <span className="text-ink font-semibold truncate">{venueAddress}</span>
         </div>
       )}
 
@@ -305,31 +348,34 @@ export function KakaoPlaceSearchInput({
         />
       </div>
 
-      {/* 5. 카카오 미니맵 프리뷰 (높이 160px) */}
-      {hasSelectedLocation && (
-        <div className="rounded-2xl border border-border overflow-hidden bg-neutral-100 shadow-inner">
-          <div className="h-7 px-3 bg-surface/90 border-b border-border/80 flex items-center justify-between text-[11px] text-muted">
-            <span className="flex items-center gap-1 font-semibold text-ink">
-              <MapPin className="w-3 h-3 text-brand" />
+      {/* 5. 현장 지도 프리뷰 (높이 160px) */}
+      {hasSelectedLocation && latitude && longitude && (
+        <div className="rounded-2xl border border-border overflow-hidden bg-surface shadow-2xs">
+          <div className="h-8 px-3.5 bg-surface border-b border-border/80 flex items-center justify-between text-[11px] text-muted">
+            <span className="flex items-center gap-1.5 font-bold text-ink">
+              <MapPin className="w-3.5 h-3.5 text-brand" />
               현장 위치 미리보기
             </span>
-            <span className="text-[10px]">카카오맵</span>
+            <a
+              href={`https://map.kakao.com/link/map/${encodeURIComponent(venueName || '행사 위치')},${latitude},${longitude}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[11px] text-brand hover:underline font-semibold flex items-center gap-1 transition-colors"
+            >
+              <span>지도 크게보기</span>
+              <ExternalLink className="w-3 h-3" />
+            </a>
           </div>
-          <div
-            ref={miniMapRef}
-            className="w-full h-[160px] relative bg-neutral-100"
-            style={{ minHeight: '160px' }}
-          >
-            {!isLoaded && (
-              <div className="absolute inset-0 flex items-center justify-center bg-surface/80 text-xs text-muted gap-2">
-                <Loader2 className="w-4 h-4 animate-spin text-brand" />
-                지도를 불러오는 중...
-              </div>
-            )}
-            {loadError && (
-              <div className="absolute inset-0 flex items-center justify-center bg-surface/80 text-xs text-red-500">
-                {loadError}
-              </div>
+          <div className="w-full h-[160px] relative bg-neutral-100 overflow-hidden">
+            {isLoaded && window.kakao?.maps ? (
+              <div ref={miniMapRef} className="w-full h-full" />
+            ) : (
+              <iframe
+                title="현장 위치 지도"
+                src={`https://www.openstreetmap.org/export/embed.html?bbox=${Number(longitude) - 0.005}%2C${Number(latitude) - 0.003}%2C${Number(longitude) + 0.005}%2C${Number(latitude) + 0.003}&layer=mapnik&marker=${latitude}%2C${longitude}`}
+                className="w-full h-full border-0 pointer-events-auto"
+                loading="lazy"
+              />
             )}
           </div>
         </div>
