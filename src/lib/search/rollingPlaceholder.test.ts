@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { ROLLING_PLACEHOLDERS, ROLLING_INTERVAL_MS, ROLLING_DURATION_MS } from '@/app/page';
+import { ROLLING_PLACEHOLDERS, ROLLING_INTERVAL_MS, ROLLING_DURATION_MS } from '@/lib/search/rollingPlaceholder';
 
 describe('Rolling Placeholder Tests (토스 스타일 롤링 플레이스홀더 검증)', () => {
   it('플레이스홀더 카피 세트가 정확히 3가지 대화 유도형 문구로 구성되어야 한다', () => {

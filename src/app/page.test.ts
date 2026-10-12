@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
-import { getCategoryFallbackImage } from './page';
+import { getCategoryFallbackImage } from '@/lib/utils/eventImages';
 
 describe('Home Page Revamp Verification', () => {
   it('히어로 3D 에셋 public/assets/clay/hero.png 파일이 실존해야 한다', () => {

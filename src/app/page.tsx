@@ -37,8 +37,13 @@ import {
   getDeadlineInfo,
 } from '@/lib/utils/date';
 
-export type DatePreset = 'all' | 'today_tomorrow' | 'this_weekend' | 'next_week' | 'custom';
-export type { EventCategory, RecruitmentStatus, EventItem as EventListItem };
+import {
+  DatePreset,
+  ROLLING_PLACEHOLDERS,
+  ROLLING_INTERVAL_MS,
+  ROLLING_DURATION_MS,
+} from '@/lib/search/rollingPlaceholder';
+import { getCategoryFallbackImage } from '@/lib/utils/eventImages';
 
 const CATEGORY_OPTIONS: { id: 'all' | EventCategory; label: string }[] = [
   { id: 'all', label: '전체 행사' },
@@ -63,65 +68,6 @@ const SORT_OPTIONS: { id: SortOrder; label: string }[] = [
   { id: 'deadline', label: '마감 임박순' },
   { id: 'wage_desc', label: '보수 높은순' },
 ];
-
-export const ROLLING_PLACEHOLDERS = [
-  '관심 있는 행사 찾기 (예: 팝업스토어, 페스티벌)',
-  '가까운 핫플로 찾기 (예: 성수, 코엑스, 킨텍스)',
-  '자신 있는 역할로 찾기 (예: 리셉션, 동선 안내, 운영)',
-] as const;
-
-export const ROLLING_INTERVAL_MS = 3600;
-export const ROLLING_DURATION_MS = 450;
-
-/**
- * 카테고리별 고화질 Unsplash fallback 이미지 매핑
- */
-export function getCategoryFallbackImage(category?: string | null, title?: string): string {
-  const normalizedCat = (category || '').toLowerCase();
-  const normalizedTitle = (title || '').toLowerCase();
-
-  if (
-    normalizedCat === 'festival' ||
-    normalizedCat === 'concert' ||
-    normalizedTitle.includes('페스티벌') ||
-    normalizedTitle.includes('콘서트') ||
-    normalizedTitle.includes('뮤직')
-  ) {
-    return 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&auto=format&fit=crop&q=80';
-  }
-
-  if (
-    normalizedCat === 'conference' ||
-    normalizedCat === 'seminar' ||
-    normalizedTitle.includes('컨퍼런스') ||
-    normalizedTitle.includes('세미나') ||
-    normalizedTitle.includes('ai')
-  ) {
-    return 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=500&auto=format&fit=crop&q=80';
-  }
-
-  if (
-    normalizedCat === 'expo' ||
-    normalizedCat === 'exhibition' ||
-    normalizedTitle.includes('전시') ||
-    normalizedTitle.includes('박람회') ||
-    normalizedTitle.includes('모빌리티')
-  ) {
-    return 'https://images.unsplash.com/photo-1531058020387-3be344556be6?w=500&auto=format&fit=crop&q=80';
-  }
-
-  if (
-    normalizedCat === 'popup' ||
-    normalizedCat === 'brand' ||
-    normalizedCat === 'event' ||
-    normalizedTitle.includes('팝업') ||
-    normalizedTitle.includes('스토어')
-  ) {
-    return 'https://images.unsplash.com/photo-1511578314322-379afb476865?w=500&auto=format&fit=crop&q=80';
-  }
-
-  return 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=500&auto=format&fit=crop&q=80';
-}
 
 export default function HomePage() {
   const [events, setEvents] = useState<EventItem[]>(() => getPublicEvents());
