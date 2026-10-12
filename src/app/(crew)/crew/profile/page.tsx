@@ -18,8 +18,10 @@ import {
   ChevronDown,
   Check,
   Trash2,
+  Move,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { AvatarCropModal } from '@/components/profile/AvatarCropModal';
 
 // 유니폼 규격 상수
 const TOP_SIZES = ['S', 'M', 'L', 'XL', '2XL'];
@@ -221,11 +223,18 @@ function CustomSelect<T extends string | number>({
 export default function CrewProfilePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [isSavedSuccess, setIsSavedSuccess] = useState(false);
+  const savedTimerRef = useRef<NodeJS.Timeout | null>(null);
+
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(
     null
   );
+
+  // 사진 원형 크롭 모달 상태
+  const [isCropModalOpen, setIsCropModalOpen] = useState(false);
+  const [cropSourceUrl, setCropSourceUrl] = useState<string | null>(null);
 
   // Form states
   const [fullName, setFullName] = useState('');
@@ -241,6 +250,13 @@ export default function CrewProfilePage() {
   const [languages, setLanguages] = useState<string[]>([]);
 
   const avatarInputRef = useRef<HTMLInputElement>(null);
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+    };
+  }, []);
 
   // Load profile from API on mount
   useEffect(() => {
@@ -289,8 +305,8 @@ export default function CrewProfilePage() {
     }
   };
 
-  // 사진 선택 시 즉각 로컬 미리보기 생성, HTML5 Canvas 최적화(최대 1200px, JPEG 0.82) 및 Supabase Storage 업로드
-  const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // 사진 선택 시 SVG 검증 후 원형 편집(크롭) 모달 실행
+  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawFile = e.target.files?.[0];
     if (!rawFile) return;
 
@@ -304,18 +320,33 @@ export default function CrewProfilePage() {
       return;
     }
 
-    // 1. 브라우저 로컬 미리보기 즉각 생성
+    setFeedback(null);
     const localUrl = URL.createObjectURL(rawFile);
-    setPreviewUrl(localUrl);
+    setCropSourceUrl(localUrl);
+    setIsCropModalOpen(true);
+    if (avatarInputRef.current) {
+      avatarInputRef.current.value = '';
+    }
+  };
+
+  // 원형 편집 모달에서 크롭 완료 시 Supabase Storage 업로드 실행
+  const handleCropComplete = async (croppedBlob: Blob) => {
     setUploadingAvatar(true);
     setFeedback(null);
 
-    // 2. 가로 최대 1,200px 기준 비율 리사이징 + JPEG(quality: 0.82) 압축 변환 후 Storage 업로드
+    // 1. 브라우저 로컬 미리보기 즉시 반영
+    const localPreview = URL.createObjectURL(croppedBlob);
+    setPreviewUrl(localPreview);
+
     try {
-      const optimizedFile = await optimizeImageFile(rawFile);
+      // 2. Blob을 File 객체로 변환하여 Storage 업로드
+      const croppedFile = new File([croppedBlob], 'avatar.jpg', {
+        type: 'image/jpeg',
+        lastModified: Date.now(),
+      });
 
       const formData = new FormData();
-      formData.append('file', optimizedFile);
+      formData.append('file', croppedFile);
       formData.append('type', 'avatar');
 
       const res = await fetch('/api/crew/profile/upload', {
@@ -329,7 +360,8 @@ export default function CrewProfilePage() {
       }
 
       setProfileImageUrl(data.url);
-      setFeedback({ type: 'success', message: '프로필 사진이 안전하게 등록되었습니다.' });
+      setIsCropModalOpen(false);
+      // [요구사항 1]: 프로필 사진 등록 시 성공 피드백 팝업창을 띄우지 않음!
     } catch (err: unknown) {
       setFeedback({
         type: 'error',
@@ -338,9 +370,15 @@ export default function CrewProfilePage() {
       setPreviewUrl(null);
     } finally {
       setUploadingAvatar(false);
-      if (avatarInputRef.current) {
-        avatarInputRef.current.value = '';
-      }
+    }
+  };
+
+  // 현재 등록된 사진의 원형 위치/확대 다시 맞추기
+  const handleOpenCropForCurrent = () => {
+    const currentPhoto = previewUrl || profileImageUrl;
+    if (currentPhoto) {
+      setCropSourceUrl(currentPhoto);
+      setIsCropModalOpen(true);
     }
   };
 
@@ -348,6 +386,7 @@ export default function CrewProfilePage() {
   const handleRemovePhoto = () => {
     setProfileImageUrl(null);
     setPreviewUrl(null);
+    setCropSourceUrl(null);
     if (avatarInputRef.current) {
       avatarInputRef.current.value = '';
     }
@@ -403,6 +442,13 @@ export default function CrewProfilePage() {
       if (!res.ok) {
         throw new Error(data.message || '프로필 정보 저장에 실패했습니다.');
       }
+
+      // [요구사항 2]: 저장 완료 시 버튼 상태를 '프로필 저장 완료!'로 전환
+      setIsSavedSuccess(true);
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+      savedTimerRef.current = setTimeout(() => {
+        setIsSavedSuccess(false);
+      }, 2500);
 
       setFeedback({ type: 'success', message: '프로필 정보가 안전하게 저장되었습니다.' });
     } catch (err: unknown) {
@@ -471,8 +517,16 @@ export default function CrewProfilePage() {
                   {/* 프로필 이미지 원형 미리보기 */}
                   <div className="relative group shrink-0">
                     <div
-                      onClick={() => !uploadingAvatar && avatarInputRef.current?.click()}
+                      onClick={() => {
+                        if (uploadingAvatar) return;
+                        if (currentPhoto) {
+                          handleOpenCropForCurrent();
+                        } else {
+                          avatarInputRef.current?.click();
+                        }
+                      }}
                       className="w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden bg-white border-2 border-border shadow-xs relative flex items-center justify-center cursor-pointer hover:border-brand-border transition-colors"
+                      title={currentPhoto ? '사진 위치 조절하기' : '사진 등록하기'}
                     >
                       {currentPhoto ? (
                         <Image
@@ -501,6 +555,7 @@ export default function CrewProfilePage() {
                       onClick={() => avatarInputRef.current?.click()}
                       className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-brand text-white flex items-center justify-center shadow-md border-2 border-white cursor-pointer hover:bg-brand-hover transition-colors"
                       aria-label="사진 등록/변경"
+                      title="사진 변경하기"
                     >
                       <Camera className="w-4 h-4" />
                     </button>
@@ -516,7 +571,7 @@ export default function CrewProfilePage() {
                       onChange={handlePhotoSelect}
                     />
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
                       <button
                         type="button"
                         disabled={uploadingAvatar}
@@ -528,15 +583,28 @@ export default function CrewProfilePage() {
                       </button>
 
                       {currentPhoto && (
-                        <button
-                          type="button"
-                          disabled={uploadingAvatar}
-                          onClick={handleRemovePhoto}
-                          className="h-10 px-3 rounded-xl border border-transparent text-muted hover:text-danger text-xs font-semibold inline-flex items-center gap-1 transition-colors cursor-pointer"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                          <span>삭제</span>
-                        </button>
+                        <>
+                          <button
+                            type="button"
+                            disabled={uploadingAvatar}
+                            onClick={handleOpenCropForCurrent}
+                            className="h-10 px-3.5 rounded-xl border border-border bg-white hover:border-brand-border text-xs font-bold text-ink inline-flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+                            title="원형 안 위치 및 확대 조절"
+                          >
+                            <Move className="w-3.5 h-3.5 text-muted" />
+                            <span>위치 조절</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            disabled={uploadingAvatar}
+                            onClick={handleRemovePhoto}
+                            className="h-10 px-3 rounded-xl border border-transparent text-muted hover:text-danger text-xs font-semibold inline-flex items-center gap-1 transition-colors cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>삭제</span>
+                          </button>
+                        </>
                       )}
                     </div>
 
@@ -545,6 +613,15 @@ export default function CrewProfilePage() {
                     </p>
                   </div>
                 </div>
+
+                {/* 원형 크롭 및 위치 조절 모달 */}
+                <AvatarCropModal
+                  isOpen={isCropModalOpen}
+                  imageSrc={cropSourceUrl}
+                  onClose={() => setIsCropModalOpen(false)}
+                  onCropComplete={handleCropComplete}
+                  isUploading={uploadingAvatar}
+                />
               </section>
 
               {/* 3. 기본 정보 (이름, 연락처) */}
@@ -767,7 +844,10 @@ export default function CrewProfilePage() {
                   type="submit"
                   disabled={isFormDisabled || !fullName.trim()}
                   className={cn(
-                    'w-full h-[52px] rounded-2xl bg-brand hover:bg-brand-hover text-white font-bold text-base shadow-sm transition-all active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer',
+                    'w-full h-[52px] rounded-2xl text-white font-bold text-base shadow-sm transition-all active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer',
+                    isSavedSuccess
+                      ? 'bg-emerald-600 hover:bg-emerald-600 shadow-emerald-600/20'
+                      : 'bg-brand hover:bg-brand-hover',
                     (isFormDisabled || !fullName.trim()) && 'opacity-60 cursor-not-allowed'
                   )}
                 >
@@ -776,6 +856,11 @@ export default function CrewProfilePage() {
                       <Loader2 className="w-5 h-5 animate-spin" />
                       <span>프로필 저장하는 중…</span>
                     </>
+                  ) : isSavedSuccess ? (
+                    <div className="flex items-center gap-2 text-white animate-in zoom-in-95 duration-150">
+                      <CheckCircle2 className="w-5 h-5 text-emerald-200" />
+                      <span>프로필 저장 완료!</span>
+                    </div>
                   ) : (
                     <span>프로필 저장하기</span>
                   )}
