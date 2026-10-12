@@ -257,6 +257,8 @@ export type CrewlinkSchema = {
         venue_name: string;
         road_address: string;
         detail_address: string | null;
+        latitude?: number | null;
+        longitude?: number | null;
         status: 'draft' | 'published' | 'in_progress' | 'completed' | 'cancelled';
         sow_spec: Json;
         created_at: string;
@@ -270,6 +272,8 @@ export type CrewlinkSchema = {
         venue_name: string;
         road_address: string;
         detail_address?: string | null;
+        latitude?: number | null;
+        longitude?: number | null;
         status?: 'draft' | 'published' | 'in_progress' | 'completed' | 'cancelled';
         sow_spec?: Json;
         created_at?: string;
@@ -283,6 +287,8 @@ export type CrewlinkSchema = {
         venue_name?: string;
         road_address?: string;
         detail_address?: string | null;
+        latitude?: number | null;
+        longitude?: number | null;
         status?: 'draft' | 'published' | 'in_progress' | 'completed' | 'cancelled';
         sow_spec?: Json;
         created_at?: string;
@@ -810,6 +816,15 @@ export type CrewlinkSchema = {
         checked_in_at: string | null;
         departed_at: string | null;
       }[];
+    };
+    get_events_in_bounds: {
+      Args: {
+        min_lat: number;
+        min_lng: number;
+        max_lat: number;
+        max_lng: number;
+      };
+      Returns: CrewlinkSchema['Tables']['projects']['Row'][];
     };
   };
   Enums: {

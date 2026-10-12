@@ -19,6 +19,7 @@ import { cn } from '@/lib/utils';
 import { PublicHeader } from '@/components/common/PublicHeader';
 import { MobileBottomNav } from '@/components/common/MobileBottomNav';
 import { FloatingClayCoin3D } from '@/components/assets/FloatingClayCoin3D';
+import { EventMapExplorer } from '@/components/explore/EventMapExplorer';
 import {
   getPublicEvents,
   type EventCategory,
@@ -81,6 +82,7 @@ export default function HomePage() {
   const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false);
   const sortDropdownRef = useRef<HTMLDivElement>(null);
   const [searchKeyword, setSearchKeyword] = useState('');
+  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
 
   // 정렬 드롭다운 바깥 영역 클릭 및 ESC 키 입력 시 닫힘 처리
   useEffect(() => {
@@ -404,24 +406,64 @@ export default function HomePage() {
             )}
           </div>
 
-          {/* Task 1: 커스텀 정렬 드롭다운 (플로팅 메뉴) */}
-          <div ref={sortDropdownRef} className="relative shrink-0 ml-auto">
-            <button
-              type="button"
-              aria-haspopup="listbox"
-              aria-expanded={isSortDropdownOpen}
-              onClick={() => setIsSortDropdownOpen((prev) => !prev)}
-              className="h-10 px-3.5 rounded-xl border border-border bg-surface text-sm font-semibold text-ink flex items-center gap-1.5 shadow-2xs hover:border-brand-border cursor-pointer transition-colors"
+          {/* Task 1 & Task 4: 보기 모드 전환 토글 & 커스텀 정렬 드롭다운 헤더 */}
+          <div className="flex items-center gap-2 shrink-0 ml-auto">
+            {/* Task 4: 보기 모드 전환 토글 탭 [ ≡ 목록형 | 🗺️ 지도형 ] */}
+            <div
+              role="tablist"
+              aria-label="공고 보기 방식 선택"
+              className="inline-flex p-1 bg-surface-muted/60 border border-border rounded-xl"
             >
-              <ArrowUpDown className="w-4 h-4 text-muted shrink-0" />
-              <span>{currentSortLabel}</span>
-              <ChevronDown
+              <button
+                type="button"
+                role="tab"
+                aria-selected={viewMode === 'list'}
+                onClick={() => setViewMode('list')}
                 className={cn(
-                  'w-3.5 h-3.5 text-muted transition-transform duration-200',
-                  isSortDropdownOpen && 'rotate-180'
+                  'h-8 px-3 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer',
+                  viewMode === 'list'
+                    ? 'bg-surface text-brand shadow-xs border border-border-subtle'
+                    : 'text-muted hover:text-ink'
                 )}
-              />
-            </button>
+              >
+                <span>≡</span>
+                <span>목록형</span>
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={viewMode === 'map'}
+                onClick={() => setViewMode('map')}
+                className={cn(
+                  'h-8 px-3 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer',
+                  viewMode === 'map'
+                    ? 'bg-surface text-brand shadow-xs border border-border-subtle'
+                    : 'text-muted hover:text-ink'
+                )}
+              >
+                <span>🗺️</span>
+                <span>지도형</span>
+              </button>
+            </div>
+
+            {/* 커스텀 정렬 드롭다운 (플로팅 메뉴) */}
+            <div ref={sortDropdownRef} className="relative">
+              <button
+                type="button"
+                aria-haspopup="listbox"
+                aria-expanded={isSortDropdownOpen}
+                onClick={() => setIsSortDropdownOpen((prev) => !prev)}
+                className="h-10 px-3.5 rounded-xl border border-border bg-surface text-sm font-semibold text-ink flex items-center gap-1.5 shadow-2xs hover:border-brand-border cursor-pointer transition-colors"
+              >
+                <ArrowUpDown className="w-4 h-4 text-muted shrink-0" />
+                <span>{currentSortLabel}</span>
+                <ChevronDown
+                  className={cn(
+                    'w-3.5 h-3.5 text-muted transition-transform duration-200',
+                    isSortDropdownOpen && 'rotate-180'
+                  )}
+                />
+              </button>
 
             {isSortDropdownOpen && (
               <div
@@ -452,13 +494,22 @@ export default function HomePage() {
                 })}
               </div>
             )}
+            </div>
           </div>
         </div>
       </section>
 
-      {/* 5. 공고 카드 그리드 리스트 */}
-      <main className="max-w-4xl w-full mx-auto px-4 sm:px-6 pt-3 flex-1">
-        {filteredAndSortedEvents.length === 0 ? (
+      {/* 5. 공고 콘텐츠 영역 (목록형 or 지도형) */}
+      {viewMode === 'map' ? (
+        <main className="max-w-6xl w-full mx-auto px-4 sm:px-6 pt-3 flex-1">
+          <EventMapExplorer
+            events={filteredAndSortedEvents}
+            currentKST={currentKST}
+          />
+        </main>
+      ) : (
+        <main className="max-w-4xl w-full mx-auto px-4 sm:px-6 pt-3 flex-1">
+          {filteredAndSortedEvents.length === 0 ? (
           <div className="py-20 text-center rounded-3xl bg-surface border border-border space-y-3">
             <p className="text-base font-bold text-ink">선택한 조건의 모집 공고가 없어요</p>
             <p className="text-xs text-muted break-keep">
@@ -569,6 +620,11 @@ export default function HomePage() {
             })}
           </div>
         )}
+        </main>
+      )}
+
+      {/* 6. 이용 안내 배너 & 푸터 */}
+      <div className="max-w-4xl w-full mx-auto px-4 sm:px-6">
 
         {/* 6. 이용 안내 배너 */}
         <section className="mt-10 p-5 rounded-3xl bg-surface border border-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -602,7 +658,7 @@ export default function HomePage() {
             기업 주최사 센터 바로가기 &rarr;
           </Link>
         </footer>
-      </main>
+      </div>
 
       {/* 8. 모바일 4탭 하단 내비게이션 바 */}
       <MobileBottomNav />

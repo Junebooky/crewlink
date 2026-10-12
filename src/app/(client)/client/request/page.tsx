@@ -21,6 +21,7 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { KakaoPlaceSearchInput } from '@/components/client/KakaoPlaceSearchInput';
 
 const SCOPE_PRESETS = [
   'POS 결제 · 영수증 발행',
@@ -37,8 +38,11 @@ export default function ClientRequestWizard() {
 
   // Form State
   const [title, setTitle] = useState('2026 하반기 글로벌 AI 컨퍼런스');
+  const [venueName, setVenueName] = useState('코엑스');
   const [roadAddress, setRoadAddress] = useState('서울 강남구 영동대로 513 코엑스');
   const [detailAddress, setDetailAddress] = useState('3층 D홀 전관');
+  const [latitude, setLatitude] = useState<number | null>(37.511854);
+  const [longitude, setLongitude] = useState<number | null>(127.059287);
   const [eventDate, setEventDate] = useState('2026-10-15');
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('18:00');
@@ -95,8 +99,11 @@ export default function ClientRequestWizard() {
     startTime,
     endTime,
     breakMinutes,
+    venueName,
     roadAddress,
     detailAddress,
+    latitude,
+    longitude,
     selectedScopes,
     headcountGuide,
     headcountVIP,
@@ -148,9 +155,13 @@ export default function ClientRequestWizard() {
         },
         body: JSON.stringify({
           title,
+          venueName,
+          venueAddress: roadAddress,
+          venueDetail: detailAddress,
           roadAddress,
           detailAddress,
-          venueName: roadAddress,
+          latitude,
+          longitude,
           eventDate,
           startTime,
           endTime,
@@ -328,25 +339,20 @@ export default function ClientRequestWizard() {
                   </p>
                 </div>
 
-                <div>
-                  <label className="text-xs font-bold text-muted block mb-1">도로명 주소</label>
-                  <input
-                    type="text"
-                    value={roadAddress}
-                    onChange={(e) => setRoadAddress(e.target.value)}
-                    className="w-full h-11 px-3 border border-border rounded-xl text-sm text-ink bg-surface focus:ring-2 focus:ring-brand focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-bold text-muted block mb-1">상세 장소</label>
-                  <input
-                    type="text"
-                    value={detailAddress}
-                    onChange={(e) => setDetailAddress(e.target.value)}
-                    className="w-full h-11 px-3 border border-border rounded-xl text-sm text-ink bg-surface focus:ring-2 focus:ring-brand focus:outline-none"
-                  />
-                </div>
+                <KakaoPlaceSearchInput
+                  venueName={venueName}
+                  venueAddress={roadAddress}
+                  venueDetail={detailAddress}
+                  latitude={latitude}
+                  longitude={longitude}
+                  onSelectPlace={(place) => {
+                    setVenueName(place.venueName);
+                    setRoadAddress(place.venueAddress);
+                    setLatitude(place.latitude);
+                    setLongitude(place.longitude);
+                  }}
+                  onChangeDetail={(detail) => setDetailAddress(detail)}
+                />
               </div>
             </div>
 
@@ -508,6 +514,12 @@ export default function ClientRequestWizard() {
                   <div className="flex justify-between">
                     <span className="text-muted">행사명</span>
                     <span className="font-bold text-ink">{title}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted">장소</span>
+                    <span className="font-semibold text-ink text-right">
+                      {venueName || roadAddress} {detailAddress && `(${detailAddress})`}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted">행사 날짜·근무 시간</span>

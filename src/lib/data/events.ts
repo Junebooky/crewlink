@@ -31,6 +31,8 @@ export interface EventItem {
   venueAddress: string;
   venueDetail: string;
   stationInfo?: string;
+  latitude?: number;
+  longitude?: number;
   startDate: string;
   endDate: string;
   dateRangeLabel: string;
@@ -71,6 +73,8 @@ export const EVENT_FEED_DATA: EventItem[] = [
     venueAddress: '서울 성동구 연무장길 45',
     venueDetail: '성수역 3번 출구 도보 5분 메인 팝업존',
     stationInfo: '성수역 도보 5분',
+    latitude: 37.5421542,
+    longitude: 127.0573211,
     startDate: '2026-10-16',
     endDate: '2026-10-20',
     dateRangeLabel: '10.16–10.20 · 5일간',
@@ -133,6 +137,8 @@ export const EVENT_FEED_DATA: EventItem[] = [
     venueAddress: '서울 강남구 영동대로 513 코엑스 3층 D홀 전관',
     venueDetail: '삼성역 코엑스 3층 컨벤션홀',
     stationInfo: '삼성역 코엑스',
+    latitude: 37.511854,
+    longitude: 127.059287,
     startDate: '2026-10-22',
     endDate: '2026-10-25',
     dateRangeLabel: '10.22–10.25 · 4일간',
@@ -194,6 +200,8 @@ export const EVENT_FEED_DATA: EventItem[] = [
     venueAddress: '서울 영등포구 여의대로 108 더현대 서울 지하 2층',
     venueDetail: '더현대 서울 지하 2층 아이코닉스퀘어',
     stationInfo: '여의도 더현대',
+    latitude: 37.525897,
+    longitude: 126.928426,
     startDate: '2026-10-19',
     endDate: '2026-10-25',
     dateRangeLabel: '10.19–10.25 · 7일간',
@@ -258,6 +266,8 @@ export const EVENT_FEED_DATA: EventItem[] = [
     venueAddress: '경기 고양시 일산서구 킨텍스로 217 제1전시장 1·2홀',
     venueDetail: '킨텍스 제1전시장 1·2홀 메인 로비',
     stationInfo: '킨텍스 제1전시장',
+    latitude: 37.669818,
+    longitude: 126.746011,
     startDate: '2026-10-28',
     endDate: '2026-10-30',
     dateRangeLabel: '10.28–10.30 · 3일간',
