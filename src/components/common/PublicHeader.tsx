@@ -154,7 +154,7 @@ export function PublicHeader({ className }: PublicHeaderProps) {
       {/* Right Action: Logged In (AccountMenu) vs Logged Out ([로그인]) */}
       <div className="flex items-center gap-2">
         {isLoadingSession ? (
-          <div className="w-20 h-8 rounded-full bg-surface-muted animate-pulse" />
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-surface-muted animate-pulse" />
         ) : sessionUser ? (
           <AccountMenu
             user={sessionUser}

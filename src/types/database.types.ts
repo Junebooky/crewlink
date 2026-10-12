@@ -261,6 +261,8 @@ export type CrewlinkSchema = {
         longitude?: number | null;
         status: 'draft' | 'published' | 'in_progress' | 'completed' | 'cancelled';
         sow_spec: Json;
+        start_date?: string | null;
+        end_date?: string | null;
         created_at: string;
         updated_at: string;
       };
@@ -276,6 +278,8 @@ export type CrewlinkSchema = {
         longitude?: number | null;
         status?: 'draft' | 'published' | 'in_progress' | 'completed' | 'cancelled';
         sow_spec?: Json;
+        start_date?: string | null;
+        end_date?: string | null;
         created_at?: string;
         updated_at?: string;
       };
@@ -291,6 +295,8 @@ export type CrewlinkSchema = {
         longitude?: number | null;
         status?: 'draft' | 'published' | 'in_progress' | 'completed' | 'cancelled';
         sow_spec?: Json;
+        start_date?: string | null;
+        end_date?: string | null;
         created_at?: string;
         updated_at?: string;
       };
@@ -302,11 +308,13 @@ export type CrewlinkSchema = {
         project_id: string;
         shift_name: string;
         required_headcount: number;
+        date?: string | null;
         start_time: string;
         end_time: string;
         checkin_opens_at: string;
         checkin_closes_at: string;
         hourly_rate_won: number;
+        daily_wage?: number | null;
         created_at: string;
         updated_at: string;
       };
@@ -315,11 +323,13 @@ export type CrewlinkSchema = {
         project_id: string;
         shift_name: string;
         required_headcount: number;
+        date?: string | null;
         start_time: string;
         end_time: string;
         checkin_opens_at?: string;
         checkin_closes_at?: string;
         hourly_rate_won: number;
+        daily_wage?: number | null;
         created_at?: string;
         updated_at?: string;
       };
@@ -328,11 +338,13 @@ export type CrewlinkSchema = {
         project_id?: string;
         shift_name?: string;
         required_headcount?: number;
+        date?: string | null;
         start_time?: string;
         end_time?: string;
         checkin_opens_at?: string;
         checkin_closes_at?: string;
         hourly_rate_won?: number;
+        daily_wage?: number | null;
         created_at?: string;
         updated_at?: string;
       };

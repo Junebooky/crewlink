@@ -11,7 +11,6 @@ import {
   PlusCircle,
   Receipt,
   LogOut,
-  ChevronDown,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
@@ -84,11 +83,12 @@ export function AccountMenu({ user, onLogout }: AccountMenuProps) {
         aria-expanded={isOpen}
         onClick={() => setIsOpen((prev) => !prev)}
         className={cn(
-          'flex items-center gap-2 py-1.5 px-2.5 rounded-full border border-border bg-surface hover:bg-canvas text-xs font-bold text-ink transition-colors cursor-pointer shadow-2xs',
-          isOpen && 'border-brand ring-2 ring-brand/10'
+          'p-0 rounded-full transition-transform active:scale-95 cursor-pointer focus:outline-hidden relative',
+          isOpen && 'ring-2 ring-brand ring-offset-2'
         )}
+        title={user.fullName}
       >
-        <div className="w-7 h-7 rounded-full overflow-hidden bg-brand-soft text-brand-strong font-black text-xs relative flex items-center justify-center shrink-0 border border-border">
+        <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full overflow-hidden bg-brand-soft text-brand-strong font-bold text-sm relative flex items-center justify-center shrink-0 shadow-xs hover:ring-2 hover:ring-brand/30 transition-all">
           {user.profileImageUrl ? (
             <Image
               src={user.profileImageUrl}
@@ -101,16 +101,6 @@ export function AccountMenu({ user, onLogout }: AccountMenuProps) {
             <span>{user.fullName.slice(0, 1) || '크'}</span>
           )}
         </div>
-        <span className="max-w-[80px] truncate hidden sm:inline">{user.fullName}</span>
-        <span className="text-[10px] font-semibold text-brand bg-brand-subtle px-1.5 py-0.5 rounded-md border border-brand-border hidden md:inline">
-          {roleBadge}
-        </span>
-        <ChevronDown
-          className={cn(
-            'w-3.5 h-3.5 text-muted transition-transform duration-200',
-            isOpen && 'rotate-180 text-brand'
-          )}
-        />
       </button>
 
       {/* Dropdown Menu */}

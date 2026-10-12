@@ -23,6 +23,8 @@ import {
   ArrowRightLeft,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { createClient } from '@/lib/supabase/client';
+import { AccountMenu } from './AccountMenu';
 
 export type UserRole = 'crew' | 'client' | 'ops';
 
@@ -72,6 +74,72 @@ export function AppShell({ children, initialRole = 'crew' }: AppShellProps) {
   const pathname = usePathname();
   const [role, setRole] = useState<UserRole>(initialRole);
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+  const [sessionUser, setSessionUser] = useState<{
+    fullName: string;
+    email?: string;
+    roles: string[];
+    profileImageUrl?: string | null;
+  } | null>(null);
+
+  // Synchronize session and profile info across all shell pages
+  useEffect(() => {
+    let isMounted = true;
+    const supabase = createClient();
+
+    async function syncAuth() {
+      try {
+        const isExplicitlyLoggedOut =
+          typeof window !== 'undefined' && localStorage.getItem('crewlink_logged_out') === 'true';
+
+        const headers: Record<string, string> =
+          process.env.NODE_ENV !== 'production' && !isExplicitlyLoggedOut
+            ? { 'x-actor-person-id': '11111111-1111-1111-1111-111111111111' }
+            : {};
+
+        const res = await fetch('/api/auth/me', {
+          cache: 'no-store',
+          headers,
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (isMounted) {
+            if (data.authenticated && data.user) {
+              setSessionUser(data.user);
+            } else {
+              setSessionUser(null);
+            }
+          }
+        } else if (isMounted) {
+          setSessionUser(null);
+        }
+      } catch {
+        if (isMounted) setSessionUser(null);
+      }
+    }
+
+    syncAuth();
+
+    const handleAuthChanged = () => syncAuth();
+    window.addEventListener('crewlink:auth-changed', handleAuthChanged);
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!isMounted) return;
+      if (event === 'SIGNED_OUT' || !session) {
+        setSessionUser(null);
+      } else if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+        syncAuth();
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener('crewlink:auth-changed', handleAuthChanged);
+      subscription.unsubscribe();
+    };
+  }, []);
 
   // Automatically detect role from pathname if URL matches
   useEffect(() => {
@@ -169,17 +237,29 @@ export function AppShell({ children, initialRole = 'crew' }: AppShellProps) {
 
         {/* User Footer */}
         <div className="p-3 border-t border-border-subtle flex items-center justify-between text-xs text-muted">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-full bg-surface-muted border border-border flex items-center justify-center font-bold text-muted">
-              {role === 'crew' ? '김' : role === 'client' ? '박' : '최'}
-            </div>
-            <div>
-              <div className="font-semibold text-ink">
-                {role === 'crew' ? '김크루' : role === 'client' ? '(주)네온패밀리' : '최마스터'}
+          {sessionUser ? (
+            <div className="flex items-center justify-between w-full">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <AccountMenu user={sessionUser} />
+                <div className="min-w-0">
+                  <div className="font-semibold text-ink truncate text-xs">{sessionUser.fullName}</div>
+                  <div className="text-[10px] text-muted truncate">{NAV_CONFIG[role].title}</div>
+                </div>
               </div>
-              <div className="text-[10px] text-muted">{NAV_CONFIG[role].title}</div>
             </div>
-          </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-full bg-surface-muted border border-border flex items-center justify-center font-bold text-muted">
+                {role === 'crew' ? '김' : role === 'client' ? '박' : '최'}
+              </div>
+              <div>
+                <div className="font-semibold text-ink">
+                  {role === 'crew' ? '김크루' : role === 'client' ? '(주)네온패밀리' : '최마스터'}
+                </div>
+                <div className="text-[10px] text-muted">{NAV_CONFIG[role].title}</div>
+              </div>
+            </div>
+          )}
         </div>
       </aside>
 
@@ -195,26 +275,29 @@ export function AppShell({ children, initialRole = 'crew' }: AppShellProps) {
           </span>
         </Link>
 
-        {/* Role toggle for mobile demo */}
-        {process.env.NODE_ENV !== 'production' && (
-          <div className="flex items-center gap-1">
-            {(['crew', 'client', 'ops'] as UserRole[]).map((r) => (
-              <button
-                key={r}
-                onClick={() => {
-                  setRole(r);
-                  window.location.href = NAV_CONFIG[r].items[0].href;
-                }}
-                className={cn(
-                  'px-2 py-1 text-xs rounded font-medium transition-colors',
-                  role === r ? 'bg-brand text-inverse' : 'text-muted hover:bg-surface-muted'
-                )}
-              >
-                {r === 'crew' ? '크루' : r === 'client' ? '주최사' : '운영팀'}
-              </button>
-            ))}
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          {/* Role toggle for mobile demo */}
+          {process.env.NODE_ENV !== 'production' && (
+            <div className="flex items-center gap-1">
+              {(['crew', 'client', 'ops'] as UserRole[]).map((r) => (
+                <button
+                  key={r}
+                  onClick={() => {
+                    setRole(r);
+                    window.location.href = NAV_CONFIG[r].items[0].href;
+                  }}
+                  className={cn(
+                    'px-2 py-1 text-xs rounded font-medium transition-colors',
+                    role === r ? 'bg-brand text-inverse' : 'text-muted hover:bg-surface-muted'
+                  )}
+                >
+                  {r === 'crew' ? '크루' : r === 'client' ? '주최사' : '운영팀'}
+                </button>
+              ))}
+            </div>
+          )}
+          {sessionUser && <AccountMenu user={sessionUser} />}
+        </div>
       </header>
 
       {/* Main Content Area */}

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/common/AppShell';
@@ -32,6 +32,29 @@ const SCOPE_PRESETS = [
   '체험 부스 · 진행·시연',
 ];
 
+/**
+ * Helper to generate YYYY-MM-DD date range safely without timezone shifts
+ */
+function getDatesInRange(startStr: string, endStr: string): string[] {
+  const dates: string[] = [];
+  if (!startStr) return dates;
+  if (!endStr || endStr < startStr) return [startStr];
+
+  const [sy, sm, sd] = startStr.split('-').map(Number);
+  const [ey, em, ed] = endStr.split('-').map(Number);
+  const curr = new Date(Date.UTC(sy, sm - 1, sd));
+  const end = new Date(Date.UTC(ey, em - 1, ed));
+
+  while (curr <= end) {
+    const y = curr.getUTCFullYear();
+    const m = String(curr.getUTCMonth() + 1).padStart(2, '0');
+    const d = String(curr.getUTCDate()).padStart(2, '0');
+    dates.push(`${y}-${m}-${d}`);
+    curr.setUTCDate(curr.getUTCDate() + 1);
+  }
+  return dates;
+}
+
 export default function ClientRequestWizard() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4>(1);
@@ -43,7 +66,12 @@ export default function ClientRequestWizard() {
   const [detailAddress, setDetailAddress] = useState('3층 D홀 전관');
   const [latitude, setLatitude] = useState<number | null>(37.511854);
   const [longitude, setLongitude] = useState<number | null>(127.059287);
-  const [eventDate, setEventDate] = useState('2026-10-15');
+
+  // 날짜 및 다일간 진행 상태
+  const [isMultiDay, setIsMultiDay] = useState(false);
+  const [startDate, setStartDate] = useState('2026-10-15');
+  const [endDate, setEndDate] = useState('2026-10-18');
+  const [isSameSchedule, setIsSameSchedule] = useState(true);
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('18:00');
   const [breakMinutes, setBreakMinutes] = useState(60);
@@ -72,6 +100,13 @@ export default function ClientRequestWizard() {
   const step4Ref = React.useRef<HTMLDivElement>(null);
   const [containerHeight, setContainerHeight] = useState<number | undefined>(undefined);
 
+  // 일자 배열 및 총 일수 계산
+  const dates = useMemo(() => {
+    return isMultiDay ? getDatesInRange(startDate, endDate) : [startDate];
+  }, [isMultiDay, startDate, endDate]);
+
+  const totalDays = Math.max(1, dates.length);
+
   React.useEffect(() => {
     const refs = [step1Ref, step2Ref, step3Ref, step4Ref];
     const activeEl = refs[currentStep - 1]?.current;
@@ -95,7 +130,10 @@ export default function ClientRequestWizard() {
   }, [
     currentStep,
     title,
-    eventDate,
+    isMultiDay,
+    startDate,
+    endDate,
+    totalDays,
     startTime,
     endTime,
     breakMinutes,
@@ -121,8 +159,9 @@ export default function ClientRequestWizard() {
   const hours = Number((netWorkMinutes / 60).toFixed(1));
 
   const hourlyRateWon = 15000;
+  const dailyWage = Math.floor(hours * hourlyRateWon);
   const totalHeadcount = headcountGuide + headcountVIP + headcountDesk;
-  const staffRemunerationWon = Math.floor(totalHeadcount * hours * hourlyRateWon);
+  const staffRemunerationWon = Math.floor(totalHeadcount * dailyWage * totalDays);
   // B2B Pricing structure: Remuneration + Platform fee 15% + VAT 10%
   const platformFeeWon = Math.floor(staffRemunerationWon * 0.15);
   const supplyPriceWon = staffRemunerationWon + platformFeeWon;
@@ -155,6 +194,7 @@ export default function ClientRequestWizard() {
         },
         body: JSON.stringify({
           title,
+          category: '전시·컨벤션',
           venueName,
           venueAddress: roadAddress,
           venueDetail: detailAddress,
@@ -162,12 +202,21 @@ export default function ClientRequestWizard() {
           detailAddress,
           latitude,
           longitude,
-          eventDate,
+          isMultiDay,
+          startDate,
+          endDate: isMultiDay ? endDate : startDate,
+          eventDate: startDate,
           startTime,
           endTime,
           breakMinutes,
           headcount: totalHeadcount,
+          dailyWage,
           hourlyRateWon,
+          totalDays,
+          dates,
+          dressCode: uniformSpec === 'ALL_BLACK_FORMAL' ? '올블랙 정장·슬랙스' : '행사 유니폼 제공',
+          uniformSpec,
+          notes: '',
           selectedScopes,
           positionSpecs: [
             { role: '동선 관리 · 일반 안내', count: headcountGuide },
@@ -292,16 +341,103 @@ export default function ClientRequestWizard() {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs font-bold text-muted block mb-1">행사 날짜</label>
-                    <input
-                      type="date"
-                      value={eventDate}
-                      onChange={(e) => setEventDate(e.target.value)}
-                      className="w-full h-11 px-3 border border-border rounded-xl text-sm text-ink bg-surface focus:ring-2 focus:ring-brand focus:outline-none"
-                    />
+                {/* 1. 진행 일정 유형 선택 세그먼트 탭 */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-muted block">행사 진행 유형</label>
+                  <div className="grid grid-cols-2 gap-2 p-1 bg-surface-muted rounded-xl border border-border">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsMultiDay(false);
+                        setEndDate(startDate);
+                      }}
+                      className={cn(
+                        'py-2 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer',
+                        !isMultiDay
+                          ? 'bg-white text-brand shadow-xs border border-border/60'
+                          : 'text-muted hover:text-ink'
+                      )}
+                    >
+                      하루만 진행해요
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsMultiDay(true);
+                        if (!endDate || endDate < startDate) {
+                          setEndDate(startDate);
+                        }
+                      }}
+                      className={cn(
+                        'py-2 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer',
+                        isMultiDay
+                          ? 'bg-white text-brand shadow-xs border border-border/60'
+                          : 'text-muted hover:text-ink'
+                      )}
+                    >
+                      여러 날 진행해요 (다일간)
+                    </button>
                   </div>
+                </div>
+
+                {/* 2. 날짜 및 시간 설정 */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {!isMultiDay ? (
+                    <div>
+                      <label className="text-xs font-bold text-muted block mb-1">행사 날짜</label>
+                      <input
+                        type="date"
+                        value={startDate}
+                        onChange={(e) => {
+                          setStartDate(e.target.value);
+                          setEndDate(e.target.value);
+                        }}
+                        className="w-full h-11 px-3 border border-border rounded-xl text-sm text-ink bg-surface focus:ring-2 focus:ring-brand focus:outline-none"
+                      />
+                    </div>
+                  ) : (
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-muted block">행사 기간</label>
+                        <span className="bg-brand-soft text-brand font-bold text-xs px-2.5 py-1 rounded-lg">
+                          총 {totalDays}일간 진행
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="text-[11px] text-muted block mb-1">시작일</label>
+                          <input
+                            type="date"
+                            value={startDate}
+                            onChange={(e) => {
+                              setStartDate(e.target.value);
+                              if (endDate && e.target.value > endDate) {
+                                setEndDate(e.target.value);
+                              }
+                            }}
+                            className="w-full h-11 px-3 border border-border rounded-xl text-sm text-ink bg-surface focus:ring-2 focus:ring-brand focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[11px] text-muted block mb-1">종료일</label>
+                          <input
+                            type="date"
+                            min={startDate}
+                            value={endDate}
+                            onChange={(e) => {
+                              if (e.target.value < startDate) {
+                                alert('종료일은 시작일보다 이전일 수 없습니다.');
+                                return;
+                              }
+                              setEndDate(e.target.value);
+                            }}
+                            className="w-full h-11 px-3 border border-border rounded-xl text-sm text-ink bg-surface focus:ring-2 focus:ring-brand focus:outline-none"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <label className="text-xs font-bold text-muted block mb-1">시작 시간</label>
@@ -323,6 +459,18 @@ export default function ClientRequestWizard() {
                     </div>
                   </div>
                 </div>
+
+                {isMultiDay && (
+                  <div className="p-3 bg-brand-soft/60 border border-brand-border/70 rounded-xl flex items-center justify-between text-xs text-brand-strong">
+                    <div className="flex items-center gap-2">
+                      <Check className="w-4 h-4 text-brand shrink-0" />
+                      <span className="font-semibold">전 일정 동일한 시간에 근무해요</span>
+                    </div>
+                    <span className="text-[11px] text-muted font-normal">
+                      {startTime} ~ {endTime} (매일 동일 적용)
+                    </span>
+                  </div>
+                )}
 
                 <div>
                   <label className="text-xs font-bold text-muted block mb-1">쉬는 시간 (분)</label>
@@ -522,12 +670,26 @@ export default function ClientRequestWizard() {
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted">행사 날짜·근무 시간</span>
-                    <span>{eventDate} (근무 {hours}시간)</span>
+                    <span className="text-muted">행사 일정</span>
+                    <span className="font-semibold text-ink">
+                      {isMultiDay
+                        ? `${startDate} ~ ${endDate} (총 ${totalDays}일)`
+                        : `${startDate} (1일)`}
+                    </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted">필요한 크루</span>
-                    <span className="font-bold text-brand">{totalHeadcount}명</span>
+                    <span className="text-muted">근무 시간</span>
+                    <span>
+                      {startTime} ~ {endTime} (일일 순 근무 {hours}시간)
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted">총 투입 인원</span>
+                    <span className="font-bold text-brand">
+                      {isMultiDay
+                        ? `총 ${totalDays}일간 하루 ${totalHeadcount}명 (연인원 ${totalHeadcount * totalDays}명)`
+                        : `${totalHeadcount}명`}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted">선택한 역할</span>
@@ -538,7 +700,9 @@ export default function ClientRequestWizard() {
                 {/* Price Breakdown */}
                 <div className="space-y-2.5 text-xs text-muted pt-2">
                   <div className="flex justify-between items-center">
-                    <span>크루 보수 ({totalHeadcount}명 × {hours}시간 × 15,000원)</span>
+                    <span>
+                      크루 보수 ({isMultiDay ? `일당 ${dailyWage.toLocaleString()}원 × ${totalDays}일 × ${totalHeadcount}명` : `${totalHeadcount}명 × ${hours}시간 × 15,000원`})
+                    </span>
                     <span className="font-semibold text-ink tabular-nums">
                       {staffRemunerationWon.toLocaleString()}원
                     </span>

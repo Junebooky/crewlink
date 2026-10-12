@@ -2,6 +2,29 @@ import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { getAuthenticatedContext } from '@/lib/auth/serverAuth';
 
+/**
+ * Helper to generate YYYY-MM-DD date range safely without timezone shifts
+ */
+function getDatesInRange(startStr: string, endStr: string): string[] {
+  const dates: string[] = [];
+  if (!startStr) return dates;
+  if (!endStr || endStr < startStr) return [startStr];
+
+  const [sy, sm, sd] = startStr.split('-').map(Number);
+  const [ey, em, ed] = endStr.split('-').map(Number);
+  const curr = new Date(Date.UTC(sy, sm - 1, sd));
+  const end = new Date(Date.UTC(ey, em - 1, ed));
+
+  while (curr <= end) {
+    const y = curr.getUTCFullYear();
+    const m = String(curr.getUTCMonth() + 1).padStart(2, '0');
+    const d = String(curr.getUTCDate()).padStart(2, '0');
+    dates.push(`${y}-${m}-${d}`);
+    curr.setUTCDate(curr.getUTCDate() + 1);
+  }
+  return dates;
+}
+
 export async function POST(request: Request) {
   try {
     const { authContext, errorResponse } = await getAuthenticatedContext(request, 'client');
@@ -15,26 +38,43 @@ export async function POST(request: Request) {
     const body = await request.json();
     const {
       title,
-      roadAddress,
-      detailAddress,
+      category = '전시·컨벤션',
       venueName,
       venueAddress,
       venueDetail,
+      roadAddress,
+      detailAddress,
       latitude,
       longitude,
-      eventDate,
+      isMultiDay = false,
+      startDate,
+      endDate,
+      eventDate, // fallback from single-date form
       startTime,
       endTime,
       breakMinutes = 60,
       headcount = 8,
+      dailyWage, // optional precomputed daily wage
       hourlyRateWon = 15000,
       selectedScopes = [],
       positionSpecs = [],
+      dressCode,
+      notes,
     } = body;
 
-    if (!title || !eventDate || !startTime || !endTime) {
+    const actualStartDate = startDate || eventDate;
+    const actualEndDate = isMultiDay ? (endDate || actualStartDate) : actualStartDate;
+
+    if (!title || !actualStartDate || !startTime || !endTime) {
       return NextResponse.json(
         { message: '행사명과 날짜, 시작·종료 시간을 입력해 주세요.' },
+        { status: 400 }
+      );
+    }
+
+    if (actualEndDate < actualStartDate) {
+      return NextResponse.json(
+        { message: '종료일은 시작일보다 이전일 수 없습니다.' },
         { status: 400 }
       );
     }
@@ -48,9 +88,11 @@ export async function POST(request: Request) {
     }
 
     // 1. Calculate pure working hours reflecting break time
-    const startDateTime = new Date(`${eventDate}T${startTime}:00`);
-    const endDateTime = new Date(`${eventDate}T${endTime}:00`);
-    const totalMinutes = (endDateTime.getTime() - startDateTime.getTime()) / (1000 * 60);
+    const startParts = startTime.split(':').map(Number);
+    const endParts = endTime.split(':').map(Number);
+    const startMins = (startParts[0] || 0) * 60 + (startParts[1] || 0);
+    const endMins = (endParts[0] || 0) * 60 + (endParts[1] || 0);
+    const totalMinutes = endMins - startMins;
 
     if (totalMinutes <= 0) {
       return NextResponse.json(
@@ -61,10 +103,16 @@ export async function POST(request: Request) {
 
     const netWorkMinutes = Math.max(60, totalMinutes - Number(breakMinutes));
     const netWorkHours = Number((netWorkMinutes / 60).toFixed(1));
+    const rateWon = Number(hourlyRateWon) || 15000;
+    const calculatedDailyWage = dailyWage ? Number(dailyWage) : Math.floor(netWorkHours * rateWon);
+
+    // Generate date array
+    const dateList = isMultiDay ? getDatesInRange(actualStartDate, actualEndDate) : [actualStartDate];
+    const totalDays = Math.max(1, dateList.length);
 
     const supabase = createAdminClient();
 
-    // 2. Resolve client organization without arbitrary fallback
+    // 2. Resolve client organization
     const { data: member } = await supabase
       .from('organization_members')
       .select('organization_id')
@@ -73,7 +121,6 @@ export async function POST(request: Request) {
 
     let organizationId = member?.organization_id || null;
     if (!organizationId) {
-      // If ops/admin user is creating project, allow assigning to default active org if member row absent
       if (authContext.roles.includes('ops') || authContext.roles.includes('admin')) {
         const { data: defaultOrg } = await supabase
           .from('organizations')
@@ -93,11 +140,11 @@ export async function POST(request: Request) {
     }
 
     let createdProjectId: string | null = null;
-    let createdShiftId: string | null = null;
+    const createdShiftIds: string[] = [];
     let createdQuoteId: string | null = null;
 
     try {
-      // 3. Insert Project
+      // 3. Insert Project with start_date & end_date
       const { data: project, error: projError } = await supabase
         .from('projects')
         .insert({
@@ -109,11 +156,21 @@ export async function POST(request: Request) {
           latitude: latitude ? Number(latitude) : null,
           longitude: longitude ? Number(longitude) : null,
           status: 'published',
+          start_date: actualStartDate,
+          end_date: actualEndDate,
           sow_spec: {
+            category,
+            isMultiDay,
+            startDate: actualStartDate,
+            endDate: actualEndDate,
+            dates: dateList,
+            totalDays,
             scopes: selectedScopes,
             netWorkHours,
             breakMinutes,
             positionSpecs,
+            dressCode: dressCode || '올블랙 정장·슬랙스',
+            notes: notes || '',
           },
         })
         .select('id')
@@ -126,50 +183,61 @@ export async function POST(request: Request) {
 
       createdProjectId = project.id;
 
-      // 4. Insert Shift
-      const checkinOpensAt = new Date(startDateTime.getTime() - 60 * 60 * 1000).toISOString();
-      const checkinClosesAt = new Date(startDateTime.getTime() + 60 * 60 * 1000).toISOString();
+      // 4. Atomically insert Shifts & Shift Slots for each date in dateList
+      for (let i = 0; i < dateList.length; i++) {
+        const currentDate = dateList[i];
+        const startDateTime = new Date(`${currentDate}T${startTime}:00`);
+        const endDateTime = new Date(`${currentDate}T${endTime}:00`);
+        const checkinOpensAt = new Date(startDateTime.getTime() - 60 * 60 * 1000).toISOString();
+        const checkinClosesAt = new Date(startDateTime.getTime() + 60 * 60 * 1000).toISOString();
 
-      const { data: shift, error: shiftError } = await supabase
-        .from('shifts')
-        .insert({
-          project_id: project.id,
-          shift_name: `${title} · 근무 일정`,
-          required_headcount: count,
-          start_time: startDateTime.toISOString(),
-          end_time: endDateTime.toISOString(),
-          checkin_opens_at: checkinOpensAt,
-          checkin_closes_at: checkinClosesAt,
-          hourly_rate_won: Number(hourlyRateWon),
-        })
-        .select('id')
-        .single();
+        const shiftName = totalDays > 1
+          ? `${title} · ${i + 1}일차 (${currentDate})`
+          : `${title} · 근무 일정`;
 
-      if (shiftError || !shift) {
-        console.error('[POST /api/client/projects] shiftError:', shiftError);
-        throw new Error(shiftError?.message || '근무 일정을 저장하지 못했어요. 입력한 시간을 확인해 주세요.');
+        const { data: shift, error: shiftError } = await supabase
+          .from('shifts')
+          .insert({
+            project_id: project.id,
+            shift_name: shiftName,
+            required_headcount: count,
+            date: currentDate,
+            start_time: startDateTime.toISOString(),
+            end_time: endDateTime.toISOString(),
+            checkin_opens_at: checkinOpensAt,
+            checkin_closes_at: checkinClosesAt,
+            hourly_rate_won: rateWon,
+            daily_wage: calculatedDailyWage,
+          })
+          .select('id')
+          .single();
+
+        if (shiftError || !shift) {
+          console.error('[POST /api/client/projects] shiftError on date', currentDate, shiftError);
+          throw new Error(shiftError?.message || `${currentDate} 일자의 근무 일정을 저장하지 못했습니다.`);
+        }
+
+        createdShiftIds.push(shift.id);
+
+        // Create shift slots for this shift
+        const slotsToInsert = Array.from({ length: count }, (_, slotIdx) => ({
+          shift_id: shift.id,
+          slot_number: slotIdx + 1,
+          position_code: `POS-${String(slotIdx + 1).padStart(2, '0')}`,
+          status: 'open',
+        }));
+
+        const { error: slotsError } = await supabase.from('shift_slots').insert(slotsToInsert);
+        if (slotsError) {
+          console.error('[POST /api/client/projects] slotsError on shift', shift.id, slotsError);
+          throw new Error(slotsError.message || `${currentDate} 일자의 근무 슬롯을 생성하지 못했습니다.`);
+        }
       }
 
-      createdShiftId = shift.id;
-
-      // 5. Create Shift Slots
-      const slotsToInsert = Array.from({ length: count }, (_, i) => ({
-        shift_id: shift.id,
-        slot_number: i + 1,
-        position_code: `POS-${String(i + 1).padStart(2, '0')}`,
-        status: 'open',
-      }));
-
-      const { error: slotsError } = await supabase.from('shift_slots').insert(slotsToInsert);
-      if (slotsError) {
-        console.error('[POST /api/client/projects] slotsError:', slotsError);
-        throw new Error(slotsError.message || '근무 슬롯을 생성하지 못했어요.');
-      }
-
-      // 6. Calculate Quote and insert into quotes table
-      const staffRemunerationWon = Math.floor(count * netWorkHours * Number(hourlyRateWon));
-      const platformFeeWon = Math.floor(staffRemunerationWon * 0.15); // 15% platform fee
-      const subtotalWon = staffRemunerationWon + platformFeeWon;
+      // 5. Calculate Quote total reflecting totalDays: dailyWage * totalDays * count
+      const totalWage = calculatedDailyWage * totalDays * count;
+      const platformFeeWon = Math.floor(totalWage * 0.15); // 15% platform fee
+      const subtotalWon = totalWage + platformFeeWon;
       const vatWon = Math.floor(subtotalWon * 0.10); // 10% VAT
       const totalAmountWon = subtotalWon + vatWon;
 
@@ -196,14 +264,18 @@ export async function POST(request: Request) {
 
       createdQuoteId = quote.id;
 
-      // 7. Insert Quote Items
+      // 6. Insert Quote Items
+      const itemName = totalDays > 1
+        ? `크루 보수 (하루 ${count}명 × ${totalDays}일 = 연인원 ${count * totalDays}명)`
+        : `크루 보수 (${count}명 × ${netWorkHours}시간)`;
+
       const { error: quoteItemsError } = await supabase.from('quote_items').insert([
         {
           quote_id: quote.id,
-          item_name: `크루 보수 (${count}명 × ${netWorkHours}시간)`,
-          quantity: count,
-          unit_price_won: Math.floor(netWorkHours * Number(hourlyRateWon)),
-          amount_won: staffRemunerationWon,
+          item_name: itemName,
+          quantity: count * totalDays,
+          unit_price_won: calculatedDailyWage,
+          amount_won: totalWage,
         },
         {
           quote_id: quote.id,
@@ -222,12 +294,14 @@ export async function POST(request: Request) {
       return NextResponse.json({
         success: true,
         projectId: project.id,
-        shiftId: shift.id,
+        shiftIds: createdShiftIds,
+        shiftId: createdShiftIds[0],
+        totalDays,
         quoteId: quote.id,
         quoteNumber: quote.quote_number,
         netWorkHours,
         totalAmountWon,
-        message: '운영 요청을 보냈어요.',
+        message: '운영 요청을 성공적으로 등록했어요.',
       });
     } catch (atomicError) {
       // Reverse hierarchical compensation rollback to prevent orphan records
@@ -242,10 +316,12 @@ export async function POST(request: Request) {
         }
       }
 
-      if (createdShiftId) {
+      if (createdShiftIds.length > 0) {
         try {
-          await supabase.from('shift_slots').delete().eq('shift_id', createdShiftId);
-          await supabase.from('shifts').delete().eq('id', createdShiftId);
+          for (const sId of createdShiftIds) {
+            await supabase.from('shift_slots').delete().eq('shift_id', sId);
+            await supabase.from('shifts').delete().eq('id', sId);
+          }
         } catch (rollbackErr) {
           console.error('[Rollback Failure: Shifts]', rollbackErr);
         }

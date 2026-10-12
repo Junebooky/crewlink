@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { ClayWallet3DAsset } from '@/components/assets/ClayWallet3DAsset';
 import { AccessibleSheet } from '@/components/common/AccessibleSheet';
+import { AccountMenu } from '@/components/common/AccountMenu';
 import { getEventById, type EventItem } from '@/lib/data/events';
 
 interface EventDetailProps {
@@ -40,15 +41,28 @@ export default function EventDetailClient({ id, event: initialEvent }: EventDeta
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [sessionUser, setSessionUser] = useState<{
+    fullName: string;
+    email?: string;
+    roles: string[];
+    profileImageUrl?: string | null;
+  } | null>(null);
 
   // 사용자 세션 기본값 프리필 (가능한 경우)
   useEffect(() => {
     async function loadSession() {
       try {
-        const res = await fetch('/api/auth/me', { cache: 'no-store' });
+        const isExplicitlyLoggedOut =
+          typeof window !== 'undefined' && localStorage.getItem('crewlink_logged_out') === 'true';
+        const headers: Record<string, string> =
+          process.env.NODE_ENV !== 'production' && !isExplicitlyLoggedOut
+            ? { 'x-actor-person-id': '11111111-1111-1111-1111-111111111111' }
+            : {};
+        const res = await fetch('/api/auth/me', { cache: 'no-store', headers });
         if (res.ok) {
           const data = await res.json();
           if (data.authenticated && data.user) {
+            setSessionUser(data.user);
             if (data.user.fullName && !applicantName) {
               setApplicantName(data.user.fullName);
             }
@@ -200,19 +214,22 @@ export default function EventDetailClient({ id, event: initialEvent }: EventDeta
           <ArrowLeft className="w-4 h-4" />
           <span>공고 목록</span>
         </Link>
-        <button
-          type="button"
-          onClick={() => {
-            if (navigator.clipboard) {
-              navigator.clipboard.writeText(window.location.href);
-              alert('공고 링크가 복사되었습니다.');
-            }
-          }}
-          className="w-9 h-9 rounded-full flex items-center justify-center text-muted hover:text-ink hover:bg-canvas transition-colors cursor-pointer"
-          aria-label="공고 공유하기"
-        >
-          <Share2 className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              if (navigator.clipboard) {
+                navigator.clipboard.writeText(window.location.href);
+                alert('공고 링크가 복사되었습니다.');
+              }
+            }}
+            className="w-9 h-9 rounded-full flex items-center justify-center text-muted hover:text-ink hover:bg-canvas transition-colors cursor-pointer"
+            aria-label="공고 공유하기"
+          >
+            <Share2 className="w-4 h-4" />
+          </button>
+          {sessionUser && <AccountMenu user={sessionUser} />}
+        </div>
       </header>
 
       <main className="max-w-2xl mx-auto px-4 pt-6 space-y-6">
