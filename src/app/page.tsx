@@ -263,7 +263,7 @@ export default function HomePage() {
           {/* 히어로 배너: 16:9 투명 배경 에셋 (hero_white.png) 황금 분할 배치 */}
           <section className="relative w-full overflow-hidden bg-white min-h-[220px] sm:min-h-[270px] md:min-h-[300px] flex items-center px-4 sm:px-6 lg:px-8 mb-6">
             {/* 좌측: 텍스트 영역 (여백 공간 활용) */}
-            <div className="relative z-10 max-w-[58%] sm:max-w-[52%] md:max-w-[48%] py-4 text-left">
+            <div className="relative z-10 max-w-[50%] py-4 text-left">
               <span className="text-xs sm:text-sm font-bold text-brand tracking-tight">
                 지금, 새로운 현장이 기다려요
               </span>
@@ -275,8 +275,8 @@ export default function HomePage() {
               </p>
             </div>
 
-            {/* 우측: 16:9 투명 배경 3D 일러스트 */}
-            <div className="absolute right-[-5%] sm:right-0 top-1/2 -translate-y-1/2 w-[60%] sm:w-[54%] md:w-[50%] max-w-[520px] aspect-[16/9] pointer-events-none z-0">
+            {/* 우측: 16:9 투명 배경 3D 일러스트 (우측 여백 확보로 잘림 원천 해결) */}
+            <div className="absolute right-2 sm:right-4 md:right-8 top-1/2 -translate-y-1/2 w-[48%] max-w-[460px] aspect-[16/9] pointer-events-none z-0">
               <Image
                 alt="CrewLink 3D Hero"
                 className="object-contain object-right"
@@ -503,7 +503,7 @@ export default function HomePage() {
               <Link
                 key={`hot-${item.id}`}
                 href={`/events/${item.id}`}
-                className="min-w-[240px] max-w-[260px] snap-start bg-white rounded-2xl shadow-[0_4px_16px_rgba(0,0,0,0.05)] border border-border/40 hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] overflow-hidden flex flex-col justify-between shrink-0 transition-all duration-200 hover:-translate-y-0.5 group"
+                className="min-w-[240px] max-w-[260px] snap-start bg-white rounded-2xl border border-slate-200/80 shadow-[0_6px_20px_rgba(15,23,42,0.07)] overflow-hidden flex flex-col justify-between shrink-0 transition-all duration-200 hover:-translate-y-0.5 group"
               >
                 {/* 상단 썸네일 */}
                 <div className="h-28 w-full relative overflow-hidden bg-slate-100">
@@ -582,17 +582,19 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 4. 섹션 2: 방금 올라왔어요 (통합 헤더바) */}
+      {/* 4. 섹션 2: 방금 올라왔어요 (헤더바 리팩토링) */}
       <section className="max-w-4xl w-full mx-auto px-4 sm:px-6 pt-2 pb-2">
         <div className="flex items-center justify-between mb-3 px-1">
           {/* 좌측: 타이틀 + 카운트 뱃지 */}
-          <div className="flex items-center gap-2">
-            <h2 className="text-lg sm:text-xl font-bold text-ink tracking-tight">
-              방금 올라왔어요
-            </h2>
-            <span className="inline-flex items-center gap-1 bg-brand-soft/50 text-brand-strong text-xs font-bold px-2 py-0.5 rounded-full">
-              <Clock className="w-3 h-3 stroke-[2.5]" />
-              <span>{filteredAndSortedEvents.length}개</span>
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="flex items-center gap-1.5 whitespace-nowrap shrink-0">
+              <span className="text-base sm:text-lg">✨</span>
+              <h2 className="text-lg sm:text-xl font-bold text-ink tracking-tight whitespace-nowrap">
+                방금 올라왔어요
+              </h2>
+            </div>
+            <span className="bg-brand-soft/50 text-brand-strong text-xs font-bold px-2 py-0.5 rounded-full shrink-0">
+              {filteredAndSortedEvents.length}개
             </span>
             {/* 필터 활성화 시 리셋 버튼 */}
             {(selectedCategory !== 'all' ||
@@ -602,7 +604,7 @@ export default function HomePage() {
               <button
                 type="button"
                 onClick={handleResetFilters}
-                className="h-6 px-2 rounded-full bg-white text-muted hover:text-ink text-[11px] font-medium flex items-center gap-1 transition-colors cursor-pointer shadow-2xs"
+                className="h-6 px-2 rounded-full bg-white text-muted hover:text-ink text-[11px] font-medium flex items-center gap-1 transition-colors cursor-pointer shadow-2xs shrink-0"
               >
                 <RotateCcw className="w-3 h-3" />
                 <span>초기화</span>
@@ -610,7 +612,7 @@ export default function HomePage() {
             )}
             {/* 활성 날짜 뱃지 */}
             {activeDateRange && (
-              <span className="h-6 px-2 rounded-full bg-brand-soft text-brand-strong border border-brand-border text-[11px] font-semibold flex items-center gap-1">
+              <span className="h-6 px-2 rounded-full bg-brand-soft text-brand-strong border border-brand-border text-[11px] font-semibold flex items-center gap-1 shrink-0">
                 <span>{activeDateRange.label}</span>
                 <button
                   type="button"
@@ -624,44 +626,47 @@ export default function HomePage() {
             )}
           </div>
 
-          {/* 우측: [최신순 | 지도형 | 추천순 ∨] 통합 필터 탭 */}
-          <div className="flex items-center gap-1 bg-white p-1 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-border/40 text-xs font-semibold">
-            <button
-              type="button"
-              onClick={() => {
-                setSortOrder('latest');
-                setViewMode('list');
-              }}
-              className={cn(
-                "px-3 py-1 rounded-full transition-all cursor-pointer",
-                sortOrder === 'latest' && viewMode === 'list'
-                  ? "bg-brand text-white font-bold shadow-xs"
-                  : "text-muted hover:text-ink font-semibold"
-              )}
-            >
-              최신순
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewMode(viewMode === 'map' ? 'list' : 'map')}
-              className={cn(
-                "px-2.5 py-1 transition-colors cursor-pointer rounded-full",
-                viewMode === 'map'
-                  ? "bg-brand text-white font-bold shadow-xs"
-                  : "text-muted hover:text-ink font-semibold"
-              )}
-            >
-              지도형
-            </button>
-            <div ref={sortDropdownRef} className="relative">
+          {/* 우측: [최신순 | 지도형] 단일 세그먼트 + [추천순 ∨] 독립 버튼 */}
+          <div className="flex items-center shrink-0">
+            {/* [최신순 | 지도형] 세그먼트 */}
+            <div className="bg-slate-100 p-1 rounded-full flex items-center text-xs font-semibold">
+              <button
+                type="button"
+                onClick={() => {
+                  setSortOrder('latest');
+                  setViewMode('list');
+                }}
+                className={cn(
+                  "rounded-full transition-all cursor-pointer",
+                  sortOrder === 'latest' && viewMode === 'list'
+                    ? "bg-brand text-white font-bold px-3 py-1 shadow-xs"
+                    : "text-muted hover:text-ink px-2.5 py-1"
+                )}
+              >
+                최신순
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode(viewMode === 'map' ? 'list' : 'map')}
+                className={cn(
+                  "rounded-full transition-all cursor-pointer",
+                  viewMode === 'map'
+                    ? "bg-brand text-white font-bold px-3 py-1 shadow-xs"
+                    : "text-muted hover:text-ink px-2.5 py-1"
+                )}
+              >
+                지도형
+              </button>
+            </div>
+
+            {/* [추천순 ∨] 별도 독립 버튼 */}
+            <div ref={sortDropdownRef} className="relative ml-1.5">
               <button
                 type="button"
                 onClick={() => setIsSortDropdownOpen((prev) => !prev)}
                 className={cn(
-                  "px-2.5 py-1 flex items-center gap-0.5 transition-colors cursor-pointer rounded-full",
-                  sortOrder !== 'latest' && viewMode === 'list'
-                    ? "bg-brand text-white font-bold shadow-xs"
-                    : "text-muted hover:text-ink font-semibold"
+                  "bg-white border border-slate-200 px-3 py-1 rounded-full text-xs font-semibold text-muted hover:text-ink shadow-2xs flex items-center gap-1 transition-colors cursor-pointer",
+                  sortOrder !== 'latest' && viewMode === 'list' && "border-brand text-brand font-bold"
                 )}
               >
                 <span>
@@ -728,8 +733,8 @@ export default function HomePage() {
               </button>
             </div>
           ) : (
-            <div className="space-y-3">
-              {filteredAndSortedEvents.map((item, idx) => {
+            <div className="space-y-3.5">
+              {filteredAndSortedEvents.map((item) => {
                 const deadlineInfo = getDeadlineInfo(item.deadlineDate, currentKST);
                 const isFav = !!favorites[item.id];
 
@@ -737,104 +742,89 @@ export default function HomePage() {
                   <Link
                     key={item.id}
                     href={`/events/${item.id}`}
-                    className="w-full flex items-stretch gap-3.5 sm:gap-4 bg-white rounded-2xl shadow-[0_4px_16px_rgba(0,0,0,0.04)] border border-border/40 hover:shadow-[0_6px_20px_rgba(0,0,0,0.07)] p-3.5 sm:p-4 mb-3 transition-all group"
+                    className="bg-white rounded-3xl border border-slate-200/80 shadow-[0_8px_24px_rgba(15,23,42,0.08)] hover:shadow-[0_12px_32px_rgba(15,23,42,0.12)] p-4 sm:p-4.5 mb-3.5 flex flex-col gap-3 transition-all duration-200 group block"
                   >
-                    {/* 좌측 썸네일 (w-24 h-24 sm:w-28 sm:h-28) */}
-                    <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden relative shrink-0 bg-slate-100">
-                      <Image
-                        src={getCategoryFallbackImage(item.category, item.title)}
-                        alt={item.title}
-                        fill
-                        unoptimized
-                        className="object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                      {/* 이미지 좌측 상단 반투명 알약 뱃지 (D-day) */}
-                      <div className="absolute top-1.5 left-1.5 z-10">
-                        <span
-                          className={cn(
-                            'px-2 py-0.5 rounded-full text-[10px] font-extrabold shadow-2xs backdrop-blur-xs',
-                            idx % 3 === 0
-                              ? 'bg-brand text-white'
-                              : idx % 3 === 1
-                              ? 'bg-emerald-500 text-white'
-                              : 'bg-brand-soft/95 text-brand-strong'
-                          )}
-                        >
+                    {/* [상단 영역]: 썸네일 + 기본 정보 */}
+                    <div className="flex items-start gap-3.5">
+                      {/* 썸네일 이미지 (D-day 브랜드 블루 단일화) */}
+                      <div className="w-24 h-24 rounded-2xl overflow-hidden relative shrink-0 bg-slate-100">
+                        <Image
+                          src={getCategoryFallbackImage(item.category, item.title)}
+                          alt={item.title}
+                          fill
+                          unoptimized
+                          className="object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                        <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-brand text-white text-[11px] font-bold shadow-xs">
                           {deadlineInfo.dDayLabel || '신규'}
                         </span>
                       </div>
+
+                      {/* 우측 텍스트 (위치, 제목, 날짜, 시간) */}
+                      <div className="flex-1 min-w-0 flex flex-col justify-between h-24 py-0.5">
+                        {/* 1줄: 카테고리 · 위치 + 찜 */}
+                        <div className="flex items-center justify-between text-xs text-muted font-medium">
+                          <span className="truncate">{item.categoryLabel} · {item.regionLabel}</span>
+                          <button
+                            type="button"
+                            onClick={(e) => toggleFavorite(e, item.id)}
+                            className="text-muted hover:text-error transition-colors shrink-0 p-1 -mr-1"
+                            aria-label="찜하기"
+                          >
+                            <Heart
+                              className={cn(
+                                'w-4 h-4',
+                                isFav ? 'fill-red-500 text-red-500' : 'fill-none text-muted'
+                              )}
+                            />
+                          </button>
+                        </div>
+
+                        {/* 2줄: 행사 제목 */}
+                        <h3 className="text-sm font-bold text-ink truncate leading-snug group-hover:text-brand transition-colors">
+                          {item.displayTitle}
+                        </h3>
+
+                        {/* 3줄: 날짜 */}
+                        <div className="text-xs text-muted font-medium flex items-center gap-1">
+                          <CalendarIcon className="w-3.5 h-3.5 text-muted/70 shrink-0" />
+                          <span className="truncate">{item.dateRangeLabel}</span>
+                        </div>
+
+                        {/* 4줄: 시간 (기존 태그 자리를 채움) */}
+                        <div className="text-xs text-muted font-medium flex items-center gap-1">
+                          <Clock className="w-3.5 h-3.5 text-muted/70 shrink-0" />
+                          <span className="truncate">{item.workHoursLabel}</span>
+                        </div>
+                      </div>
                     </div>
 
-                    {/* 우측 컨텐츠 영역 (4줄 고정 구조) */}
-                    <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
-                      {/* Line 1 (카테고리/지역 + 찜) */}
-                      <div className="flex items-center justify-between text-xs text-muted font-medium">
-                        <div className="flex items-center gap-1 min-w-0 pr-2 truncate">
-                          <span className="shrink-0">{item.categoryLabel}</span>
-                          <span className="shrink-0">·</span>
-                          <MapPin className="w-3 h-3 text-muted shrink-0" />
-                          <span className="text-ink font-semibold truncate">{item.regionLabel}</span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={(e) => toggleFavorite(e, item.id)}
-                          className="w-7 h-7 rounded-full hover:bg-surface-muted flex items-center justify-center text-muted hover:text-error transition-colors cursor-pointer shrink-0"
-                          aria-label="찜하기"
-                        >
-                          <Heart
-                            className={cn(
-                              'w-4 h-4',
-                              isFav ? 'fill-red-500 text-red-500' : 'fill-none text-muted'
-                            )}
-                          />
-                        </button>
-                      </div>
-
-                      {/* Line 2 (행사 제목 폰트 축소 - text-sm font-bold truncate) */}
-                      <h3 className="text-sm font-bold text-ink truncate mt-0.5 group-hover:text-brand transition-colors">
-                        {item.displayTitle}
-                      </h3>
-
-                      {/* Line 3 (기간과 시간 1줄 인라인 병합) */}
-                      <div className="text-[11px] sm:text-xs text-muted font-medium flex items-center gap-2 mt-1 truncate">
-                        <span className="inline-flex items-center gap-1 shrink-0 font-medium text-ink">
-                          <CalendarIcon className="w-3 h-3 text-muted shrink-0" />
-                          <span>{item.dateRangeLabel}</span>
-                        </span>
-                        <span className="text-muted/60">·</span>
-                        <span className="inline-flex items-center gap-1 shrink-0">
-                          <Clock className="w-3 h-3 text-muted shrink-0" />
-                          <span>{item.workHoursLabel}</span>
-                        </span>
-                      </div>
-
-                      {/* Line 4 (가로 스크롤 태그 인라인 + 우측 하단 금액 고정) */}
-                      <div className="flex items-center justify-between gap-2 mt-1.5">
-                        {/* 좌측: 인라인 1줄 태그 (넘치면 가로 스크롤) */}
-                        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar whitespace-nowrap min-w-0 flex-1">
-                          {item.primaryRoles.map((role) => (
-                            <span
-                              key={role}
-                              className="bg-brand-soft/40 text-brand-strong text-[11px] font-semibold px-2 py-0.5 rounded-md shrink-0"
-                            >
-                              {role}
-                            </span>
-                          ))}
-                        </div>
-
-                        {/* 우측 하단: 코인 에셋 + 금액 고정 (절대 겹침 없음) */}
-                        <div className="shrink-0 flex items-center gap-1.5 ml-auto">
-                          <Image
-                            src="/assets/clay/coin.png"
-                            alt="하루 일당"
-                            width={20}
-                            height={20}
-                            className="w-5 h-5 object-contain shrink-0"
-                          />
-                          <span className="text-ink font-black text-sm sm:text-base tracking-tight whitespace-nowrap">
-                            {item.dailyWageWon.toLocaleString()}원
+                    {/* [하단 영역]: 썸네일 아래 전체 가로 폭을 활용한 태그 & 금액 */}
+                    <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
+                      {/* 좌측: 직무 능력 태그들 (가로 인라인 나열) */}
+                      <div className="flex items-center gap-1.5 flex-1 min-w-0 overflow-x-auto no-scrollbar">
+                        {item.primaryRoles.map((tag) => (
+                          <span
+                            key={tag}
+                            className="bg-brand-soft/40 text-brand-strong text-[11px] font-semibold px-2.5 py-1 rounded-lg shrink-0 whitespace-nowrap"
+                          >
+                            {tag}
                           </span>
-                        </div>
+                        ))}
+                      </div>
+
+                      {/* 우측: 코인 에셋 + 금액 (절대 겹침 없이 넓게 고정) */}
+                      <div className="shrink-0 flex items-center gap-1.5 ml-2">
+                        <Image
+                          src="/assets/clay/coin.png"
+                          alt="일당"
+                          width={20}
+                          height={20}
+                          className="w-5 h-5 object-contain shrink-0"
+                        />
+                        <span className="text-ink font-black text-sm sm:text-base tracking-tight whitespace-nowrap">
+                          {item.dailyWageWon.toLocaleString()}원
+                        </span>
                       </div>
                     </div>
                   </Link>

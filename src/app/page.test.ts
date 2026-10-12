@@ -47,31 +47,33 @@ describe('Home Page Revamp Verification', () => {
     );
   });
 
-  it('홈 화면 파일에 순백색 bg-white 배경과 토스풍 카드 엘리베이션 그림자가 포함되어야 한다', () => {
+  it('홈 화면 파일에 순백색 bg-white 배경과 강화된 카드 엘리베이션 그림자가 포함되어야 한다', () => {
     const pageContent = fs.readFileSync(path.resolve(process.cwd(), 'src/app/page.tsx'), 'utf-8');
     expect(pageContent).toContain('bg-white');
     expect(pageContent).toContain('지금 핫한 공고');
     expect(pageContent).toContain('방금 올라왔어요');
     expect(pageContent).toContain('/assets/clay/hero_white.png');
     expect(pageContent).toContain('/assets/clay/coin.png');
-    expect(pageContent).toContain('shadow-[0_8px_30px_rgba(0,0,0,0.06)]');
-    expect(pageContent).toContain('shadow-[0_4px_16px_rgba(0,0,0,0.05)]');
-    expect(pageContent).toContain('shadow-[0_4px_16px_rgba(0,0,0,0.04)]');
-    expect(pageContent).toContain('shadow-[0_2px_8px_rgba(0,0,0,0.04)]');
+    expect(pageContent).toContain('right-2 sm:right-4 md:right-8');
+    expect(pageContent).toContain('shadow-[0_8px_24px_rgba(15,23,42,0.08)]');
+    expect(pageContent).toContain('shadow-[0_6px_20px_rgba(15,23,42,0.07)]');
+    expect(pageContent).toContain('border-slate-200/80');
   });
 
-  it('공고 리스트 카드가 컴팩트 모바일 4줄 고정 구조 및 썸네일 규격을 따라야 한다', () => {
+  it('공고 리스트 카드가 상단 정보 및 하단 풀 라인 태그/금액 구조와 브랜드 블루 D-day를 따라야 한다', () => {
     const pageContent = fs.readFileSync(path.resolve(process.cwd(), 'src/app/page.tsx'), 'utf-8');
-    expect(pageContent).toContain('w-24 h-24 sm:w-28 sm:h-28');
-    expect(pageContent).toContain('items-stretch');
-    expect(pageContent).toContain('flex-1 min-w-0 flex flex-col justify-between py-0.5');
-    expect(pageContent).toContain('text-sm font-bold text-ink truncate mt-0.5');
-    expect(pageContent).toContain('overflow-x-auto no-scrollbar whitespace-nowrap min-w-0 flex-1');
+    expect(pageContent).toContain('w-24 h-24');
+    expect(pageContent).toContain('flex-1 min-w-0 flex flex-col justify-between h-24 py-0.5');
+    expect(pageContent).toContain('text-sm font-bold text-ink truncate');
+    expect(pageContent).toContain('border-t border-slate-100');
+    expect(pageContent).toContain('bg-brand text-white text-[11px] font-bold shadow-xs');
   });
 
-  it('방금 올라왔어요 섹션이 통합 헤더바 구조를 따라야 한다', () => {
+  it('방금 올라왔어요 섹션이 단일 세그먼트 및 독립 정렬 버튼 구조를 따라야 한다', () => {
     const pageContent = fs.readFileSync(path.resolve(process.cwd(), 'src/app/page.tsx'), 'utf-8');
+    expect(pageContent).toContain('✨');
     expect(pageContent).toContain('방금 올라왔어요');
+    expect(pageContent).toContain('bg-slate-100 p-1 rounded-full flex items-center');
     expect(pageContent).toContain('최신순');
     expect(pageContent).toContain('지도형');
     expect(pageContent).toContain('추천순');
