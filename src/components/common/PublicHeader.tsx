@@ -22,7 +22,7 @@ export function PublicHeader({ className }: PublicHeaderProps) {
     profileImageUrl?: string | null;
   } | null>(null);
   const [activeRole, setActiveRole] = useState<'crew' | 'client' | 'ops'>('crew');
-  const [isLoadingSession, setIsLoadingSession] = useState(true);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
   // Reactive Supabase auth synchronization
@@ -34,6 +34,17 @@ export function PublicHeader({ className }: PublicHeaderProps) {
       try {
         const isExplicitlyLoggedOut =
           typeof window !== 'undefined' && localStorage.getItem('crewlink_logged_out') === 'true';
+
+        if (isExplicitlyLoggedOut) {
+          if (isMounted) {
+            setSessionUser(null);
+            setIsAuthLoading(false);
+          }
+          return;
+        }
+
+        // supabase.auth.getSession() 검사 완료 전까지는 버튼 노출 방지
+        await supabase.auth.getSession();
 
         // In dev mode, resolve actor matching the active role (crew, client, ops)
         const currentRole =
@@ -54,7 +65,7 @@ export function PublicHeader({ className }: PublicHeaderProps) {
         const actorId = roleActorMap[currentRole] || roleActorMap.crew;
 
         const headers: Record<string, string> =
-          process.env.NODE_ENV !== 'production' && !isExplicitlyLoggedOut
+          process.env.NODE_ENV !== 'production'
             ? { 'x-actor-person-id': actorId }
             : {};
 
@@ -78,7 +89,7 @@ export function PublicHeader({ className }: PublicHeaderProps) {
       } catch {
         if (isMounted) setSessionUser(null);
       } finally {
-        if (isMounted) setIsLoadingSession(false);
+        if (isMounted) setIsAuthLoading(false);
       }
     }
 
@@ -89,14 +100,14 @@ export function PublicHeader({ className }: PublicHeaderProps) {
     const handleAuthChanged = () => syncAuth();
     window.addEventListener('crewlink:auth-changed', handleAuthChanged);
 
-    // Listen reactively to auth state changes (explicit sign in, sign out)
+    // Listen reactively to explicit auth state changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (!isMounted) return;
-      if (event === 'SIGNED_OUT' || !session) {
+      if (event === 'SIGNED_OUT') {
         setSessionUser(null);
-        setIsLoadingSession(false);
+        setIsAuthLoading(false);
       } else if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
         if (typeof window !== 'undefined') {
           localStorage.removeItem('crewlink_logged_out');
@@ -125,11 +136,11 @@ export function PublicHeader({ className }: PublicHeaderProps) {
       )}
     >
       {/* Brand & Crew Navigation */}
-      <div className="flex items-center gap-6 sm:gap-8">
-        <Link href="/" className="flex items-center gap-2 group">
+      <div className="flex items-center gap-4 sm:gap-8 min-w-0">
+        <Link href="/" className="flex items-center gap-2 group shrink-0">
           <div className="w-8 h-8 rounded-xl overflow-hidden shadow-xs group-hover:scale-105 transition-transform shrink-0">
             <Image
-              src="/crewlink_favicon.png"
+              src="/crewlink_app_icon.png"
               alt="CrewLink Logo"
               width={32}
               height={32}
@@ -137,17 +148,17 @@ export function PublicHeader({ className }: PublicHeaderProps) {
               priority
             />
           </div>
-          <span className="font-extrabold text-base sm:text-lg text-ink tracking-tight">
+          <span className="font-extrabold text-base sm:text-lg text-ink tracking-tight whitespace-nowrap">
             CrewLink
           </span>
         </Link>
 
         {/* Public Crew Links (NO client links in top header!) */}
-        <nav className="flex items-center gap-1 sm:gap-2">
+        <nav className="flex items-center gap-1 sm:gap-2 shrink-0">
           <Link
             href="/"
             className={cn(
-              'px-3 py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition-colors',
+              'px-3 py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition-colors whitespace-nowrap',
               isCurrent('/')
                 ? 'bg-brand-soft text-brand-strong font-bold'
                 : 'text-muted hover:text-ink hover:bg-canvas'
@@ -158,7 +169,7 @@ export function PublicHeader({ className }: PublicHeaderProps) {
           <Link
             href="/guide"
             className={cn(
-              'px-3 py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition-colors',
+              'px-3 py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition-colors whitespace-nowrap',
               isCurrent('/guide')
                 ? 'bg-brand-soft text-brand-strong font-bold'
                 : 'text-muted hover:text-ink hover:bg-canvas'
@@ -169,40 +180,13 @@ export function PublicHeader({ className }: PublicHeaderProps) {
         </nav>
       </div>
 
-      {/* Right Action: Logged In (AccountMenu) vs Logged Out ([로그인]) */}
-      <div className="flex items-center gap-2">
-        {/* Role toggle for dev preview */}
-        {process.env.NODE_ENV !== 'production' && (
-          <div className="flex items-center gap-1 bg-surface-muted p-1 rounded-lg text-xs font-semibold mr-1">
-            {(['crew', 'client', 'ops'] as const).map((r) => (
-              <button
-                key={r}
-                type="button"
-                onClick={() => {
-                  setActiveRole(r);
-                  if (typeof window !== 'undefined') {
-                    localStorage.setItem('crewlink_active_role', r);
-                    window.dispatchEvent(new CustomEvent('crewlink:auth-changed'));
-                  }
-                  if (r === 'client') window.location.href = '/client';
-                  else if (r === 'ops') window.location.href = '/ops';
-                  else window.location.href = '/crew';
-                }}
-                className={cn(
-                  'px-2 py-0.5 rounded text-[11px] transition-all cursor-pointer',
-                  activeRole === r
-                    ? 'bg-surface text-brand shadow-2xs font-bold'
-                    : 'text-muted hover:text-ink'
-                )}
-              >
-                {r === 'crew' ? '크루' : r === 'client' ? '주최사' : '운영진'}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {isLoadingSession ? (
-          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-surface-muted animate-pulse" />
+      {/* Right Action: Loading Skeleton (36px x 36px) vs Logged In (AccountMenu) vs Logged Out ([로그인]) */}
+      <div className="flex items-center gap-2 shrink-0">
+        {isAuthLoading ? (
+          <div
+            className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-surface-muted/60 border border-border/40 animate-pulse shrink-0"
+            aria-hidden="true"
+          />
         ) : sessionUser ? (
           <AccountMenu
             user={sessionUser}

@@ -193,13 +193,13 @@ export default function HomePage() {
         <div className="max-w-4xl mx-auto space-y-4">
           <div>
             <p className="text-xs font-bold text-muted tracking-wider uppercase mb-1">
-              행사와 크루를 잇다
+              지금 모집 중인 현황
             </p>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-ink tracking-tight">
-              지금, 함께할 현장
+              어떤 현장으로 가볼까요?
             </h1>
             <p className="text-sm text-muted mt-1 break-keep">
-              일정과 장소, 보수를 확인하고 나에게 맞는 현장을 찾아보세요.
+              날짜와 장소만 고르면 딱 맞는 일이 기다려요.
             </p>
           </div>
 

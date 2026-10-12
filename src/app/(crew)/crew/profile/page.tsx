@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import Image from 'next/image';
-import { AppShell } from '@/components/common/AppShell';
 import {
   User,
   Camera,
@@ -514,7 +513,7 @@ export default function CrewProfilePage() {
   const currentPhoto = previewUrl || profileImageUrl;
 
   return (
-    <AppShell initialRole="crew">
+    <>
       <div className="w-full bg-white min-h-full">
         <div className="max-w-xl mx-auto px-4 sm:px-6 py-6 sm:py-8 w-full space-y-7 pb-28">
           {/* 1. 토스풍(Toss-style) 대화형 메인 타이틀 */}
@@ -929,6 +928,6 @@ export default function CrewProfilePage() {
         redirectTo="/crew/profile"
         onSuccess={fetchProfile}
       />
-    </AppShell>
+    </>
   );
 }

@@ -146,7 +146,7 @@ export function LoginModal({
             <div className="flex items-center gap-2 mb-2">
               <div className="w-8 h-8 rounded-xl overflow-hidden shadow-xs shrink-0">
                 <Image
-                  src="/crewlink_favicon.png"
+                  src="/crewlink_app_icon.png"
                   alt="CrewLink Logo"
                   width={32}
                   height={32}

@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import { AppShell } from '@/components/common/AppShell';
 import { calculateBusinessIncomePay } from '@/modules/settlements/taxCalculator';
 import { StatusBadge } from '@/components/common/StatusBadge';
 import {
@@ -31,8 +30,7 @@ export default function CrewSettlementsPage() {
   const finalNetPayout = taxBreakdown.netTaxablePayWon + transportExpense;
 
   return (
-    <AppShell initialRole="crew">
-      <div className="max-w-xl mx-auto px-4 py-5 w-full space-y-5">
+    <div className="max-w-xl mx-auto px-4 py-5 w-full space-y-5">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold text-ink">정산 내역</h1>
@@ -147,6 +145,5 @@ export default function CrewSettlementsPage() {
           </div>
         </div>
       </div>
-    </AppShell>
-  );
-}
+    );
+  }

@@ -230,7 +230,7 @@ export default function EventDetailClient({ id, event: initialEvent }: EventDeta
           <ArrowLeft className="w-4 h-4 text-muted group-hover:text-ink" />
           <div className="w-7 h-7 rounded-lg overflow-hidden shadow-2xs group-hover:scale-105 transition-transform shrink-0">
             <Image
-              src="/crewlink_favicon.png"
+              src="/crewlink_app_icon.png"
               alt="CrewLink Logo"
               width={28}
               height={28}

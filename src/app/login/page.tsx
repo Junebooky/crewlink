@@ -87,7 +87,7 @@ export default function LoginPage() {
           <Link href="/" className="inline-flex items-center gap-2 group mb-2">
             <div className="w-9 h-9 rounded-xl overflow-hidden shadow-xs group-hover:scale-105 transition-transform shrink-0">
               <Image
-                src="/crewlink_favicon.png"
+                src="/crewlink_app_icon.png"
                 alt="CrewLink Logo"
                 width={36}
                 height={36}

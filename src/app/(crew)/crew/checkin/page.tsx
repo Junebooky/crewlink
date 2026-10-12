@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { AppShell } from '@/components/common/AppShell';
 import { Html5Qrcode } from 'html5-qrcode';
 import {
   QrCode,
@@ -157,8 +156,7 @@ export default function CrewCheckinPage() {
   };
 
   return (
-    <AppShell initialRole="crew">
-      <div className="max-w-md mx-auto px-4 py-5 w-full space-y-5 pb-24">
+    <div className="max-w-md mx-auto px-4 py-5 w-full space-y-5 pb-24">
         {/* Top Navigation */}
         <div className="flex items-center justify-between">
           <Link href="/crew" className="inline-flex items-center gap-1.5 text-xs text-muted hover:text-ink">
@@ -349,6 +347,5 @@ export default function CrewCheckinPage() {
           </div>
         )}
       </div>
-    </AppShell>
-  );
-}
+    );
+  }

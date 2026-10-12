@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { AppShell } from '@/components/common/AppShell';
 import { SignatureCapture, SignatureStroke } from '@/components/common/SignatureCapture';
 import {
   FileText,
@@ -64,8 +63,7 @@ export default function CrewContractPage() {
   };
 
   return (
-    <AppShell initialRole="crew">
-      <div className="max-w-xl mx-auto px-4 py-5 w-full space-y-5 pb-24">
+    <div className="max-w-xl mx-auto px-4 py-5 w-full space-y-5 pb-24">
         <div className="flex items-center justify-between">
           <Link href="/crew" className="inline-flex items-center gap-1.5 text-xs text-muted hover:text-ink">
             <ArrowLeft className="w-4 h-4" />
@@ -186,6 +184,5 @@ export default function CrewContractPage() {
           </form>
         )}
       </div>
-    </AppShell>
-  );
-}
+    );
+  }

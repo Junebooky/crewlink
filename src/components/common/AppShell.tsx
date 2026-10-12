@@ -71,9 +71,18 @@ export interface AppShellProps {
   initialRole?: UserRole;
 }
 
-export function AppShell({ children, initialRole = 'crew' }: AppShellProps) {
+export function AppShell({ children, initialRole }: AppShellProps) {
   const pathname = usePathname();
-  const [role, setRole] = useState<UserRole>(initialRole);
+
+  // Synchronous role determination on the very first render (Zero FOUC)
+  const role: UserRole = pathname.startsWith('/crew')
+    ? 'crew'
+    : pathname.startsWith('/client') || pathname.startsWith('/biz')
+    ? 'client'
+    : pathname.startsWith('/ops')
+    ? 'ops'
+    : initialRole || 'crew';
+
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
   const [sessionUser, setSessionUser] = useState<{
     fullName: string;
@@ -92,23 +101,13 @@ export function AppShell({ children, initialRole = 'crew' }: AppShellProps) {
         const isExplicitlyLoggedOut =
           typeof window !== 'undefined' && localStorage.getItem('crewlink_logged_out') === 'true';
 
-        // Dynamically resolve actor based on pathname and active role
-        const currentActiveRole =
-          pathname.startsWith('/client')
-            ? 'client'
-            : pathname.startsWith('/ops')
-            ? 'ops'
-            : pathname.startsWith('/crew')
-            ? 'crew'
-            : (typeof window !== 'undefined' && localStorage.getItem('crewlink_active_role')) || 'crew';
-
         const roleActorMap: Record<string, string> = {
           crew: '11111111-1111-1111-1111-111111111111',
           client: '33333333-3333-3333-3333-333333333333',
           ops: '22222222-2222-2222-2222-222222222222',
         };
 
-        const actorId = roleActorMap[currentActiveRole] || roleActorMap.crew;
+        const actorId = roleActorMap[role] || roleActorMap.crew;
 
         const headers: Record<string, string> =
           process.env.NODE_ENV !== 'production' && !isExplicitlyLoggedOut
@@ -158,14 +157,7 @@ export function AppShell({ children, initialRole = 'crew' }: AppShellProps) {
       window.removeEventListener('crewlink:auth-changed', handleAuthChanged);
       subscription.unsubscribe();
     };
-  }, []);
-
-  // Automatically detect role from pathname if URL matches
-  useEffect(() => {
-    if (pathname.startsWith('/client')) setRole('client');
-    else if (pathname.startsWith('/ops')) setRole('ops');
-    else if (pathname.startsWith('/crew')) setRole('crew');
-  }, [pathname]);
+  }, [role]);
 
   // Virtual Viewport detection for mobile software keyboards
   useEffect(() => {
@@ -196,7 +188,7 @@ export function AppShell({ children, initialRole = 'crew' }: AppShellProps) {
           <Link href="/" className="flex items-center gap-2 group">
             <div className="w-8 h-8 rounded-xl overflow-hidden shadow-xs group-hover:scale-105 transition-transform shrink-0">
               <Image
-                src="/crewlink_favicon.png"
+                src="/crewlink_app_icon.png"
                 alt="CrewLink Logo"
                 width={32}
                 height={32}
@@ -220,7 +212,6 @@ export function AppShell({ children, initialRole = 'crew' }: AppShellProps) {
                   key={r}
                   type="button"
                   onClick={() => {
-                    setRole(r);
                     if (typeof window !== 'undefined') {
                       localStorage.setItem('crewlink_active_role', r);
                       window.dispatchEvent(new CustomEvent('crewlink:auth-changed'));
@@ -298,7 +289,7 @@ export function AppShell({ children, initialRole = 'crew' }: AppShellProps) {
         <Link href="/" className="flex items-center gap-2 group">
           <div className="w-7 h-7 rounded-lg overflow-hidden shadow-2xs group-hover:scale-105 transition-transform shrink-0">
             <Image
-              src="/crewlink_favicon.png"
+              src="/crewlink_app_icon.png"
               alt="CrewLink Logo"
               width={28}
               height={28}
@@ -320,7 +311,6 @@ export function AppShell({ children, initialRole = 'crew' }: AppShellProps) {
                 <button
                   key={r}
                   onClick={() => {
-                    setRole(r);
                     if (typeof window !== 'undefined') {
                       localStorage.setItem('crewlink_active_role', r);
                       window.dispatchEvent(new CustomEvent('crewlink:auth-changed'));

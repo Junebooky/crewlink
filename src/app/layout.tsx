@@ -18,11 +18,12 @@ export const metadata: Metadata = {
   description: "함께할 크루부터 현장 확인과 정산까지. 행사 운영을 한곳에서 이어가세요.",
   icons: {
     icon: [
-      { url: "/crewlink_favicon.png", type: "image/png" },
+      { url: "/crewlink_app_icon.png", type: "image/png" },
+      { url: "/icon.png", type: "image/png" },
       { url: "/favicon.ico" },
     ],
-    shortcut: "/crewlink_favicon.png",
-    apple: "/crewlink_favicon.png",
+    shortcut: "/crewlink_app_icon.png",
+    apple: "/crewlink_app_icon.png",
   },
 };
 
