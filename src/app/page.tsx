@@ -267,7 +267,7 @@ export default function HomePage() {
               <span className="text-xs sm:text-sm font-bold text-brand tracking-tight">
                 지금, 새로운 현장이 기다려요
               </span>
-              <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-ink tracking-tight mt-1 leading-snug break-keep">
+              <h1 className="text-2xl sm:text-2xl md:text-3xl font-black text-ink tracking-tight mt-1 leading-snug break-keep">
                 좋은 사람들과<br />멋진 현장을 만들어봐요
               </h1>
               <p className="text-xs sm:text-sm font-medium text-muted mt-2 break-keep line-clamp-2">

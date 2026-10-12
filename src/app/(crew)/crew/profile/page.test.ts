@@ -52,4 +52,15 @@ describe('크루 프로필 관리 페이지 UI/UX 검증', () => {
     // 카드 컨테이너 클래스에 테두리 관련 클래스가 없어야 함
     expect(profileContent).not.toContain('border-border-subtle p-5');
   });
+
+  it('라벨과 인풋 간 수직 여백(mb-2)과 유니폼 4분할 그리드가 표준 규격으로 적용되어야 한다', () => {
+    // 라벨 공통 스타일 mb-2 text-left 검증
+    expect(profileContent).toContain('text-xs sm:text-sm font-bold text-ink mb-2 text-left');
+
+    // 유니폼 4분할 그리드 검증
+    expect(profileContent).toContain('grid grid-cols-2 gap-4 sm:gap-5');
+
+    // 폼 컨테이너 space-y 검증
+    expect(profileContent).toContain('space-y-5 sm:space-y-6');
+  });
 });

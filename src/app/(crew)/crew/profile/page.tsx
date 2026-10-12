@@ -168,7 +168,7 @@ function CustomSelect<T extends string | number>({
         aria-haspopup="listbox"
         aria-expanded={isOpen}
         onClick={() => setIsOpen((prev) => !prev)}
-        className="w-full h-12 px-4 rounded-xl border border-border bg-white text-sm font-semibold text-ink flex items-center justify-between shadow-2xs hover:border-brand-border cursor-pointer transition-colors focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand"
+        className="w-full h-12 px-4 rounded-xl border border-border/80 bg-white text-sm font-semibold text-ink flex items-center justify-between shadow-2xs hover:border-brand-border cursor-pointer transition-colors focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand"
       >
         <span className={cn('truncate', !selectedOption && 'text-muted font-normal')}>
           {selectedOption ? selectedOption.label : placeholder}
@@ -553,9 +553,9 @@ export default function CrewProfilePage() {
               <p className="text-xs text-muted">프로필 정보를 불러오는 중입니다…</p>
             </div>
           ) : (
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
               {/* 2. 프로필 사진 영역 (상반신 1장 단일화) */}
-              <section className="bg-white rounded-3xl p-5 sm:p-6 shadow-[0_0_0_1px_rgba(15,23,42,0.04),0_2px_8px_rgba(15,23,42,0.06),0_12px_28px_-4px_rgba(15,23,42,0.12),0_24px_48px_-8px_rgba(15,23,42,0.12)] hover:shadow-[0_0_0_1px_rgba(15,23,42,0.06),0_4px_16px_rgba(15,23,42,0.08),0_20px_40px_-4px_rgba(15,23,42,0.16),0_32px_64px_-8px_rgba(15,23,42,0.16)] hover:-translate-y-1 transition-all duration-200 mb-5">
+              <section className="bg-white rounded-3xl p-5 sm:p-6 shadow-[0_0_0_1px_rgba(15,23,42,0.04),0_2px_8px_rgba(15,23,42,0.06),0_12px_28px_-4px_rgba(15,23,42,0.12),0_24px_48px_-8px_rgba(15,23,42,0.12)] hover:shadow-[0_0_0_1px_rgba(15,23,42,0.06),0_4px_16px_rgba(15,23,42,0.08),0_20px_40px_-4px_rgba(15,23,42,0.16),0_32px_64px_-8px_rgba(15,23,42,0.16)] hover:-translate-y-1 transition-all duration-200">
                 <div className="flex items-center gap-2 mb-4 text-left">
                   <Image
                     src="/assets/clay/profile.png"
@@ -671,7 +671,7 @@ export default function CrewProfilePage() {
               </section>
 
               {/* 3. 기본 정보 (이름, 연락처) */}
-              <section className="bg-white rounded-3xl p-5 sm:p-6 shadow-[0_0_0_1px_rgba(15,23,42,0.04),0_2px_8px_rgba(15,23,42,0.06),0_12px_28px_-4px_rgba(15,23,42,0.12),0_24px_48px_-8px_rgba(15,23,42,0.12)] hover:shadow-[0_0_0_1px_rgba(15,23,42,0.06),0_4px_16px_rgba(15,23,42,0.08),0_20px_40px_-4px_rgba(15,23,42,0.16),0_32px_64px_-8px_rgba(15,23,42,0.16)] hover:-translate-y-1 transition-all duration-200 mb-5">
+              <section className="bg-white rounded-3xl p-5 sm:p-6 shadow-[0_0_0_1px_rgba(15,23,42,0.04),0_2px_8px_rgba(15,23,42,0.06),0_12px_28px_-4px_rgba(15,23,42,0.12),0_24px_48px_-8px_rgba(15,23,42,0.12)] hover:shadow-[0_0_0_1px_rgba(15,23,42,0.06),0_4px_16px_rgba(15,23,42,0.08),0_20px_40px_-4px_rgba(15,23,42,0.16),0_32px_64px_-8px_rgba(15,23,42,0.16)] hover:-translate-y-1 transition-all duration-200">
                 <div className="flex items-center gap-2 mb-4 text-left">
                   <Image
                     src="/assets/clay/phone.png"
@@ -688,9 +688,9 @@ export default function CrewProfilePage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                  <div className="space-y-1.5">
-                    <label htmlFor="crew-fullname" className="font-semibold text-ink">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5 text-xs">
+                  <div>
+                    <label htmlFor="crew-fullname" className="block text-xs sm:text-sm font-bold text-ink mb-2 text-left">
                       이름 <span className="text-brand">*</span>
                     </label>
                     <input
@@ -700,12 +700,12 @@ export default function CrewProfilePage() {
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                       placeholder="실명을 입력해 주세요"
-                      className="w-full h-12 px-4 rounded-xl border border-border bg-white text-ink text-sm font-semibold focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-colors"
+                      className="w-full h-12 px-4 rounded-xl border border-border/80 bg-white text-ink text-sm font-semibold focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-colors"
                     />
                   </div>
 
-                  <div className="space-y-1.5">
-                    <label htmlFor="crew-phone" className="font-semibold text-ink">
+                  <div>
+                    <label htmlFor="crew-phone" className="block text-xs sm:text-sm font-bold text-ink mb-2 text-left">
                       연락처 <span className="text-brand">*</span>
                     </label>
                     <input
@@ -716,13 +716,13 @@ export default function CrewProfilePage() {
                       value={phoneNumber}
                       onChange={handlePhoneChange}
                       placeholder="010-0000-0000"
-                      className="w-full h-12 px-4 rounded-xl border border-border bg-white text-ink text-sm font-mono font-semibold focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-colors"
+                      className="w-full h-12 px-4 rounded-xl border border-border/80 bg-white text-ink text-sm font-mono font-semibold focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-colors"
                     />
                   </div>
                 </div>
 
                 {email && (
-                  <div className="pt-2 border-t border-border-subtle flex items-center justify-between text-xs text-muted">
+                  <div className="pt-3 border-t border-border-subtle flex items-center justify-between text-xs text-muted">
                     <span>로그인 계정</span>
                     <span className="font-mono text-ink font-medium">{email}</span>
                   </div>
@@ -730,7 +730,7 @@ export default function CrewProfilePage() {
               </section>
 
               {/* 4. 유니폼 영역 ("유니폼 핏을 맞춰볼까요?") */}
-              <section className="bg-white rounded-3xl p-5 sm:p-6 shadow-[0_0_0_1px_rgba(15,23,42,0.04),0_2px_8px_rgba(15,23,42,0.06),0_12px_28px_-4px_rgba(15,23,42,0.12),0_24px_48px_-8px_rgba(15,23,42,0.12)] hover:shadow-[0_0_0_1px_rgba(15,23,42,0.06),0_4px_16px_rgba(15,23,42,0.08),0_20px_40px_-4px_rgba(15,23,42,0.16),0_32px_64px_-8px_rgba(15,23,42,0.16)] hover:-translate-y-1 transition-all duration-200 mb-5">
+              <section className="bg-white rounded-3xl p-5 sm:p-6 shadow-[0_0_0_1px_rgba(15,23,42,0.04),0_2px_8px_rgba(15,23,42,0.06),0_12px_28px_-4px_rgba(15,23,42,0.12),0_24px_48px_-8px_rgba(15,23,42,0.12)] hover:shadow-[0_0_0_1px_rgba(15,23,42,0.06),0_4px_16px_rgba(15,23,42,0.08),0_20px_40px_-4px_rgba(15,23,42,0.16),0_32px_64px_-8px_rgba(15,23,42,0.16)] hover:-translate-y-1 transition-all duration-200">
                 <div className="flex items-center gap-2 mb-4 text-left">
                   <Image
                     src="/assets/clay/shirt.png"
@@ -747,10 +747,10 @@ export default function CrewProfilePage() {
                   </div>
                 </div>
 
-                <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4 sm:gap-5">
                   {/* 키 (cm) */}
-                  <div className="space-y-1.5 text-xs">
-                    <label htmlFor="crew-height" className="font-semibold text-ink">
+                  <div>
+                    <label htmlFor="crew-height" className="block text-xs sm:text-sm font-bold text-ink mb-2 text-left">
                       키 (cm)
                     </label>
                     <div className="relative">
@@ -762,7 +762,7 @@ export default function CrewProfilePage() {
                         value={heightCm}
                         onChange={(e) => setHeightCm(e.target.value)}
                         placeholder="예: 175"
-                        className="w-full h-12 px-4 pr-11 rounded-xl border border-border bg-white text-ink text-sm font-semibold focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-colors"
+                        className="w-full h-12 px-4 pr-11 rounded-xl border border-border/80 bg-white text-ink text-sm font-semibold focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-colors"
                       />
                       <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted font-bold text-xs pointer-events-none">
                         cm
@@ -771,11 +771,11 @@ export default function CrewProfilePage() {
                   </div>
 
                   {/* 상의 유니폼 사이즈 (Top Size 칩) */}
-                  <div className="space-y-2 text-xs">
-                    <span className="font-semibold text-ink">
-                      상의 유니폼 사이즈 (Top)
-                    </span>
-                    <div className="grid grid-cols-5 gap-2">
+                  <div>
+                    <label className="block text-xs sm:text-sm font-bold text-ink mb-2 text-left">
+                      상의 유니폼 사이즈
+                    </label>
+                    <div className="grid grid-cols-5 gap-1 sm:gap-1.5 h-12">
                       {TOP_SIZES.map((size) => {
                         const isSelected = topSize === size;
                         return (
@@ -784,10 +784,10 @@ export default function CrewProfilePage() {
                             type="button"
                             onClick={() => setTopSize(size)}
                             className={cn(
-                              'h-11 rounded-xl border text-center font-bold text-xs transition-colors cursor-pointer flex items-center justify-center',
+                              'h-12 rounded-xl border text-center font-bold text-[11px] sm:text-xs transition-colors cursor-pointer flex items-center justify-center p-0',
                               isSelected
                                 ? 'bg-brand text-white border-brand shadow-xs'
-                                : 'bg-white text-ink border-border hover:border-brand-border'
+                                : 'bg-white text-ink border-border/80 hover:border-brand-border'
                             )}
                           >
                             {size}
@@ -798,9 +798,9 @@ export default function CrewProfilePage() {
                   </div>
 
                   {/* 하의 사이즈 (CustomSelect 적용) */}
-                  <div className="space-y-1.5 text-xs">
-                    <label htmlFor="crew-bottom" className="font-semibold text-ink">
-                      하의 사이즈 (허리)
+                  <div>
+                    <label htmlFor="crew-bottom" className="block text-xs sm:text-sm font-bold text-ink mb-2 text-left">
+                      하의 사이즈
                     </label>
                     <CustomSelect
                       id="crew-bottom"
@@ -811,9 +811,9 @@ export default function CrewProfilePage() {
                   </div>
 
                   {/* 신발 사이즈 (CustomSelect 적용) */}
-                  <div className="space-y-1.5 text-xs">
-                    <label htmlFor="crew-shoes" className="font-semibold text-ink">
-                      신발 사이즈 (단화/운동화)
+                  <div>
+                    <label htmlFor="crew-shoes" className="block text-xs sm:text-sm font-bold text-ink mb-2 text-left">
+                      신발 사이즈 (mm)
                     </label>
                     <CustomSelect
                       id="crew-shoes"
@@ -826,7 +826,7 @@ export default function CrewProfilePage() {
               </section>
 
               {/* 5. 경력/소개 ("현장 경험이 있다면 알려주세요") */}
-              <section className="bg-white rounded-3xl p-5 sm:p-6 shadow-[0_0_0_1px_rgba(15,23,42,0.04),0_2px_8px_rgba(15,23,42,0.06),0_12px_28px_-4px_rgba(15,23,42,0.12),0_24px_48px_-8px_rgba(15,23,42,0.12)] hover:shadow-[0_0_0_1px_rgba(15,23,42,0.06),0_4px_16px_rgba(15,23,42,0.08),0_20px_40px_-4px_rgba(15,23,42,0.16),0_32px_64px_-8px_rgba(15,23,42,0.16)] hover:-translate-y-1 transition-all duration-200 mb-5">
+              <section className="bg-white rounded-3xl p-5 sm:p-6 shadow-[0_0_0_1px_rgba(15,23,42,0.04),0_2px_8px_rgba(15,23,42,0.06),0_12px_28px_-4px_rgba(15,23,42,0.12),0_24px_48px_-8px_rgba(15,23,42,0.12)] hover:shadow-[0_0_0_1px_rgba(15,23,42,0.06),0_4px_16px_rgba(15,23,42,0.08),0_20px_40px_-4px_rgba(15,23,42,0.16),0_32px_64px_-8px_rgba(15,23,42,0.16)] hover:-translate-y-1 transition-all duration-200">
                 <div className="flex items-center gap-2 mb-4 text-left">
                   <Image
                     src="/assets/clay/quote.png"
@@ -843,10 +843,10 @@ export default function CrewProfilePage() {
                   </div>
                 </div>
 
-                <div className="space-y-4 text-xs">
+                <div className="space-y-4 sm:space-y-5">
                   {/* 행사 스태프 경력 (CustomSelect 적용) */}
-                  <div className="space-y-1.5">
-                    <label htmlFor="crew-exp" className="font-semibold text-ink">
+                  <div>
+                    <label htmlFor="crew-exp" className="block text-xs sm:text-sm font-bold text-ink mb-2 text-left">
                       행사 스태프 경력
                     </label>
                     <CustomSelect
@@ -858,8 +858,8 @@ export default function CrewProfilePage() {
                   </div>
 
                   {/* 한 줄 소개 및 각오 (Bio) */}
-                  <div className="space-y-1.5">
-                    <label htmlFor="crew-bio" className="font-semibold text-ink">
+                  <div>
+                    <label htmlFor="crew-bio" className="block text-xs sm:text-sm font-bold text-ink mb-2 text-left">
                       한 줄 소개 및 각오
                     </label>
                     <textarea
@@ -868,14 +868,14 @@ export default function CrewProfilePage() {
                       value={bio}
                       onChange={(e) => setBio(e.target.value)}
                       placeholder="예: 밝은 미소와 신속한 응대로 행사의 품격을 높이는 크루입니다."
-                      className="w-full p-4 rounded-xl border border-border bg-white text-ink text-sm leading-relaxed focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-colors resize-none"
+                      className="w-full p-4 rounded-xl border border-border/80 bg-white text-ink text-sm leading-relaxed focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-colors resize-none"
                     />
                   </div>
                 </div>
               </section>
 
               {/* 6. 외국어 영역 ("외국어 응대가 가능한가요? (선택)") */}
-              <section className="bg-white rounded-3xl p-5 sm:p-6 shadow-[0_0_0_1px_rgba(15,23,42,0.04),0_2px_8px_rgba(15,23,42,0.06),0_12px_28px_-4px_rgba(15,23,42,0.12),0_24px_48px_-8px_rgba(15,23,42,0.12)] hover:shadow-[0_0_0_1px_rgba(15,23,42,0.06),0_4px_16px_rgba(15,23,42,0.08),0_20px_40px_-4px_rgba(15,23,42,0.16),0_32px_64px_-8px_rgba(15,23,42,0.16)] hover:-translate-y-1 transition-all duration-200 mb-5">
+              <section className="bg-white rounded-3xl p-5 sm:p-6 shadow-[0_0_0_1px_rgba(15,23,42,0.04),0_2px_8px_rgba(15,23,42,0.06),0_12px_28px_-4px_rgba(15,23,42,0.12),0_24px_48px_-8px_rgba(15,23,42,0.12)] hover:shadow-[0_0_0_1px_rgba(15,23,42,0.06),0_4px_16px_rgba(15,23,42,0.08),0_20px_40px_-4px_rgba(15,23,42,0.16),0_32px_64px_-8px_rgba(15,23,42,0.16)] hover:-translate-y-1 transition-all duration-200">
                 <div className="flex items-center gap-2 mb-4 text-left">
                   <Image
                     src="/assets/clay/language.png"
@@ -904,7 +904,7 @@ export default function CrewProfilePage() {
                           'h-10 px-1 sm:px-2 rounded-xl sm:rounded-2xl border text-[11px] sm:text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1 select-none',
                           isSelected
                             ? 'bg-brand text-white border-brand shadow-xs'
-                            : 'bg-white text-ink border-border hover:border-brand-border'
+                            : 'bg-white text-ink border-border/80 hover:border-brand-border'
                         )}
                       >
                         {isSelected && <Check className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-white shrink-0" />}
@@ -916,7 +916,7 @@ export default function CrewProfilePage() {
               </section>
 
               {/* 7. 저장 버튼 */}
-              <div className="pt-2 mb-5">
+              <div className="pt-2">
                 <button
                   type="submit"
                   disabled={isFormDisabled || !fullName.trim()}
