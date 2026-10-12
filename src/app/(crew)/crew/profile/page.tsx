@@ -509,7 +509,7 @@ export default function CrewProfilePage() {
 
   return (
     <>
-      <div className="w-full bg-white min-h-full">
+      <div className="w-full bg-canvas min-h-full">
         <div className="max-w-xl mx-auto px-4 sm:px-6 py-6 sm:py-8 w-full space-y-7 pb-28">
           {/* 1. 토스풍(Toss-style) 대화형 메인 타이틀 */}
           <div className="space-y-1.5 pt-1">
@@ -555,7 +555,7 @@ export default function CrewProfilePage() {
           ) : (
             <form onSubmit={handleSubmit}>
               {/* 2. 프로필 사진 영역 (상반신 1장 단일화) */}
-              <section className="bg-white rounded-3xl p-5 sm:p-6 shadow-[0_8px_24px_rgba(15,23,42,0.08)] hover:shadow-[0_12px_32px_rgba(15,23,42,0.12)] transition-all duration-200 mb-5">
+              <section className="bg-white rounded-3xl p-5 sm:p-6 shadow-[0_0_0_1px_rgba(15,23,42,0.04),0_2px_8px_rgba(15,23,42,0.06),0_12px_28px_-4px_rgba(15,23,42,0.12),0_24px_48px_-8px_rgba(15,23,42,0.12)] hover:shadow-[0_0_0_1px_rgba(15,23,42,0.06),0_4px_16px_rgba(15,23,42,0.08),0_20px_40px_-4px_rgba(15,23,42,0.16),0_32px_64px_-8px_rgba(15,23,42,0.16)] hover:-translate-y-1 transition-all duration-200 mb-5">
                 <div className="flex items-center gap-2 mb-4 text-left">
                   <Image
                     src="/assets/clay/profile.png"
@@ -671,7 +671,7 @@ export default function CrewProfilePage() {
               </section>
 
               {/* 3. 기본 정보 (이름, 연락처) */}
-              <section className="bg-white rounded-3xl p-5 sm:p-6 shadow-[0_8px_24px_rgba(15,23,42,0.08)] hover:shadow-[0_12px_32px_rgba(15,23,42,0.12)] transition-all duration-200 mb-5">
+              <section className="bg-white rounded-3xl p-5 sm:p-6 shadow-[0_0_0_1px_rgba(15,23,42,0.04),0_2px_8px_rgba(15,23,42,0.06),0_12px_28px_-4px_rgba(15,23,42,0.12),0_24px_48px_-8px_rgba(15,23,42,0.12)] hover:shadow-[0_0_0_1px_rgba(15,23,42,0.06),0_4px_16px_rgba(15,23,42,0.08),0_20px_40px_-4px_rgba(15,23,42,0.16),0_32px_64px_-8px_rgba(15,23,42,0.16)] hover:-translate-y-1 transition-all duration-200 mb-5">
                 <div className="flex items-center gap-2 mb-4 text-left">
                   <Image
                     src="/assets/clay/phone.png"
@@ -730,7 +730,7 @@ export default function CrewProfilePage() {
               </section>
 
               {/* 4. 유니폼 영역 ("유니폼 핏을 맞춰볼까요?") */}
-              <section className="bg-white rounded-3xl p-5 sm:p-6 shadow-[0_8px_24px_rgba(15,23,42,0.08)] hover:shadow-[0_12px_32px_rgba(15,23,42,0.12)] transition-all duration-200 mb-5">
+              <section className="bg-white rounded-3xl p-5 sm:p-6 shadow-[0_0_0_1px_rgba(15,23,42,0.04),0_2px_8px_rgba(15,23,42,0.06),0_12px_28px_-4px_rgba(15,23,42,0.12),0_24px_48px_-8px_rgba(15,23,42,0.12)] hover:shadow-[0_0_0_1px_rgba(15,23,42,0.06),0_4px_16px_rgba(15,23,42,0.08),0_20px_40px_-4px_rgba(15,23,42,0.16),0_32px_64px_-8px_rgba(15,23,42,0.16)] hover:-translate-y-1 transition-all duration-200 mb-5">
                 <div className="flex items-center gap-2 mb-4 text-left">
                   <Image
                     src="/assets/clay/shirt.png"
@@ -826,7 +826,7 @@ export default function CrewProfilePage() {
               </section>
 
               {/* 5. 경력/소개 ("현장 경험이 있다면 알려주세요") */}
-              <section className="bg-white rounded-3xl p-5 sm:p-6 shadow-[0_8px_24px_rgba(15,23,42,0.08)] hover:shadow-[0_12px_32px_rgba(15,23,42,0.12)] transition-all duration-200 mb-5">
+              <section className="bg-white rounded-3xl p-5 sm:p-6 shadow-[0_0_0_1px_rgba(15,23,42,0.04),0_2px_8px_rgba(15,23,42,0.06),0_12px_28px_-4px_rgba(15,23,42,0.12),0_24px_48px_-8px_rgba(15,23,42,0.12)] hover:shadow-[0_0_0_1px_rgba(15,23,42,0.06),0_4px_16px_rgba(15,23,42,0.08),0_20px_40px_-4px_rgba(15,23,42,0.16),0_32px_64px_-8px_rgba(15,23,42,0.16)] hover:-translate-y-1 transition-all duration-200 mb-5">
                 <div className="flex items-center gap-2 mb-4 text-left">
                   <Image
                     src="/assets/clay/quote.png"
@@ -875,7 +875,7 @@ export default function CrewProfilePage() {
               </section>
 
               {/* 6. 외국어 영역 ("외국어 응대가 가능한가요? (선택)") */}
-              <section className="bg-white rounded-3xl p-5 sm:p-6 shadow-[0_8px_24px_rgba(15,23,42,0.08)] hover:shadow-[0_12px_32px_rgba(15,23,42,0.12)] transition-all duration-200 mb-5">
+              <section className="bg-white rounded-3xl p-5 sm:p-6 shadow-[0_0_0_1px_rgba(15,23,42,0.04),0_2px_8px_rgba(15,23,42,0.06),0_12px_28px_-4px_rgba(15,23,42,0.12),0_24px_48px_-8px_rgba(15,23,42,0.12)] hover:shadow-[0_0_0_1px_rgba(15,23,42,0.06),0_4px_16px_rgba(15,23,42,0.08),0_20px_40px_-4px_rgba(15,23,42,0.16),0_32px_64px_-8px_rgba(15,23,42,0.16)] hover:-translate-y-1 transition-all duration-200 mb-5">
                 <div className="flex items-center gap-2 mb-4 text-left">
                   <Image
                     src="/assets/clay/language.png"
@@ -942,7 +942,7 @@ export default function CrewProfilePage() {
               </div>
 
               {/* 8. 보안 및 개인정보 분리 보관 안내 */}
-              <div className="p-5 rounded-3xl bg-white shadow-[0_8px_24px_rgba(15,23,42,0.08)] hover:shadow-[0_12px_32px_rgba(15,23,42,0.12)] transition-all duration-200 text-xs space-y-1.5">
+              <div className="p-5 rounded-3xl bg-white shadow-[0_0_0_1px_rgba(15,23,42,0.04),0_2px_8px_rgba(15,23,42,0.06),0_12px_28px_-4px_rgba(15,23,42,0.12),0_24px_48px_-8px_rgba(15,23,42,0.12)] hover:shadow-[0_0_0_1px_rgba(15,23,42,0.06),0_4px_16px_rgba(15,23,42,0.08),0_20px_40px_-4px_rgba(15,23,42,0.16),0_32px_64px_-8px_rgba(15,23,42,0.16)] hover:-translate-y-1 transition-all duration-200 text-xs space-y-1.5">
                 <div className="flex items-center gap-1.5 font-bold text-ink">
                   <Lock className="w-3.5 h-3.5 text-brand" />
                   <span>개인정보 분리 보관 원칙</span>

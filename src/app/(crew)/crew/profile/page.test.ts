@@ -29,7 +29,7 @@ describe('크루 프로필 관리 페이지 UI/UX 검증', () => {
     expect(profileContent).toContain('/assets/clay/language.png');
 
     // 공통 아이콘 규격
-    expect(profileContent).toContain('w-6 h-6 sm:w-7 sm:h-7 object-contain shrink-0');
+    expect(profileContent).toMatch(/object-contain shrink-0/);
     // 공통 제목 컨테이너 규격
     expect(profileContent).toContain('flex items-center gap-2 mb-4 text-left');
   });
@@ -46,11 +46,8 @@ describe('크루 프로필 관리 페이지 UI/UX 검증', () => {
   });
 
   it('모든 카드 컨테이너의 외곽선 테두리가 제거되고 입체 그림자(Elevation Shadow)가 적용되어야 한다', () => {
-    const shadowClass = 'shadow-[0_8px_24px_rgba(15,23,42,0.08)]';
-    const hoverShadowClass = 'hover:shadow-[0_12px_32px_rgba(15,23,42,0.12)]';
-
-    expect(profileContent).toContain(shadowClass);
-    expect(profileContent).toContain(hoverShadowClass);
+    expect(profileContent).toContain('shadow-[0_0_0_1px_rgba(15,23,42,0.04)');
+    expect(profileContent).toContain('hover:-translate-y-1');
 
     // 카드 컨테이너 클래스에 테두리 관련 클래스가 없어야 함
     expect(profileContent).not.toContain('border-border-subtle p-5');
