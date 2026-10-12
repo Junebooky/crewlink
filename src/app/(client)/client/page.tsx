@@ -474,9 +474,9 @@ export default function ClientDashboardPage() {
       {/* 지원자 심사 및 선발 모달 */}
       {isModalOpen && selectedProject && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="bg-surface w-full max-w-2xl max-h-[90vh] rounded-3xl shadow-2xl border border-border flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+          <div className="bg-white w-full max-w-2xl max-h-[90vh] rounded-3xl shadow-2xl border border-border flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
             {/* Modal Header */}
-            <div className="p-5 sm:p-6 border-b border-border flex items-center justify-between shrink-0 bg-surface/95 backdrop-blur-sm">
+            <div className="p-5 sm:p-6 border-b border-border flex items-center justify-between shrink-0 bg-white">
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-brand-soft text-brand-strong border border-brand/20">
@@ -497,7 +497,7 @@ export default function ClientDashboardPage() {
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="w-8 h-8 rounded-full bg-surface-muted hover:bg-canvas text-muted hover:text-ink flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                className="w-8 h-8 rounded-full bg-surface-muted hover:bg-surface text-muted hover:text-ink border border-border/50 flex items-center justify-center transition-colors cursor-pointer shrink-0"
                 aria-label="모달 닫기"
               >
                 <X className="w-5 h-5" />
@@ -515,7 +515,7 @@ export default function ClientDashboardPage() {
             )}
 
             {/* Modal Body: Applicants List */}
-            <div className="p-5 sm:p-6 overflow-y-auto space-y-4 flex-1">
+            <div className="p-5 sm:p-6 overflow-y-auto space-y-4 flex-1 bg-surface-muted/30">
               {isApplicantsLoading ? (
                 <div className="py-12 flex flex-col items-center justify-center text-muted gap-2">
                   <Loader2 className="w-6 h-6 animate-spin text-brand" />
@@ -542,12 +542,12 @@ export default function ClientDashboardPage() {
               )}
             </div>
 
-            {/* Modal Footer (Clean 1-line guidance banner without cramped close button) */}
-            <div className="px-6 py-4 border-t border-border bg-canvas/80 flex items-center justify-center text-xs text-muted shrink-0">
-              <span className="flex items-center gap-2 font-medium">
+            {/* Modal Footer (Toss-style conversational guidance) */}
+            <div className="px-6 py-4 border-t border-border bg-white flex items-center justify-center shrink-0">
+              <div className="flex items-center gap-2 text-xs font-medium text-muted text-center tracking-tight">
                 <ShieldCheck className="w-4 h-4 text-brand shrink-0" />
-                <span>선발된 크루에게 현장 안내 알림이 자동으로 발송됩니다.</span>
-              </span>
+                <span>크루에게 행사 확정 알림과 현장 안내를 보냈어요</span>
+              </div>
             </div>
           </div>
         </div>

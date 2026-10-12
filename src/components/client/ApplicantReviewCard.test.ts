@@ -50,4 +50,20 @@ describe('ApplicantReviewCard & 3D Clay Assets Specification Verification', () =
     expect(defaultBio(null)).toBe('외국어 회화 및 관람객 동선 통제 전문');
     expect(defaultBio('VIP 의전 전문')).toBe('VIP 의전 전문');
   });
+
+  it('토스 스타일 카피(선발 되돌리기, 안내 문구)가 컴포넌트 코드에 정확히 반영되어야 한다', () => {
+    const cardContent = fs.readFileSync(
+      path.resolve(process.cwd(), 'src/components/client/ApplicantReviewCard.tsx'),
+      'utf-8'
+    );
+    expect(cardContent).toContain('선발 되돌리기');
+    expect(cardContent).toContain('선발 완료');
+    expect(cardContent).toContain('whitespace-nowrap shrink-0 text-xs font-medium text-muted');
+
+    const pageContent = fs.readFileSync(
+      path.resolve(process.cwd(), 'src/app/(client)/client/page.tsx'),
+      'utf-8'
+    );
+    expect(pageContent).toContain('크루에게 행사 확정 알림과 현장 안내를 보냈어요');
+  });
 });
