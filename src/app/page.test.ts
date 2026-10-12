@@ -55,4 +55,12 @@ describe('Home Page Revamp Verification', () => {
     expect(pageContent).toContain('/assets/clay/hero.png');
     expect(pageContent).toContain('/assets/clay/coin.png');
   });
+
+  it('공고 리스트 카드가 1:1 수직 높이 균형 및 확장된 썸네일 규격을 따라야 한다', () => {
+    const pageContent = fs.readFileSync(path.resolve(process.cwd(), 'src/app/page.tsx'), 'utf-8');
+    expect(pageContent).toContain('w-32 h-32 sm:w-36 sm:h-36');
+    expect(pageContent).toContain('items-stretch');
+    expect(pageContent).toContain('rounded-3xl');
+    expect(pageContent).toContain('flex-1 min-w-0 flex flex-col justify-between py-0.5');
+  });
 });

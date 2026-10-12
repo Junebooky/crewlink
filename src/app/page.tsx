@@ -747,10 +747,10 @@ export default function HomePage() {
                   <Link
                     key={item.id}
                     href={`/events/${item.id}`}
-                    className="w-full bg-white rounded-2xl shadow-2xs hover:shadow-xs p-4 mb-3 flex items-center gap-3.5 sm:gap-4 transition-all group border border-transparent hover:border-brand-border/40"
+                    className="w-full flex items-stretch gap-3.5 sm:gap-4 bg-white rounded-3xl p-4 sm:p-4.5 shadow-2xs hover:shadow-xs mb-3 transition-all group border border-transparent hover:border-brand-border/40"
                   >
-                    {/* 좌측 썸네일 */}
-                    <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden relative shrink-0 bg-slate-100">
+                    {/* 좌측 썸네일 (w-32 h-32 sm:w-36 sm:h-36 1:1 정방형) */}
+                    <div className="w-32 h-32 sm:w-36 sm:h-36 rounded-2xl overflow-hidden relative shrink-0 bg-slate-100">
                       <Image
                         src={getCategoryFallbackImage(item.category, item.title)}
                         alt={item.title}
@@ -759,15 +759,15 @@ export default function HomePage() {
                         className="object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                       {/* 좌측 상단 마감 뱃지 (D-day) */}
-                      <div className="absolute top-1.5 left-1.5 z-10">
+                      <div className="absolute top-2 left-2 z-10">
                         <span
                           className={cn(
-                            'px-2 py-0.5 rounded-md text-[10px] font-extrabold shadow-2xs',
+                            'px-2.5 py-0.5 rounded-full text-[11px] font-extrabold shadow-2xs backdrop-blur-xs',
                             idx % 3 === 0
                               ? 'bg-brand text-white'
                               : idx % 3 === 1
                               ? 'bg-emerald-500 text-white'
-                              : 'bg-brand-soft text-brand-strong'
+                              : 'bg-brand-soft/95 text-brand-strong'
                           )}
                         >
                           {deadlineInfo.dDayLabel || '신규'}
@@ -775,81 +775,80 @@ export default function HomePage() {
                       </div>
                     </div>
 
-                    {/* 중앙 본문 영역 */}
-                    <div className="flex-1 min-w-0 pr-2">
-                      {/* 1줄: 카테고리/지역 */}
-                      <div className="text-[11px] sm:text-xs text-muted font-medium flex items-center gap-1 truncate">
-                        <span>{item.categoryLabel}</span>
-                        <span>·</span>
-                        <span className="text-ink font-semibold">{item.regionLabel}</span>
-                        <span>·</span>
-                        <span className="truncate">{item.hostName}</span>
-                      </div>
-
-                      {/* 2줄: 행사 제목 */}
-                      <h3 className="text-sm sm:text-base font-bold text-ink leading-snug line-clamp-1 sm:line-clamp-2 mt-0.5 group-hover:text-brand transition-colors">
-                        {item.displayTitle}
-                      </h3>
-
-                      {/* 3줄: 일정 및 시간 - 잘림 완전 제거 */}
-                      <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-muted font-medium">
-                        <span className="inline-flex items-center gap-1 shrink-0 font-medium text-ink">
-                          <CalendarIcon className="w-3.5 h-3.5 text-muted shrink-0" />
-                          <span>{item.dateRangeLabel}</span>
-                        </span>
-                        <span className="inline-flex items-center gap-1 shrink-0">
-                          <Clock className="w-3.5 h-3.5 text-muted shrink-0" />
-                          <span>{item.workHoursLabel}</span>
-                        </span>
-                      </div>
-
-                      {/* 4줄: 하는 일 태그 - 가로 인라인 정렬 */}
-                      <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                        {item.primaryRoles.slice(0, 3).map((role) => (
-                          <span
-                            key={role}
-                            className="bg-brand-soft/40 text-brand-strong text-[11px] font-semibold px-2 py-0.5 rounded-md shrink-0"
+                    {/* 우측 컨텐츠 영역 (1:1 수직 높이 균형) */}
+                    <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
+                      {/* 상단 블록: 카테고리/주소 + 하트 & 제목 & 일시 */}
+                      <div>
+                        {/* 1줄: 카테고리 · 주소 & 하트 (중복 D-day 삭제) */}
+                        <div className="flex items-center justify-between text-xs text-muted font-medium">
+                          <div className="flex items-center gap-1 min-w-0 pr-2 truncate">
+                            <span className="shrink-0">{item.categoryLabel}</span>
+                            <span className="shrink-0">·</span>
+                            <span className="text-ink font-semibold truncate">
+                              {item.venueDetail ? `${item.regionLabel} ${item.venueDetail}` : item.regionLabel}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={(e) => toggleFavorite(e, item.id)}
+                            className="w-7 h-7 rounded-full hover:bg-surface-muted flex items-center justify-center text-muted hover:text-error transition-colors cursor-pointer shrink-0"
+                            aria-label="찜하기"
                           >
-                            {role}
+                            <Heart
+                              className={cn(
+                                'w-4 h-4',
+                                isFav ? 'fill-red-500 text-red-500' : 'fill-none text-muted'
+                              )}
+                            />
+                          </button>
+                        </div>
+
+                        {/* 2줄: 행사 제목 (가로 폭 전체 활용, 잘림 해결) */}
+                        <h3 className="text-base sm:text-lg font-bold text-ink leading-snug line-clamp-1 sm:line-clamp-2 mt-0.5 group-hover:text-brand transition-colors">
+                          {item.displayTitle}
+                        </h3>
+
+                        {/* 3줄: 날짜 & 근무 시간 1줄 인라인 병합 */}
+                        <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted font-medium">
+                          <span className="inline-flex items-center gap-1 shrink-0 font-medium text-ink">
+                            <CalendarIcon className="w-3.5 h-3.5 text-muted shrink-0" />
+                            <span>{item.dateRangeLabel}</span>
                           </span>
-                        ))}
+                          <span className="text-muted/60">·</span>
+                          <span className="inline-flex items-center gap-1 shrink-0">
+                            <Clock className="w-3.5 h-3.5 text-muted shrink-0" />
+                            <span>{item.workHoursLabel}</span>
+                          </span>
+                        </div>
                       </div>
-                    </div>
 
-                    {/* 우측 액션 및 보수 영역 */}
-                    <div className="shrink-0 flex flex-col justify-between items-end self-stretch pl-1 py-0.5">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[11px] font-bold text-brand">
-                          {deadlineInfo.dDayLabel}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={(e) => toggleFavorite(e, item.id)}
-                          className="w-7 h-7 rounded-full hover:bg-surface-muted flex items-center justify-center text-muted hover:text-error transition-colors cursor-pointer"
-                          aria-label="찜하기"
-                        >
-                          <Heart
-                            className={cn(
-                              'w-4 h-4',
-                              isFav ? 'fill-red-500 text-red-500' : 'fill-none text-muted'
-                            )}
+                      {/* 하단 블록: 하는 일 태그 인라인화 & [우측 하단 금액 고정] */}
+                      <div className="mt-2 flex items-end justify-between gap-2">
+                        {/* 좌측: 하는 일 태그 리스트 */}
+                        <div className="flex flex-wrap items-center gap-1.5 flex-1 min-w-0">
+                          {item.primaryRoles.slice(0, 3).map((role) => (
+                            <span
+                              key={role}
+                              className="bg-brand-soft/40 text-brand-strong text-[11px] font-semibold px-2 py-0.5 rounded-md shrink-0"
+                            >
+                              {role}
+                            </span>
+                          ))}
+                        </div>
+
+                        {/* 우측 하단: 코인 에셋 + 볼드 금액 고정 */}
+                        <div className="shrink-0 flex items-center gap-1.5 ml-auto">
+                          <Image
+                            src="/assets/clay/coin.png"
+                            alt="하루 일당"
+                            width={22}
+                            height={22}
+                            className="w-5 h-5 sm:w-5.5 sm:h-5.5 object-contain"
                           />
-                        </button>
-                      </div>
-
-                      {/* 하루 일당 표시 (3D 코인 /assets/clay/coin.png + 볼드 금액) */}
-                      <div className="flex items-center gap-1 mt-auto">
-                        <Image
-                          src="/assets/clay/coin.png"
-                          alt="하루 일당"
-                          width={24}
-                          height={24}
-                          className="w-5 h-5 sm:w-6 sm:h-6 object-contain shrink-0"
-                        />
-                        <span className="text-base sm:text-lg font-black text-ink tabular-nums">
-                          {item.dailyWageWon.toLocaleString()}
-                        </span>
-                        <span className="text-xs font-bold text-ink">원</span>
+                          <span className="text-ink font-black text-base sm:text-lg tracking-tight whitespace-nowrap">
+                            {item.dailyWageWon.toLocaleString()}원
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </Link>
