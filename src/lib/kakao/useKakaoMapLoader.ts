@@ -48,8 +48,15 @@ export function useKakaoMapLoader() {
         initMaps();
       };
       existingScript.addEventListener('load', handleLoad);
+      // 스크립트가 이미 로드 완료되어 load 이벤트가 다시 발생하지 않는 경우 대비 폴링
+      const pollTimer = setInterval(() => {
+        if (initMaps()) {
+          clearInterval(pollTimer);
+        }
+      }, 100);
       return () => {
         existingScript.removeEventListener('load', handleLoad);
+        clearInterval(pollTimer);
       };
     }
 
