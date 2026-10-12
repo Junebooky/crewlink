@@ -7,6 +7,7 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 import { AccountMenu } from './AccountMenu';
+import { LoginModal } from '@/components/auth/LoginModal';
 
 export interface PublicHeaderProps {
   className?: string;
@@ -20,6 +21,7 @@ export function PublicHeader({ className }: PublicHeaderProps) {
     roles: string[];
   } | null>(null);
   const [isLoadingSession, setIsLoadingSession] = useState(true);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
   // Reactive Supabase auth synchronization
   useEffect(() => {
@@ -143,15 +145,20 @@ export function PublicHeader({ className }: PublicHeaderProps) {
         ) : (
           <button
             type="button"
-            onClick={() => {
-              window.location.href = '/crew';
-            }}
+            onClick={() => setIsLoginModalOpen(true)}
             className="h-9 px-4 rounded-xl bg-brand hover:bg-brand-hover text-inverse text-xs sm:text-sm font-bold transition-colors shadow-2xs flex items-center justify-center cursor-pointer"
           >
             로그인
           </button>
         )}
       </div>
+
+      {/* 모바일 퍼스트 로그인 모달 */}
+      <LoginModal
+        isOpen={isLoginModalOpen}
+        onClose={() => setIsLoginModalOpen(false)}
+        redirectTo="/crew"
+      />
     </header>
   );
 }
