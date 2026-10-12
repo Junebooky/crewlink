@@ -127,22 +127,36 @@ export type Database = {
       };
       crew_profiles: {
         Row: {
-          id: string;
+          id?: string;
           person_id: string;
-          bio: string | null;
+          profile_image_url?: string | null;
+          full_body_image_url?: string | null;
+          height_cm?: number | null;
+          top_size?: string | null;
+          bottom_size?: string | null;
+          shoe_size_mm?: number | null;
           experience_years: number;
-          uniform_size: 'S' | 'M' | 'L' | 'XL' | '2XL' | 'FREE' | null;
-          profile_photo_url: string | null;
-          rating_avg: number;
-          total_shifts_completed: number;
-          created_at: string;
-          updated_at: string;
+          bio: string | null;
+          languages?: string[];
+          uniform_size?: 'S' | 'M' | 'L' | 'XL' | '2XL' | 'FREE' | null;
+          profile_photo_url?: string | null;
+          rating_avg?: number;
+          total_shifts_completed?: number;
+          created_at?: string;
+          updated_at?: string;
         };
         Insert: {
           id?: string;
           person_id: string;
-          bio?: string | null;
+          profile_image_url?: string | null;
+          full_body_image_url?: string | null;
+          height_cm?: number | null;
+          top_size?: string | null;
+          bottom_size?: string | null;
+          shoe_size_mm?: number | null;
           experience_years?: number;
+          bio?: string | null;
+          languages?: string[];
           uniform_size?: 'S' | 'M' | 'L' | 'XL' | '2XL' | 'FREE' | null;
           profile_photo_url?: string | null;
           rating_avg?: number;
@@ -153,8 +167,15 @@ export type Database = {
         Update: {
           id?: string;
           person_id?: string;
-          bio?: string | null;
+          profile_image_url?: string | null;
+          full_body_image_url?: string | null;
+          height_cm?: number | null;
+          top_size?: string | null;
+          bottom_size?: string | null;
+          shoe_size_mm?: number | null;
           experience_years?: number;
+          bio?: string | null;
+          languages?: string[];
           uniform_size?: 'S' | 'M' | 'L' | 'XL' | '2XL' | 'FREE' | null;
           profile_photo_url?: string | null;
           rating_avg?: number;

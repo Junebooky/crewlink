@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import {
   Calendar as CalendarIcon,
@@ -8,6 +8,7 @@ import {
   Search,
   Check,
   ChevronRight,
+  ChevronDown,
   ShieldCheck,
   ArrowUpDown,
   RotateCcw,
@@ -17,7 +18,7 @@ import {
 import { cn } from '@/lib/utils';
 import { PublicHeader } from '@/components/common/PublicHeader';
 import { MobileBottomNav } from '@/components/common/MobileBottomNav';
-import { ClayCoinStack3D } from '@/components/assets/ClayCoinStack3D';
+import { FloatingClayCoin3D } from '@/components/assets/FloatingClayCoin3D';
 import {
   getPublicEvents,
   type EventCategory,
@@ -77,7 +78,33 @@ export default function HomePage() {
   const [customEndDate, setCustomEndDate] = useState<string>('');
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [sortOrder, setSortOrder] = useState<SortOrder>('latest');
+  const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false);
+  const sortDropdownRef = useRef<HTMLDivElement>(null);
   const [searchKeyword, setSearchKeyword] = useState('');
+
+  // 정렬 드롭다운 바깥 영역 클릭 및 ESC 키 입력 시 닫힘 처리
+  useEffect(() => {
+    if (!isSortDropdownOpen) return;
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (sortDropdownRef.current && !sortDropdownRef.current.contains(e.target as Node)) {
+        setIsSortDropdownOpen(false);
+      }
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsSortDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isSortDropdownOpen]);
 
   // KST 동적 날짜 필터링 범위 계산
   const activeDateRange = useMemo<{ start: string; end: string; label: string } | null>(() => {
@@ -151,6 +178,8 @@ export default function HomePage() {
     setSortOrder('latest');
     setSearchKeyword('');
   };
+
+  const currentSortLabel = SORT_OPTIONS.find((opt) => opt.id === sortOrder)?.label || '최신순';
 
   return (
     <div className="min-h-screen bg-canvas text-ink flex flex-col pb-20 md:pb-12">
@@ -335,7 +364,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 4. 활성 필터 태그 & 정렬 헤더 */}
+      {/* 4. 활성 필터 태그 & 커스텀 정렬 드롭다운 헤더 */}
       <section className="max-w-4xl w-full mx-auto px-4 sm:px-6 pt-5 pb-2">
         <div className="flex flex-wrap items-center justify-between gap-3">
           {/* 활성 필터 리셋 & 칩 표시 */}
@@ -375,21 +404,54 @@ export default function HomePage() {
             )}
           </div>
 
-          {/* 정렬 셀렉트 */}
-          <div className="flex items-center gap-1 shrink-0 ml-auto">
-            <ArrowUpDown className="w-3.5 h-3.5 text-muted pointer-events-none" />
-            <select
-              value={sortOrder}
-              onChange={(e) => setSortOrder(e.target.value as SortOrder)}
-              className="text-xs font-semibold text-muted bg-transparent border-none focus:outline-none focus:ring-0 cursor-pointer pr-1"
-              aria-label="공고 목록 정렬"
+          {/* Task 1: 커스텀 정렬 드롭다운 (플로팅 메뉴) */}
+          <div ref={sortDropdownRef} className="relative shrink-0 ml-auto">
+            <button
+              type="button"
+              aria-haspopup="listbox"
+              aria-expanded={isSortDropdownOpen}
+              onClick={() => setIsSortDropdownOpen((prev) => !prev)}
+              className="h-10 px-3.5 rounded-xl border border-border bg-surface text-sm font-semibold text-ink flex items-center gap-1.5 shadow-2xs hover:border-brand-border cursor-pointer transition-colors"
             >
-              {SORT_OPTIONS.map((opt) => (
-                <option key={opt.id} value={opt.id}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
+              <ArrowUpDown className="w-4 h-4 text-muted shrink-0" />
+              <span>{currentSortLabel}</span>
+              <ChevronDown
+                className={cn(
+                  'w-3.5 h-3.5 text-muted transition-transform duration-200',
+                  isSortDropdownOpen && 'rotate-180'
+                )}
+              />
+            </button>
+
+            {isSortDropdownOpen && (
+              <div
+                role="listbox"
+                className="absolute right-0 top-full mt-1.5 z-30 w-36 p-1.5 rounded-2xl border border-border bg-surface shadow-lg animate-in fade-in zoom-in-95 duration-150"
+              >
+                {SORT_OPTIONS.map((opt) => {
+                  const isSelected = sortOrder === opt.id;
+                  return (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      role="option"
+                      aria-selected={isSelected}
+                      onClick={() => {
+                        setSortOrder(opt.id);
+                        setIsSortDropdownOpen(false);
+                      }}
+                      className={cn(
+                        'w-full text-sm font-medium rounded-xl px-3 py-2 text-ink hover:bg-brand-soft hover:text-brand-strong cursor-pointer flex items-center justify-between transition-colors',
+                        isSelected && 'bg-brand-soft text-brand-strong font-semibold'
+                      )}
+                    >
+                      <span>{opt.label}</span>
+                      {isSelected && <Check className="w-4 h-4 text-brand shrink-0" />}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -407,7 +469,7 @@ export default function HomePage() {
               onClick={handleResetFilters}
               className="h-10 px-5 rounded-2xl bg-brand text-inverse text-xs font-bold hover:bg-brand-hover transition-colors shadow-2xs cursor-pointer inline-flex items-center gap-1.5"
             >
-              <RotateCcw className="w-3.5 h-3.5" />
+              <RotateCcw className="w-3 h-3" />
               <span>전체 공고 보기</span>
             </button>
           </div>
@@ -478,16 +540,17 @@ export default function HomePage() {
                     </div>
                   </div>
 
-                  {/* 카드 하단: 하루 보수 & 주최사 정보 */}
+                  {/* 카드 하단: 하루 보수 (오픈형 3D 클레이 코인 좌측 인라인 배치) & 주최사 정보 */}
                   <div className="pt-3 border-t border-border-subtle flex items-end justify-between">
                     <div>
                       <p className="text-xs text-muted">하루 보수 · 세전</p>
-                      <div className="flex items-center gap-1 mt-0.5">
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        {/* Task 2: 오픈형 3D 클레이 코인 금액 좌측 인라인 배치 */}
+                        <FloatingClayCoin3D className="w-6 h-6 shrink-0" />
                         <span className="text-lg sm:text-xl font-extrabold text-ink tabular-nums">
                           {item.dailyWageWon.toLocaleString()}
                         </span>
                         <span className="text-xs font-bold text-ink">원</span>
-                        <ClayCoinStack3D className="w-5 h-5 shrink-0 ml-0.5" />
                       </div>
                     </div>
 
