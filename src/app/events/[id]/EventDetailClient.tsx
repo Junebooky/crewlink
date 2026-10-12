@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import {
   ArrowLeft,
@@ -8,38 +8,35 @@ import {
   MapPin,
   Check,
   Share2,
+  ChevronRight,
 } from 'lucide-react';
-import { getEventById, formatRecruitmentDeadline } from '@/lib/data/events';
 
-export interface EventDetailData {
-  id: string;
-  displayTitle: string;
-  hostName: string;
-  categoryLabel: string;
-  regionLabel: string;
-  venueAddress: string;
-  venueDetail: string;
-  deadlineDateLabel: string;
-  workHoursLabel: string;
-  breakMinutesLabel: string;
-  dailyWageWon: number;
-  dates: { id: string; date: string; dayOfWeek: string }[];
-  roles: { title: string; desc: string }[];
-  dressCode: {
-    type: 'FORMAL' | 'CASUAL' | 'UNIFORM';
-    title: string;
-    desc: string;
-  };
-  qualifications: string[];
-}
-
-export interface EventDetailProps {
+interface EventDetailProps {
   id?: string;
-  event?: EventDetailData;
+  event?: {
+    id: string;
+    displayTitle: string;
+    hostName: string;
+    categoryLabel: string;
+    regionLabel: string;
+    venueAddress: string;
+    venueDetail: string;
+    deadlineDateLabel: string;
+    workHoursLabel: string;
+    breakMinutesLabel: string;
+    dailyWageWon: number;
+    dates: { id: string; date: string; dayOfWeek: string }[];
+    roles: { title: string; desc: string }[];
+    dressCode: {
+      type: 'FORMAL' | 'CASUAL' | 'UNIFORM';
+      title: string;
+      desc: string;
+    };
+    qualifications: string[];
+  };
 }
 
-
-// 3D 클레이 지갑 + 코인 스택 + 반짝이 별 에셋 (참조 이미지 스타일)
+// 3D 클레이 지갑 + 코인 스택 + 반짝이 별 에셋
 function ClayWallet3DAsset() {
   return (
     <div className="relative w-28 h-20 shrink-0 flex items-center justify-center select-none">
@@ -177,129 +174,78 @@ function ClayWallet3DAsset() {
   );
 }
 
-const DEFAULT_EVENT: EventDetailData = {
-  id: 'evt-2026-001',
-  displayTitle: '2026 성수 럭셔리 뷰티 브랜드 팝업스토어 현장 운영 크루',
-  hostName: '(주)글로우랩스 코리아',
-  categoryLabel: '팝업스토어',
-  regionLabel: '서울 성동구',
-  venueAddress: '서울 성동구 연무장길 45',
-  venueDetail: '성수역 3번 출구 도보 5분 메인 팝업존',
-  deadlineDateLabel: '10.18까지 모집',
-  workHoursLabel: '11:00 ~ 20:00',
-  breakMinutesLabel: '60분 휴게',
-  dailyWageWon: 120000,
-  dates: [
-    { id: 'd1', date: '2026-10-16', dayOfWeek: '금' },
-    { id: 'd2', date: '2026-10-17', dayOfWeek: '토' },
-    { id: 'd3', date: '2026-10-18', dayOfWeek: '일' },
-  ],
-  roles: [
-    {
-      title: '동선 및 관람객 입장 통제',
-      desc: '사전 예약자 대기열 라인 정돈 및 현장 대기 인원 동선 분리 안내',
-    },
-    {
-      title: '체험 부스 및 이벤트 지원',
-      desc: '포토존 인솔, 럭키드로우 룰렛 진행 및 인스타그램 인증 확인',
-    },
-    {
-      title: '사은품 배부 및 체크리스트 관리',
-      desc: '방문 완료 키트 패키징 불출 및 수량 체크',
-    },
-  ],
-  dressCode: {
-    type: 'FORMAL',
-    title: '단정 올블랙 정장 및 단화 착용',
-    desc: '상/하의 단정한 블랙 슬랙스 및 셔츠, 찢어진 바지/운동화/슬리퍼 불가',
-  },
-  qualifications: [
-    '고객 응대에 밝고 적극적인 태도를 가지신 분',
-    '시간 엄수 및 근태가 성실하신 분 (지각/무단이탈 절대 불가)',
-    '단정한 용모와 복장 규정 준수가 가능하신 분',
-  ],
-};
-
-function generateDates(startDateStr: string, endDateStr: string): { id: string; date: string; dayOfWeek: string }[] {
-  const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
-  const dates: { id: string; date: string; dayOfWeek: string }[] = [];
-  try {
-    const start = new Date(startDateStr);
-    const end = new Date(endDateStr);
-    const curr = new Date(start);
-    let idx = 1;
-    while (curr <= end && dates.length < 14) {
-      const yyyy = curr.getFullYear();
-      const mm = String(curr.getMonth() + 1).padStart(2, '0');
-      const dd = String(curr.getDate()).padStart(2, '0');
-      const dateStr = `${yyyy}-${mm}-${dd}`;
-      dates.push({
-        id: `d${idx}`,
-        date: dateStr,
-        dayOfWeek: dayNames[curr.getDay()],
-      });
-      curr.setDate(curr.getDate() + 1);
-      idx++;
-    }
-  } catch {
-    // fallback
-  }
-  return dates.length > 0
-    ? dates
-    : [{ id: 'd1', date: startDateStr, dayOfWeek: '금' }];
-}
-
 export default function EventDetailClient({ id, event: initialEvent }: EventDetailProps) {
-  const event = useMemo<EventDetailData>(() => {
-    if (initialEvent) return initialEvent;
-    if (id) {
-      const found = getEventById(id);
-      if (found) {
-        return {
-          id: found.id,
-          displayTitle: found.title,
-          hostName: found.hostName,
-          categoryLabel: found.categoryLabel,
-          regionLabel: found.regionLabel,
-          venueAddress: found.detailedAddress || found.regionLabel,
-          venueDetail: found.stationInfo || '',
-          deadlineDateLabel: formatRecruitmentDeadline(found.deadlineDate),
-          workHoursLabel: found.workHoursLabel,
-          breakMinutesLabel: found.breakMinutes ? `${found.breakMinutes}분 휴게` : '60분 휴게',
-          dailyWageWon: found.dailyWageWon,
-          dates: generateDates(found.startDate, found.endDate),
-          roles:
-            found.roleDetails && found.roleDetails.length > 0
-              ? found.roleDetails.map((r) => ({ title: r.role, desc: r.desc }))
-              : found.primaryRoles.map((r) => ({
-                  title: r,
-                  desc: `${r} 관련 현장 업무를 담당합니다.`,
-                })),
-          dressCode: {
-            type: 'FORMAL',
-            title: found.uniformSpec || '단정 올블랙 정장 및 단화 착용',
-            desc:
-              found.uniformSpec ||
-              '상/하의 단정한 블랙 슬랙스 및 셔츠, 찢어진 바지/운동화/슬리퍼 불가',
-          },
-          qualifications:
-            found.qualifications && found.qualifications.length > 0
-              ? found.qualifications
-              : DEFAULT_EVENT.qualifications,
-        };
-      }
-    }
-    return DEFAULT_EVENT;
-  }, [id, initialEvent]);
+  const event = initialEvent || {
+    id: 'evt-2026-001',
+    displayTitle: '2026 성수 럭셔리 뷰티 브랜드 팝업스토어 현장 운영 크루',
+    hostName: '(주)글로우랩스 코리아',
+    categoryLabel: '팝업스토어',
+    regionLabel: '서울 성동구',
+    venueAddress: '서울 성동구 연무장길 45',
+    venueDetail: '성수역 3번 출구 도보 5분 메인 팝업존',
+    deadlineDateLabel: '10.18까지 모집',
+    workHoursLabel: '11:00 ~ 20:00',
+    breakMinutesLabel: '60분 휴게',
+    dailyWageWon: 120000,
+    dates: [
+      { id: 'd1', date: '2026-10-16', dayOfWeek: '금' },
+      { id: 'd2', date: '2026-10-17', dayOfWeek: '토' },
+      { id: 'd3', date: '2026-10-18', dayOfWeek: '일' },
+      { id: 'd4', date: '2026-10-19', dayOfWeek: '월' },
+      { id: 'd5', date: '2026-10-20', dayOfWeek: '화' },
+    ],
+    roles: [
+      {
+        title: '동선 및 관람객 입장 통제',
+        desc: '사전 예약자 대기열 라인 정돈 및 현장 대기 인원 동선 분리 안내',
+      },
+      {
+        title: '체험 부스 및 이벤트 지원',
+        desc: '포토존 인솔, 럭키드로우 룰렛 진행 및 인스타그램 인증 확인',
+      },
+      {
+        title: '사은품 배부 및 체크리스트 관리',
+        desc: '방문 완료 키트 패키징 불출 및 수량 체크',
+      },
+    ],
+    dressCode: {
+      type: 'FORMAL' as const,
+      title: '단정 올블랙 정장 및 단화 착용',
+      desc: '상/하의 단정한 블랙 슬랙스 및 셔츠, 찢어진 바지/운동화/슬리퍼 불가',
+    },
+    qualifications: [
+      '고객 응대에 밝고 적극적인 태도를 가지신 분',
+      '시간 엄수 및 근태가 성실하신 분 (지각/무단이탈 절대 불가)',
+      '단정한 용모와 복장 규정 준수가 가능하신 분',
+    ],
+  };
 
-  const [selectedDateIds, setSelectedDateIds] = useState<string[]>(() =>
+  const [selectedDateIds, setSelectedDateIds] = useState<string[]>(
     event.dates.map((d) => d.id)
   );
 
-  useEffect(() => {
-    setSelectedDateIds(event.dates.map((d) => d.id));
-  }, [event.id]);
+  // 가로 스크롤 및 우측 화살표 인디케이터 관제
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [canScrollRight, setCanScrollRight] = useState(false);
 
+  const checkScrollState = () => {
+    if (!scrollContainerRef.current) return;
+    const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
+    // 여유 마진 4px
+    setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 4);
+  };
+
+  useEffect(() => {
+    checkScrollState();
+    window.addEventListener('resize', checkScrollState);
+    return () => window.removeEventListener('resize', checkScrollState);
+  }, [event.dates]);
+
+  const handleScrollRight = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollBy({ left: 120, behavior: 'smooth' });
+    }
+  };
 
   const toggleDate = (id: string) => {
     setSelectedDateIds((prev) =>
@@ -315,6 +261,18 @@ export default function EventDetailClient({ id, event: initialEvent }: EventDeta
 
   return (
     <div className="min-h-screen bg-canvas text-ink pb-28">
+      {/* 넛지(Nudge) 애니메이션 키프레임 */}
+      <style dangerouslySetInnerHTML={{
+        __html: `
+        @keyframes gentleNudge {
+          0%, 100% { transform: translateX(0); }
+          50% { transform: translateX(3px); }
+        }
+        .animate-nudge {
+          animation: gentleNudge 1.3s ease-in-out infinite;
+        }
+      ` }} />
+
       {/* 1. 상단 내비게이션 바 */}
       <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-border/80 h-14 flex items-center justify-between px-4 sm:px-6">
         <Link
@@ -332,7 +290,7 @@ export default function EventDetailClient({ id, event: initialEvent }: EventDeta
               alert('공고 링크가 복사되었습니다.');
             }
           }}
-          className="w-9 h-9 rounded-full flex items-center justify-center text-muted hover:text-ink hover:bg-canvas transition-colors"
+          className="w-9 h-9 rounded-full flex items-center justify-center text-muted hover:text-ink hover:bg-canvas transition-colors cursor-pointer"
           aria-label="공고 공유하기"
         >
           <Share2 className="w-4 h-4" />
@@ -340,7 +298,7 @@ export default function EventDetailClient({ id, event: initialEvent }: EventDeta
       </header>
 
       <main className="max-w-2xl mx-auto px-4 pt-6 space-y-6">
-        {/* 2. 헤더 메타 (인증 주최사 파란 원형 속 흰색 V 체크 & 마감일 텍스트) */}
+        {/* 2. 헤더 메타 */}
         <div>
           <div className="flex items-center justify-between gap-2 mb-2">
             <div className="flex items-center gap-1.5 text-xs">
@@ -362,7 +320,7 @@ export default function EventDetailClient({ id, event: initialEvent }: EventDeta
           </h1>
         </div>
 
-        {/* 3. [2번 요구사항 반영] 날짜 선택 + 예상 보수를 하나로 합친 단일 통합 카드 */}
+        {/* 3. 날짜 선택 + 예상 보수 통합 카드 */}
         <section className="bg-white rounded-3xl p-5 sm:p-6 border border-border shadow-2xs space-y-5">
           {/* 상단: 근무 일정 선택 */}
           <div>
@@ -372,24 +330,47 @@ export default function EventDetailClient({ id, event: initialEvent }: EventDeta
               </span>
               <span className="text-xs text-muted">원하는 날짜를 선택해 주세요</span>
             </div>
-            <div className="grid grid-cols-3 gap-2.5">
-              {event.dates.map((d) => {
-                const isSelected = selectedDateIds.includes(d.id);
-                return (
-                  <button
-                    key={d.id}
-                    type="button"
-                    onClick={() => toggleDate(d.id)}
-                    className={`py-3 px-2 rounded-2xl border text-center transition-all cursor-pointer ${isSelected
-                      ? 'border-brand bg-white text-ink font-bold shadow-xs ring-1 ring-brand'
-                      : 'border-border/80 bg-canvas text-muted hover:border-brand/40'
-                      }`}
-                  >
-                    <p className="text-xs text-muted mb-0.5">{d.dayOfWeek}요일</p>
-                    <p className="text-sm font-semibold">{d.date.slice(5)}</p>
-                  </button>
-                );
-              })}
+
+            {/* 스크롤 트랙 컨테이너 (우측 인디케이터 오버레이 포함) */}
+            <div className="relative">
+              <div
+                ref={scrollContainerRef}
+                onScroll={checkScrollState}
+                className="p-1 -m-1 flex gap-2 overflow-x-auto scrollbar-none snap-x scroll-smooth"
+              >
+                {event.dates.map((d) => {
+                  const isSelected = selectedDateIds.includes(d.id);
+                  return (
+                    <button
+                      key={d.id}
+                      type="button"
+                      onClick={() => toggleDate(d.id)}
+                      className={`py-2.5 px-2 rounded-2xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center shrink-0 w-[calc((100%-24px)/4)] min-w-[70px] snap-start ${isSelected
+                        ? 'border-brand bg-white text-ink font-bold shadow-xs ring-1 ring-inset ring-brand'
+                        : 'border-border/80 bg-canvas text-muted hover:border-brand/40'
+                        }`}
+                    >
+                      <span className="text-xs text-muted mb-0.5">{d.dayOfWeek}요일</span>
+                      <span className="text-sm font-semibold tracking-tight">
+                        {d.date.slice(5).replace('-', '.')}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* 4일 초과 시 우측 스크롤 인디케이터 (화이트 그라데이션 + 넛지 모션) */}
+              {event.dates.length > 4 && canScrollRight && (
+                <div
+                  onClick={handleScrollRight}
+                  className="absolute right-0 top-0 bottom-0 w-12 flex items-center justify-end pr-0.5 pointer-events-auto cursor-pointer bg-gradient-to-l from-white via-white/85 to-transparent transition-opacity duration-200 select-none"
+                  aria-label="다음 일정 보기"
+                >
+                  <div className="w-6 h-6 rounded-full bg-white border border-brand/30 shadow-2xs flex items-center justify-center text-brand animate-nudge">
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -421,7 +402,7 @@ export default function EventDetailClient({ id, event: initialEvent }: EventDeta
           </div>
         </section>
 
-        {/* 4. [3번 요구사항 반영] 근무 핵심 요약 (원래대로 완벽 복원) */}
+        {/* 4. 근무 핵심 요약 */}
         <section className="bg-white rounded-3xl p-5 border border-border shadow-2xs space-y-4">
           <h2 className="text-base font-bold text-ink">근무 핵심 요약</h2>
           <div className="space-y-3.5 text-sm">
@@ -446,7 +427,7 @@ export default function EventDetailClient({ id, event: initialEvent }: EventDeta
           </div>
         </section>
 
-        {/* 5. 담당할 주요 업무 (순백색 카드) */}
+        {/* 5. 담당할 주요 업무 */}
         <section className="bg-white rounded-3xl p-5 border border-border shadow-2xs space-y-4">
           <h2 className="text-base font-bold text-ink">담당할 주요 업무</h2>
           <div className="space-y-2.5">
@@ -469,7 +450,7 @@ export default function EventDetailClient({ id, event: initialEvent }: EventDeta
           </div>
         </section>
 
-        {/* 6. [1번 요구사항 반영] 복장 규정 (배경화면 제거 및 border에 브랜드 색상 적용) */}
+        {/* 6. 복장 규정 */}
         <section className="bg-white rounded-3xl p-5 border border-border shadow-2xs space-y-4">
           <h2 className="text-base font-bold text-ink">복장 규정</h2>
           <div className="p-4 rounded-2xl border border-brand/60">
@@ -480,7 +461,7 @@ export default function EventDetailClient({ id, event: initialEvent }: EventDeta
           </div>
         </section>
 
-        {/* 7. [1번 요구사항 반영] 지원 자격 안내 (원래의 깔끔한 체크리스트 유지) */}
+        {/* 7. 지원 자격 안내 */}
         <section className="bg-white rounded-3xl p-5 border border-border shadow-2xs space-y-3">
           <h2 className="text-base font-bold text-ink">지원 자격 및 안내</h2>
           <ul className="space-y-2.5 text-xs text-muted">
