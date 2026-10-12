@@ -584,7 +584,7 @@ export default function CrewProfilePage() {
                           avatarInputRef.current?.click();
                         }
                       }}
-                      className="w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden bg-white border-2 border-border shadow-xs relative flex items-center justify-center cursor-pointer hover:border-brand-border transition-colors"
+                      className="w-30 h-30 sm:w-28 sm:h-28 rounded-full overflow-hidden bg-white border-1 border-border shadow-xs relative flex items-center justify-center cursor-pointer hover:border-brand-border transition-colors"
                       title={currentPhoto ? '사진 위치 조절하기' : '사진 등록하기'}
                     >
                       {currentPhoto ? (
@@ -690,7 +690,7 @@ export default function CrewProfilePage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
                   <div>
-                    <label htmlFor="crew-fullname" className="block text-sm font-bold text-ink mb-2 text-left">
+                    <label htmlFor="crew-fullname" className="block text-sm font-semibold text-muted mb-2 text-left">
                       이름 <span className="text-brand">*</span>
                     </label>
                     <input
@@ -705,7 +705,7 @@ export default function CrewProfilePage() {
                   </div>
 
                   <div>
-                    <label htmlFor="crew-phone" className="block text-sm font-bold text-ink mb-2 text-left">
+                    <label htmlFor="crew-phone" className="block text-sm font-semibold text-muted mb-2 text-left">
                       연락처 <span className="text-brand">*</span>
                     </label>
                     <input
@@ -750,7 +750,7 @@ export default function CrewProfilePage() {
                 <div className="grid grid-cols-2 gap-4 sm:gap-5">
                   {/* 키 (cm) */}
                   <div>
-                    <label htmlFor="crew-height" className="block text-sm font-bold text-ink mb-2 text-left">
+                    <label htmlFor="crew-height" className="block text-sm font-semibold text-muted mb-2 text-left">
                       키 (cm)
                     </label>
                     <div className="relative">
@@ -764,7 +764,7 @@ export default function CrewProfilePage() {
                         placeholder="예: 175"
                         className="w-full h-12 px-4 pr-11 rounded-xl border border-border/80 bg-white text-ink text-sm font-semibold focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-colors"
                       />
-                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted font-bold text-xs pointer-events-none">
+                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted font-semibold text-xs pointer-events-none">
                         cm
                       </span>
                     </div>
@@ -772,7 +772,7 @@ export default function CrewProfilePage() {
 
                   {/* 상의 유니폼 사이즈 (Top Size 칩) */}
                   <div>
-                    <label className="block text-sm font-bold text-ink mb-2 text-left">
+                    <label className="block text-sm font-semibold text-muted mb-2 text-left">
                       상의 유니폼 사이즈
                     </label>
                     <div className="grid grid-cols-5 gap-1 sm:gap-1.5 h-12">
@@ -799,7 +799,7 @@ export default function CrewProfilePage() {
 
                   {/* 하의 사이즈 (CustomSelect 적용) */}
                   <div>
-                    <label htmlFor="crew-bottom" className="block text-sm font-bold text-ink mb-2 text-left">
+                    <label htmlFor="crew-bottom" className="block text-sm font-semibold text-muted mb-2 text-left">
                       하의 사이즈
                     </label>
                     <CustomSelect
@@ -812,7 +812,7 @@ export default function CrewProfilePage() {
 
                   {/* 신발 사이즈 (CustomSelect 적용) */}
                   <div>
-                    <label htmlFor="crew-shoes" className="block text-sm font-bold text-ink mb-2 text-left">
+                    <label htmlFor="crew-shoes" className="block text-sm font-semibold text-muted mb-2 text-left">
                       신발 사이즈 (mm)
                     </label>
                     <CustomSelect
@@ -846,7 +846,7 @@ export default function CrewProfilePage() {
                 <div className="space-y-4 sm:space-y-5">
                   {/* 행사 스태프 경력 (CustomSelect 적용) */}
                   <div>
-                    <label htmlFor="crew-exp" className="block text-sm font-bold text-ink mb-2 text-left">
+                    <label htmlFor="crew-exp" className="block text-sm font-semibold text-muted mb-2 text-left">
                       행사 스태프 경력
                     </label>
                     <CustomSelect
@@ -859,7 +859,7 @@ export default function CrewProfilePage() {
 
                   {/* 한 줄 소개 및 각오 (Bio) */}
                   <div>
-                    <label htmlFor="crew-bio" className="block text-sm font-bold text-ink mb-2 text-left">
+                    <label htmlFor="crew-bio" className="block text-sm font-semibold text-muted mb-2 text-left">
                       한 줄 소개 및 각오
                     </label>
                     <textarea
