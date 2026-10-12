@@ -8,13 +8,20 @@ export function generateStaticParams() {
   }));
 }
 
-export default async function EventDetailPage({
+async function EventDetailContent({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  return <EventDetailClient id={id} />;
+}
 
+export default function EventDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   return (
     <Suspense
       fallback={
@@ -23,7 +30,8 @@ export default async function EventDetailPage({
         </div>
       }
     >
-      <EventDetailClient id={id} />
+      <EventDetailContent params={params} />
     </Suspense>
   );
 }
+

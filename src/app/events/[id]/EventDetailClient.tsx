@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import {
   ArrowLeft,
@@ -9,30 +9,35 @@ import {
   Check,
   Share2,
 } from 'lucide-react';
+import { getEventById, formatRecruitmentDeadline } from '@/lib/data/events';
 
-interface EventDetailProps {
-  event?: {
-    id: string;
-    displayTitle: string;
-    hostName: string;
-    categoryLabel: string;
-    regionLabel: string;
-    venueAddress: string;
-    venueDetail: string;
-    deadlineDateLabel: string;
-    workHoursLabel: string;
-    breakMinutesLabel: string;
-    dailyWageWon: number;
-    dates: { id: string; date: string; dayOfWeek: string }[];
-    roles: { title: string; desc: string }[];
-    dressCode: {
-      type: 'FORMAL' | 'CASUAL' | 'UNIFORM';
-      title: string;
-      desc: string;
-    };
-    qualifications: string[];
+export interface EventDetailData {
+  id: string;
+  displayTitle: string;
+  hostName: string;
+  categoryLabel: string;
+  regionLabel: string;
+  venueAddress: string;
+  venueDetail: string;
+  deadlineDateLabel: string;
+  workHoursLabel: string;
+  breakMinutesLabel: string;
+  dailyWageWon: number;
+  dates: { id: string; date: string; dayOfWeek: string }[];
+  roles: { title: string; desc: string }[];
+  dressCode: {
+    type: 'FORMAL' | 'CASUAL' | 'UNIFORM';
+    title: string;
+    desc: string;
   };
+  qualifications: string[];
 }
+
+export interface EventDetailProps {
+  id?: string;
+  event?: EventDetailData;
+}
+
 
 // 3D 클레이 지갑 + 코인 스택 + 반짝이 별 에셋 (참조 이미지 스타일)
 function ClayWallet3DAsset() {
@@ -172,53 +177,129 @@ function ClayWallet3DAsset() {
   );
 }
 
-export default function EventDetailClient({ event: initialEvent }: EventDetailProps) {
-  const event = initialEvent || {
-    id: 'evt-2026-001',
-    displayTitle: '2026 성수 럭셔리 뷰티 브랜드 팝업스토어 현장 운영 크루',
-    hostName: '(주)글로우랩스 코리아',
-    categoryLabel: '팝업스토어',
-    regionLabel: '서울 성동구',
-    venueAddress: '서울 성동구 연무장길 45',
-    venueDetail: '성수역 3번 출구 도보 5분 메인 팝업존',
-    deadlineDateLabel: '10.18까지 모집',
-    workHoursLabel: '11:00 ~ 20:00',
-    breakMinutesLabel: '60분 휴게',
-    dailyWageWon: 120000,
-    dates: [
-      { id: 'd1', date: '2026-10-16', dayOfWeek: '금' },
-      { id: 'd2', date: '2026-10-17', dayOfWeek: '토' },
-      { id: 'd3', date: '2026-10-18', dayOfWeek: '일' },
-    ],
-    roles: [
-      {
-        title: '동선 및 관람객 입장 통제',
-        desc: '사전 예약자 대기열 라인 정돈 및 현장 대기 인원 동선 분리 안내',
-      },
-      {
-        title: '체험 부스 및 이벤트 지원',
-        desc: '포토존 인솔, 럭키드로우 룰렛 진행 및 인스타그램 인증 확인',
-      },
-      {
-        title: '사은품 배부 및 체크리스트 관리',
-        desc: '방문 완료 키트 패키징 불출 및 수량 체크',
-      },
-    ],
-    dressCode: {
-      type: 'FORMAL' as const,
-      title: '단정 올블랙 정장 및 단화 착용',
-      desc: '상/하의 단정한 블랙 슬랙스 및 셔츠, 찢어진 바지/운동화/슬리퍼 불가',
+const DEFAULT_EVENT: EventDetailData = {
+  id: 'evt-2026-001',
+  displayTitle: '2026 성수 럭셔리 뷰티 브랜드 팝업스토어 현장 운영 크루',
+  hostName: '(주)글로우랩스 코리아',
+  categoryLabel: '팝업스토어',
+  regionLabel: '서울 성동구',
+  venueAddress: '서울 성동구 연무장길 45',
+  venueDetail: '성수역 3번 출구 도보 5분 메인 팝업존',
+  deadlineDateLabel: '10.18까지 모집',
+  workHoursLabel: '11:00 ~ 20:00',
+  breakMinutesLabel: '60분 휴게',
+  dailyWageWon: 120000,
+  dates: [
+    { id: 'd1', date: '2026-10-16', dayOfWeek: '금' },
+    { id: 'd2', date: '2026-10-17', dayOfWeek: '토' },
+    { id: 'd3', date: '2026-10-18', dayOfWeek: '일' },
+  ],
+  roles: [
+    {
+      title: '동선 및 관람객 입장 통제',
+      desc: '사전 예약자 대기열 라인 정돈 및 현장 대기 인원 동선 분리 안내',
     },
-    qualifications: [
-      '고객 응대에 밝고 적극적인 태도를 가지신 분',
-      '시간 엄수 및 근태가 성실하신 분 (지각/무단이탈 절대 불가)',
-      '단정한 용모와 복장 규정 준수가 가능하신 분',
-    ],
-  };
+    {
+      title: '체험 부스 및 이벤트 지원',
+      desc: '포토존 인솔, 럭키드로우 룰렛 진행 및 인스타그램 인증 확인',
+    },
+    {
+      title: '사은품 배부 및 체크리스트 관리',
+      desc: '방문 완료 키트 패키징 불출 및 수량 체크',
+    },
+  ],
+  dressCode: {
+    type: 'FORMAL',
+    title: '단정 올블랙 정장 및 단화 착용',
+    desc: '상/하의 단정한 블랙 슬랙스 및 셔츠, 찢어진 바지/운동화/슬리퍼 불가',
+  },
+  qualifications: [
+    '고객 응대에 밝고 적극적인 태도를 가지신 분',
+    '시간 엄수 및 근태가 성실하신 분 (지각/무단이탈 절대 불가)',
+    '단정한 용모와 복장 규정 준수가 가능하신 분',
+  ],
+};
 
-  const [selectedDateIds, setSelectedDateIds] = useState<string[]>(
+function generateDates(startDateStr: string, endDateStr: string): { id: string; date: string; dayOfWeek: string }[] {
+  const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
+  const dates: { id: string; date: string; dayOfWeek: string }[] = [];
+  try {
+    const start = new Date(startDateStr);
+    const end = new Date(endDateStr);
+    const curr = new Date(start);
+    let idx = 1;
+    while (curr <= end && dates.length < 14) {
+      const yyyy = curr.getFullYear();
+      const mm = String(curr.getMonth() + 1).padStart(2, '0');
+      const dd = String(curr.getDate()).padStart(2, '0');
+      const dateStr = `${yyyy}-${mm}-${dd}`;
+      dates.push({
+        id: `d${idx}`,
+        date: dateStr,
+        dayOfWeek: dayNames[curr.getDay()],
+      });
+      curr.setDate(curr.getDate() + 1);
+      idx++;
+    }
+  } catch {
+    // fallback
+  }
+  return dates.length > 0
+    ? dates
+    : [{ id: 'd1', date: startDateStr, dayOfWeek: '금' }];
+}
+
+export default function EventDetailClient({ id, event: initialEvent }: EventDetailProps) {
+  const event = useMemo<EventDetailData>(() => {
+    if (initialEvent) return initialEvent;
+    if (id) {
+      const found = getEventById(id);
+      if (found) {
+        return {
+          id: found.id,
+          displayTitle: found.title,
+          hostName: found.hostName,
+          categoryLabel: found.categoryLabel,
+          regionLabel: found.regionLabel,
+          venueAddress: found.detailedAddress || found.regionLabel,
+          venueDetail: found.stationInfo || '',
+          deadlineDateLabel: formatRecruitmentDeadline(found.deadlineDate),
+          workHoursLabel: found.workHoursLabel,
+          breakMinutesLabel: found.breakMinutes ? `${found.breakMinutes}분 휴게` : '60분 휴게',
+          dailyWageWon: found.dailyWageWon,
+          dates: generateDates(found.startDate, found.endDate),
+          roles:
+            found.roleDetails && found.roleDetails.length > 0
+              ? found.roleDetails.map((r) => ({ title: r.role, desc: r.desc }))
+              : found.primaryRoles.map((r) => ({
+                  title: r,
+                  desc: `${r} 관련 현장 업무를 담당합니다.`,
+                })),
+          dressCode: {
+            type: 'FORMAL',
+            title: found.uniformSpec || '단정 올블랙 정장 및 단화 착용',
+            desc:
+              found.uniformSpec ||
+              '상/하의 단정한 블랙 슬랙스 및 셔츠, 찢어진 바지/운동화/슬리퍼 불가',
+          },
+          qualifications:
+            found.qualifications && found.qualifications.length > 0
+              ? found.qualifications
+              : DEFAULT_EVENT.qualifications,
+        };
+      }
+    }
+    return DEFAULT_EVENT;
+  }, [id, initialEvent]);
+
+  const [selectedDateIds, setSelectedDateIds] = useState<string[]>(() =>
     event.dates.map((d) => d.id)
   );
+
+  useEffect(() => {
+    setSelectedDateIds(event.dates.map((d) => d.id));
+  }, [event.id]);
+
 
   const toggleDate = (id: string) => {
     setSelectedDateIds((prev) =>
