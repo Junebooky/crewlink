@@ -59,6 +59,10 @@ describe('ApplicantReviewCard & 3D Clay Assets Specification Verification', () =
     expect(cardContent).toContain('선발 되돌리기');
     expect(cardContent).toContain('선발 완료');
     expect(cardContent).toContain('whitespace-nowrap shrink-0 text-xs font-medium text-muted');
+    expect(cardContent).toContain('신체 정보');
+    expect(cardContent).toContain('경력 및 평점');
+    expect(cardContent).toContain('전문 분야');
+    expect(cardContent).toContain('bg-white rounded-2xl shadow-2xs');
 
     const pageContent = fs.readFileSync(
       path.resolve(process.cwd(), 'src/app/(client)/client/page.tsx'),

@@ -325,7 +325,7 @@ export default function ClientDashboardPage() {
           </div>
 
           <div className="p-4 bg-surface border border-border rounded-2xl shadow-xs">
-            <div className="text-xs text-brand-strong font-bold flex items-center gap-1">
+            <div className="text-xs text-black font-bold flex items-center gap-1">
               <CheckCircle2 className="w-3.5 h-3.5 text-brand" />
               선발 완료
             </div>
@@ -388,7 +388,7 @@ export default function ClientDashboardPage() {
                       {/* Card Header: Standardized Status Badge & Clear Registration Date */}
                       <div className="flex items-center justify-between gap-2 mb-3">
                         {isFullyApproved ? (
-                          <span className="bg-brand-soft/40 text-brand-strong font-bold text-xs px-2.5 py-1 rounded-lg border border-brand/20">
+                          <span className="bg-brand-soft/40 text-black font-bold text-xs px-2.5 py-1 rounded-lg border border-brand/20">
                             선발 완료
                           </span>
                         ) : hasApplicants ? (
@@ -484,7 +484,7 @@ export default function ClientDashboardPage() {
                   </span>
                   <span className="text-xs text-muted">
                     목표 {selectedProject.requiredCount}명 중{' '}
-                    <strong className="text-brand-strong font-bold">
+                    <strong className="text-black font-bold">
                       {selectedProject.approvedCount}명
                     </strong>{' '}
                     선발 완료
