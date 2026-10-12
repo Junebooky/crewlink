@@ -3,8 +3,8 @@
 -- =====================================================================
 
 -- 1. Ensure crew_profiles table exists with all visual profile & body spec attributes
-CREATE TABLE IF NOT EXISTS public.crew_profiles (
-    person_id UUID PRIMARY KEY REFERENCES public.people(id) ON DELETE CASCADE,
+CREATE TABLE IF NOT EXISTS crewlink.crew_profiles (
+    person_id UUID PRIMARY KEY REFERENCES crewlink.people(id) ON DELETE CASCADE,
     profile_image_url TEXT,
     full_body_image_url TEXT,
     height_cm INTEGER,
@@ -18,62 +18,62 @@ CREATE TABLE IF NOT EXISTS public.crew_profiles (
 );
 
 -- Ensure additional columns exist if crew_profiles was previously created with earlier schema
-ALTER TABLE public.crew_profiles ADD COLUMN IF NOT EXISTS profile_image_url TEXT;
-ALTER TABLE public.crew_profiles ADD COLUMN IF NOT EXISTS full_body_image_url TEXT;
-ALTER TABLE public.crew_profiles ADD COLUMN IF NOT EXISTS height_cm INTEGER;
-ALTER TABLE public.crew_profiles ADD COLUMN IF NOT EXISTS top_size TEXT;
-ALTER TABLE public.crew_profiles ADD COLUMN IF NOT EXISTS bottom_size TEXT;
-ALTER TABLE public.crew_profiles ADD COLUMN IF NOT EXISTS shoe_size_mm INTEGER;
-ALTER TABLE public.crew_profiles ADD COLUMN IF NOT EXISTS languages TEXT[] DEFAULT '{}';
-ALTER TABLE public.crew_profiles ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+ALTER TABLE crewlink.crew_profiles ADD COLUMN IF NOT EXISTS profile_image_url TEXT;
+ALTER TABLE crewlink.crew_profiles ADD COLUMN IF NOT EXISTS full_body_image_url TEXT;
+ALTER TABLE crewlink.crew_profiles ADD COLUMN IF NOT EXISTS height_cm INTEGER;
+ALTER TABLE crewlink.crew_profiles ADD COLUMN IF NOT EXISTS top_size TEXT;
+ALTER TABLE crewlink.crew_profiles ADD COLUMN IF NOT EXISTS bottom_size TEXT;
+ALTER TABLE crewlink.crew_profiles ADD COLUMN IF NOT EXISTS shoe_size_mm INTEGER;
+ALTER TABLE crewlink.crew_profiles ADD COLUMN IF NOT EXISTS languages TEXT[] DEFAULT '{}';
+ALTER TABLE crewlink.crew_profiles ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
 
 -- Also ensure experience_years column supports numeric decimals
 DO $$
 BEGIN
-    ALTER TABLE public.crew_profiles ALTER COLUMN experience_years TYPE NUMERIC(3,1);
+    ALTER TABLE crewlink.crew_profiles ALTER COLUMN experience_years TYPE NUMERIC(3,1);
 EXCEPTION
     WHEN OTHERS THEN NULL;
 END $$;
 
 -- 2. Row Level Security on crew_profiles
-ALTER TABLE public.crew_profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE crewlink.crew_profiles ENABLE ROW LEVEL SECURITY;
 
 -- Drop previous overlapping policies if they exist to prevent conflicts
-DROP POLICY IF EXISTS "crew_profiles_self_all" ON public.crew_profiles;
-DROP POLICY IF EXISTS "crew_profiles_client_ops_select" ON public.crew_profiles;
-DROP POLICY IF EXISTS "Crew read own profile" ON public.crew_profiles;
-DROP POLICY IF EXISTS "Crew update own profile" ON public.crew_profiles;
+DROP POLICY IF EXISTS "crew_profiles_self_all" ON crewlink.crew_profiles;
+DROP POLICY IF EXISTS "crew_profiles_client_ops_select" ON crewlink.crew_profiles;
+DROP POLICY IF EXISTS "Crew read own profile" ON crewlink.crew_profiles;
+DROP POLICY IF EXISTS "Crew update own profile" ON crewlink.crew_profiles;
 
 -- Crew self-access: CRUD their own profile
-CREATE POLICY "crew_profiles_self_all" ON public.crew_profiles
+CREATE POLICY "crew_profiles_self_all" ON crewlink.crew_profiles
     FOR ALL
     TO authenticated
     USING (
         person_id IN (
-            SELECT id FROM public.people WHERE auth_user_id = auth.uid()
+            SELECT id FROM crewlink.people WHERE auth_user_id = auth.uid()
         )
     )
     WITH CHECK (
         person_id IN (
-            SELECT id FROM public.people WHERE auth_user_id = auth.uid()
+            SELECT id FROM crewlink.people WHERE auth_user_id = auth.uid()
         )
     );
 
 -- Organizers (client) and operations/admin (ops, admin) can SELECT crew profiles
-CREATE POLICY "crew_profiles_client_ops_select" ON public.crew_profiles
+CREATE POLICY "crew_profiles_client_ops_select" ON crewlink.crew_profiles
     FOR SELECT
     TO authenticated
     USING (
         EXISTS (
-            SELECT 1 FROM public.platform_roles pr
-            JOIN public.people p ON p.id = pr.person_id
+            SELECT 1 FROM crewlink.platform_roles pr
+            JOIN crewlink.people p ON p.id = pr.person_id
             WHERE p.auth_user_id = auth.uid()
               AND pr.role IN ('client', 'ops', 'admin')
               AND pr.is_active = true
         )
         OR
         person_id IN (
-            SELECT id FROM public.people WHERE auth_user_id = auth.uid()
+            SELECT id FROM crewlink.people WHERE auth_user_id = auth.uid()
         )
     );
 

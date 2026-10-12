@@ -3,10 +3,10 @@
 -- =====================================================================
 
 -- 1. checkin_with_qr_v2: Revoke from public/anon/authenticated & Grant to service_role only
-REVOKE ALL ON FUNCTION public.checkin_with_qr_v2(UUID, VARCHAR, NUMERIC, NUMERIC, JSONB) FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.checkin_with_qr_v2(UUID, VARCHAR, NUMERIC, NUMERIC, JSONB) TO service_role;
+REVOKE ALL ON FUNCTION crewlink.checkin_with_qr_v2(UUID, VARCHAR, NUMERIC, NUMERIC, JSONB) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION crewlink.checkin_with_qr_v2(UUID, VARCHAR, NUMERIC, NUMERIC, JSONB) TO service_role;
 
-CREATE OR REPLACE FUNCTION public.checkin_with_qr_v2(
+CREATE OR REPLACE FUNCTION crewlink.checkin_with_qr_v2(
     p_assignment_id UUID,
     p_token_hash VARCHAR(64),
     p_latitude NUMERIC DEFAULT NULL,
@@ -16,7 +16,7 @@ CREATE OR REPLACE FUNCTION public.checkin_with_qr_v2(
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = ''
+SET search_path = crewlink, public, auth
 AS $$
 DECLARE
     v_assignment RECORD;
@@ -33,7 +33,7 @@ BEGIN
     -- Concurrency Control: Row-level lock on assignments FOR UPDATE
     SELECT id, shift_id, crew_person_id, status, checked_in_at, version
     INTO v_assignment
-    FROM public.assignments
+    FROM crewlink.assignments
     WHERE id = p_assignment_id
     FOR UPDATE;
 
@@ -55,7 +55,7 @@ BEGIN
     -- Check shift details & time window
     SELECT id, checkin_opens_at, checkin_closes_at
     INTO v_shift
-    FROM public.shifts
+    FROM crewlink.shifts
     WHERE id = v_assignment.shift_id;
 
     IF NOT FOUND THEN
@@ -73,7 +73,7 @@ BEGIN
     -- Multi-Scan QR Challenge Verification
     SELECT id, shift_id, expires_at, revoked_at
     INTO v_challenge
-    FROM public.checkin_challenges
+    FROM crewlink.checkin_challenges
     WHERE token_hash = p_token_hash
       AND shift_id = v_assignment.shift_id;
 
@@ -90,14 +90,14 @@ BEGIN
     END IF;
 
     -- State transition unification
-    UPDATE public.assignments
+    UPDATE crewlink.assignments
     SET status = 'checked_in',
         checked_in_at = v_now,
         version = v_assignment.version + 1
     WHERE id = v_assignment.id;
 
     -- Log attendance with unique constraint guarantee
-    INSERT INTO public.attendance_logs (
+    INSERT INTO crewlink.attendance_logs (
         assignment_id,
         checkin_method,
         recorded_at,
@@ -114,7 +114,7 @@ BEGIN
     ) ON CONFLICT (assignment_id, checkin_method) DO NOTHING;
 
     -- Record Audit Event
-    INSERT INTO public.audit_events (
+    INSERT INTO crewlink.audit_events (
         actor_person_id,
         entity_type,
         entity_id,
@@ -143,7 +143,7 @@ END;
 $$;
 
 -- 2. get_assigned_crews: Verify organizer membership or ops/admin & exclude phone numbers
-CREATE OR REPLACE FUNCTION public.get_assigned_crews(p_project_id UUID)
+CREATE OR REPLACE FUNCTION crewlink.get_assigned_crews(p_project_id UUID)
 RETURNS TABLE (
     assignment_id UUID,
     shift_id UUID,
@@ -159,22 +159,22 @@ RETURNS TABLE (
 LANGUAGE plpgsql
 SECURITY DEFINER
 STABLE
-SET search_path = ''
+SET search_path = crewlink, public, auth
 AS $$
 DECLARE
     v_caller_person_id UUID;
     v_is_authorized BOOLEAN := FALSE;
 BEGIN
     -- Check caller role and organization membership
-    IF public.is_ops_or_admin() THEN
+    IF crewlink.is_ops_or_admin() THEN
         v_is_authorized := TRUE;
     ELSE
-        v_caller_person_id := public.current_person_id();
+        v_caller_person_id := crewlink.current_person_id();
         IF v_caller_person_id IS NOT NULL THEN
             SELECT EXISTS (
                 SELECT 1
-                FROM public.projects p
-                JOIN public.organization_members om ON om.organization_id = p.organization_id
+                FROM crewlink.projects p
+                JOIN crewlink.organization_members om ON om.organization_id = p.organization_id
                 WHERE p.id = p_project_id
                   AND om.person_id = v_caller_person_id
             ) INTO v_is_authorized;
@@ -200,37 +200,37 @@ BEGIN
         COALESCE(cp.rating_avg, 5.0) AS rating_avg,
         a.checked_in_at,
         a.departed_at
-    FROM public.assignments a
-    JOIN public.shifts s ON s.id = a.shift_id
-    JOIN public.people p ON p.id = a.crew_person_id
-    LEFT JOIN public.crew_profiles cp ON cp.person_id = p.id
-    LEFT JOIN public.shift_slots ss ON ss.id = a.shift_slot_id
+    FROM crewlink.assignments a
+    JOIN crewlink.shifts s ON s.id = a.shift_id
+    JOIN crewlink.people p ON p.id = a.crew_person_id
+    LEFT JOIN crewlink.crew_profiles cp ON cp.person_id = p.id
+    LEFT JOIN crewlink.shift_slots ss ON ss.id = a.shift_slot_id
     WHERE s.project_id = p_project_id;
 END;
 $$;
 
 -- 3. Applications table constraints & policies
-ALTER TABLE public.applications DROP CONSTRAINT IF EXISTS applications_status_check;
-ALTER TABLE public.applications ADD CONSTRAINT applications_status_check 
+ALTER TABLE crewlink.applications DROP CONSTRAINT IF EXISTS applications_status_check;
+ALTER TABLE crewlink.applications ADD CONSTRAINT applications_status_check 
     CHECK (lower(status) IN ('applied', 'approved', 'rejected', 'withdrawn'));
 
-ALTER TABLE public.applications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE crewlink.applications ENABLE ROW LEVEL SECURITY;
 
 DO $$
 BEGIN
     IF NOT EXISTS (
         SELECT 1 FROM pg_policies WHERE tablename = 'applications' AND policyname = 'Crew read own applications'
     ) THEN
-        CREATE POLICY "Crew read own applications" ON public.applications
+        CREATE POLICY "Crew read own applications" ON crewlink.applications
             FOR SELECT TO authenticated
-            USING (crew_person_id = public.current_person_id() OR public.is_ops_or_admin());
+            USING (crew_person_id = crewlink.current_person_id() OR crewlink.is_ops_or_admin());
     END IF;
 
     IF NOT EXISTS (
         SELECT 1 FROM pg_policies WHERE tablename = 'applications' AND policyname = 'Crew insert own applications'
     ) THEN
-        CREATE POLICY "Crew insert own applications" ON public.applications
+        CREATE POLICY "Crew insert own applications" ON crewlink.applications
             FOR INSERT TO authenticated
-            WITH CHECK (crew_person_id = public.current_person_id());
+            WITH CHECK (crew_person_id = crewlink.current_person_id());
     END IF;
 END $$;

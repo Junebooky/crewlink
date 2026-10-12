@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
+import type { Database } from '@/types/database.types';
 
 export async function createClient() {
   const cookieStore = await cookies();
@@ -8,7 +9,8 @@ export async function createClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://mock-project.supabase.co';
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'mock-anon-key';
 
-  return createServerClient(supabaseUrl, supabaseKey, {
+  return createServerClient<Database>(supabaseUrl, supabaseKey, {
+    db: { schema: 'crewlink' },
     cookies: {
       getAll() {
         return cookieStore.getAll();
@@ -34,7 +36,8 @@ export function createAdminClient() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
     'mock-admin-key';
 
-  return createSupabaseClient(supabaseUrl, serviceKey, {
+  return createSupabaseClient<Database>(supabaseUrl, serviceKey, {
+    db: { schema: 'crewlink' },
     auth: {
       autoRefreshToken: false,
       persistSession: false,

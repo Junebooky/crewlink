@@ -7,8 +7,20 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "btree_gist";
 
+-- Create isolated schema for CrewLink
+CREATE SCHEMA IF NOT EXISTS crewlink;
+
+GRANT USAGE ON SCHEMA crewlink TO anon, authenticated, service_role;
+GRANT ALL ON ALL TABLES IN SCHEMA crewlink TO anon, authenticated, service_role;
+GRANT ALL ON ALL ROUTINES IN SCHEMA crewlink TO anon, authenticated, service_role;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA crewlink TO anon, authenticated, service_role;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA crewlink GRANT ALL ON TABLES TO anon, authenticated, service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA crewlink GRANT ALL ON ROUTINES TO anon, authenticated, service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA crewlink GRANT ALL ON SEQUENCES TO anon, authenticated, service_role;
+
 -- 2. User & Authentication Layer
-CREATE TABLE IF NOT EXISTS public.people (
+CREATE TABLE IF NOT EXISTS crewlink.people (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     auth_user_id UUID UNIQUE,
     full_name TEXT NOT NULL,
@@ -18,18 +30,18 @@ CREATE TABLE IF NOT EXISTS public.people (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS public.account_links (
+CREATE TABLE IF NOT EXISTS crewlink.account_links (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    person_id UUID NOT NULL REFERENCES public.people(id) ON DELETE CASCADE,
+    person_id UUID NOT NULL REFERENCES crewlink.people(id) ON DELETE CASCADE,
     provider TEXT NOT NULL,
     provider_user_id TEXT NOT NULL,
     linked_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     CONSTRAINT uq_account_link UNIQUE (provider, provider_user_id)
 );
 
-CREATE TABLE IF NOT EXISTS public.private_contact_details (
+CREATE TABLE IF NOT EXISTS crewlink.private_contact_details (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    person_id UUID NOT NULL UNIQUE REFERENCES public.people(id) ON DELETE CASCADE,
+    person_id UUID NOT NULL UNIQUE REFERENCES crewlink.people(id) ON DELETE CASCADE,
     phone_number TEXT NOT NULL,
     email TEXT,
     tax_provider_user_key TEXT, -- Tax tech provider identifier (no raw SSN)
@@ -38,9 +50,9 @@ CREATE TABLE IF NOT EXISTS public.private_contact_details (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS public.platform_roles (
+CREATE TABLE IF NOT EXISTS crewlink.platform_roles (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    person_id UUID NOT NULL REFERENCES public.people(id) ON DELETE CASCADE,
+    person_id UUID NOT NULL REFERENCES crewlink.people(id) ON DELETE CASCADE,
     role TEXT NOT NULL CHECK (role IN ('crew', 'client', 'ops', 'admin')),
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     granted_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -48,7 +60,7 @@ CREATE TABLE IF NOT EXISTS public.platform_roles (
 );
 
 -- 3. Organization & Client Layer
-CREATE TABLE IF NOT EXISTS public.organizations (
+CREATE TABLE IF NOT EXISTS crewlink.organizations (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
     business_registration_number TEXT,
@@ -59,10 +71,10 @@ CREATE TABLE IF NOT EXISTS public.organizations (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS public.organization_members (
+CREATE TABLE IF NOT EXISTS crewlink.organization_members (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    organization_id UUID NOT NULL REFERENCES public.organizations(id) ON DELETE CASCADE,
-    person_id UUID NOT NULL REFERENCES public.people(id) ON DELETE CASCADE,
+    organization_id UUID NOT NULL REFERENCES crewlink.organizations(id) ON DELETE CASCADE,
+    person_id UUID NOT NULL REFERENCES crewlink.people(id) ON DELETE CASCADE,
     role TEXT NOT NULL CHECK (role IN ('owner', 'manager', 'viewer')),
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -70,9 +82,9 @@ CREATE TABLE IF NOT EXISTS public.organization_members (
 );
 
 -- 4. Crew Profile & Availability
-CREATE TABLE IF NOT EXISTS public.crew_profiles (
+CREATE TABLE IF NOT EXISTS crewlink.crew_profiles (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    person_id UUID NOT NULL UNIQUE REFERENCES public.people(id) ON DELETE CASCADE,
+    person_id UUID NOT NULL UNIQUE REFERENCES crewlink.people(id) ON DELETE CASCADE,
     bio TEXT,
     experience_years INT NOT NULL DEFAULT 0,
     uniform_size TEXT CHECK (uniform_size IN ('S', 'M', 'L', 'XL', '2XL', 'FREE')),
@@ -83,18 +95,18 @@ CREATE TABLE IF NOT EXISTS public.crew_profiles (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS public.crew_availability (
+CREATE TABLE IF NOT EXISTS crewlink.crew_availability (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    crew_person_id UUID NOT NULL REFERENCES public.people(id) ON DELETE CASCADE,
+    crew_person_id UUID NOT NULL REFERENCES crewlink.people(id) ON DELETE CASCADE,
     available_range TSRANGE NOT NULL,
     is_recurring BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 -- 5. Project & SOW Layer
-CREATE TABLE IF NOT EXISTS public.projects (
+CREATE TABLE IF NOT EXISTS crewlink.projects (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    organization_id UUID NOT NULL REFERENCES public.organizations(id) ON DELETE RESTRICT,
+    organization_id UUID NOT NULL REFERENCES crewlink.organizations(id) ON DELETE RESTRICT,
     title TEXT NOT NULL,
     description TEXT,
     venue_name TEXT NOT NULL,
@@ -106,9 +118,9 @@ CREATE TABLE IF NOT EXISTS public.projects (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS public.shifts (
+CREATE TABLE IF NOT EXISTS crewlink.shifts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    project_id UUID NOT NULL REFERENCES public.projects(id) ON DELETE CASCADE,
+    project_id UUID NOT NULL REFERENCES crewlink.projects(id) ON DELETE CASCADE,
     shift_name TEXT NOT NULL,
     required_headcount INT NOT NULL CHECK (required_headcount > 0),
     start_time TIMESTAMPTZ NOT NULL,
@@ -122,9 +134,9 @@ CREATE TABLE IF NOT EXISTS public.shifts (
     CONSTRAINT chk_checkin_window CHECK (checkin_closes_at >= checkin_opens_at)
 );
 
-CREATE TABLE IF NOT EXISTS public.shift_slots (
+CREATE TABLE IF NOT EXISTS crewlink.shift_slots (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    shift_id UUID NOT NULL REFERENCES public.shifts(id) ON DELETE CASCADE,
+    shift_id UUID NOT NULL REFERENCES crewlink.shifts(id) ON DELETE CASCADE,
     slot_number INT NOT NULL,
     position_code TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'filled', 'cancelled')),
@@ -132,9 +144,9 @@ CREATE TABLE IF NOT EXISTS public.shift_slots (
     CONSTRAINT uq_shift_slot UNIQUE (shift_id, slot_number)
 );
 
-CREATE TABLE IF NOT EXISTS public.quotes (
+CREATE TABLE IF NOT EXISTS crewlink.quotes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    project_id UUID NOT NULL REFERENCES public.projects(id) ON DELETE CASCADE,
+    project_id UUID NOT NULL REFERENCES crewlink.projects(id) ON DELETE CASCADE,
     quote_number TEXT NOT NULL UNIQUE,
     subtotal_won BIGINT NOT NULL DEFAULT 0,
     platform_fee_won BIGINT NOT NULL DEFAULT 0,
@@ -145,9 +157,9 @@ CREATE TABLE IF NOT EXISTS public.quotes (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS public.quote_items (
+CREATE TABLE IF NOT EXISTS crewlink.quote_items (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    quote_id UUID NOT NULL REFERENCES public.quotes(id) ON DELETE CASCADE,
+    quote_id UUID NOT NULL REFERENCES crewlink.quotes(id) ON DELETE CASCADE,
     item_name TEXT NOT NULL,
     quantity INT NOT NULL CHECK (quantity > 0),
     unit_price_won BIGINT NOT NULL CHECK (unit_price_won >= 0),
@@ -155,21 +167,21 @@ CREATE TABLE IF NOT EXISTS public.quote_items (
 );
 
 -- 6. Application, Assignment & Concurrency-Safe Reservations
-CREATE TABLE IF NOT EXISTS public.applications (
+CREATE TABLE IF NOT EXISTS crewlink.applications (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    project_id UUID NOT NULL REFERENCES public.projects(id) ON DELETE CASCADE,
-    shift_id UUID NOT NULL REFERENCES public.shifts(id) ON DELETE CASCADE,
-    crew_person_id UUID NOT NULL REFERENCES public.people(id) ON DELETE CASCADE,
+    project_id UUID NOT NULL REFERENCES crewlink.projects(id) ON DELETE CASCADE,
+    shift_id UUID NOT NULL REFERENCES crewlink.shifts(id) ON DELETE CASCADE,
+    crew_person_id UUID NOT NULL REFERENCES crewlink.people(id) ON DELETE CASCADE,
     status TEXT NOT NULL DEFAULT 'applied' CHECK (status IN ('applied', 'approved', 'rejected', 'withdrawn')),
     applied_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     CONSTRAINT uq_application UNIQUE (shift_id, crew_person_id)
 );
 
-CREATE TABLE IF NOT EXISTS public.assignments (
+CREATE TABLE IF NOT EXISTS crewlink.assignments (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    shift_id UUID NOT NULL REFERENCES public.shifts(id) ON DELETE CASCADE,
-    shift_slot_id UUID REFERENCES public.shift_slots(id) ON DELETE SET NULL,
-    crew_person_id UUID NOT NULL REFERENCES public.people(id) ON DELETE RESTRICT,
+    shift_id UUID NOT NULL REFERENCES crewlink.shifts(id) ON DELETE CASCADE,
+    shift_slot_id UUID REFERENCES crewlink.shift_slots(id) ON DELETE SET NULL,
+    crew_person_id UUID NOT NULL REFERENCES crewlink.people(id) ON DELETE RESTRICT,
     status TEXT NOT NULL DEFAULT 'assigned' CHECK (status IN ('assigned', 'departed', 'waiting_ops', 'checked_in', 'completed', 'no_show', 'cancelled', 'released')),
     assigned_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     departed_at TIMESTAMPTZ,
@@ -179,20 +191,20 @@ CREATE TABLE IF NOT EXISTS public.assignments (
 
 -- Partial Unique Index (Excludes cancelled/released assignments)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_active_slot_assignment 
-ON public.assignments (shift_slot_id) 
+ON crewlink.assignments (shift_slot_id) 
 WHERE status NOT IN ('cancelled', 'released');
 
-CREATE TABLE IF NOT EXISTS public.work_reservations (
+CREATE TABLE IF NOT EXISTS crewlink.work_reservations (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    assignment_id UUID REFERENCES public.assignments(id) ON DELETE CASCADE,
-    crew_person_id UUID NOT NULL REFERENCES public.people(id) ON DELETE CASCADE,
+    assignment_id UUID REFERENCES crewlink.assignments(id) ON DELETE CASCADE,
+    crew_person_id UUID NOT NULL REFERENCES crewlink.people(id) ON DELETE CASCADE,
     reserved_range TSRANGE NOT NULL,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 -- PostgreSQL Exclusion Constraint: Prevent overlapping active work reservations per crew member
-ALTER TABLE public.work_reservations
+ALTER TABLE crewlink.work_reservations
 ADD CONSTRAINT no_overlapping_reservations 
 EXCLUDE USING gist (
     crew_person_id WITH =,
@@ -200,9 +212,9 @@ EXCLUDE USING gist (
 ) WHERE (is_active = TRUE);
 
 -- 7. Contracts & Electronic Signature
-CREATE TABLE IF NOT EXISTS public.contracts (
+CREATE TABLE IF NOT EXISTS crewlink.contracts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    project_id UUID NOT NULL REFERENCES public.projects(id) ON DELETE CASCADE,
+    project_id UUID NOT NULL REFERENCES crewlink.projects(id) ON DELETE CASCADE,
     sow_title TEXT NOT NULL,
     terms_content TEXT NOT NULL,
     pdf_hash TEXT,
@@ -210,10 +222,10 @@ CREATE TABLE IF NOT EXISTS public.contracts (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS public.contract_signatures (
+CREATE TABLE IF NOT EXISTS crewlink.contract_signatures (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    contract_id UUID NOT NULL REFERENCES public.contracts(id) ON DELETE CASCADE,
-    signer_person_id UUID NOT NULL REFERENCES public.people(id) ON DELETE RESTRICT,
+    contract_id UUID NOT NULL REFERENCES crewlink.contracts(id) ON DELETE CASCADE,
+    signer_person_id UUID NOT NULL REFERENCES crewlink.people(id) ON DELETE RESTRICT,
     signature_vector_json JSONB NOT NULL,
     terms_sha256 TEXT,
     contract_version TEXT DEFAULT 'v1.0',
@@ -223,20 +235,20 @@ CREATE TABLE IF NOT EXISTS public.contract_signatures (
 );
 
 -- 8. Attendance & QR Challenges (Multi-scan capable with revoked_at)
-CREATE TABLE IF NOT EXISTS public.checkin_challenges (
+CREATE TABLE IF NOT EXISTS crewlink.checkin_challenges (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    shift_id UUID NOT NULL REFERENCES public.shifts(id) ON DELETE CASCADE,
+    shift_id UUID NOT NULL REFERENCES crewlink.shifts(id) ON DELETE CASCADE,
     token_hash VARCHAR(64) NOT NULL,
     expires_at TIMESTAMPTZ NOT NULL,
     revoked_at TIMESTAMPTZ DEFAULT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX IF NOT EXISTS idx_checkin_token_hash ON public.checkin_challenges(token_hash);
+CREATE INDEX IF NOT EXISTS idx_checkin_token_hash ON crewlink.checkin_challenges(token_hash);
 
-CREATE TABLE IF NOT EXISTS public.attendance_logs (
+CREATE TABLE IF NOT EXISTS crewlink.attendance_logs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    assignment_id UUID NOT NULL REFERENCES public.assignments(id) ON DELETE CASCADE,
+    assignment_id UUID NOT NULL REFERENCES crewlink.assignments(id) ON DELETE CASCADE,
     checkin_method TEXT NOT NULL CHECK (checkin_method IN ('qr_v2', 'manual_ops', 'geofence')),
     recorded_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     latitude NUMERIC(10, 7),
@@ -245,34 +257,34 @@ CREATE TABLE IF NOT EXISTS public.attendance_logs (
     CONSTRAINT uq_attendance_assignment_method UNIQUE (assignment_id, checkin_method)
 );
 
-CREATE TABLE IF NOT EXISTS public.work_sessions (
+CREATE TABLE IF NOT EXISTS crewlink.work_sessions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    assignment_id UUID NOT NULL REFERENCES public.assignments(id) ON DELETE CASCADE,
+    assignment_id UUID NOT NULL REFERENCES crewlink.assignments(id) ON DELETE CASCADE,
     actual_start_at TIMESTAMPTZ,
     actual_end_at TIMESTAMPTZ,
     break_minutes INT NOT NULL DEFAULT 0,
     is_overtime BOOLEAN NOT NULL DEFAULT FALSE,
-    approved_by_person_id UUID REFERENCES public.people(id) ON DELETE SET NULL,
+    approved_by_person_id UUID REFERENCES crewlink.people(id) ON DELETE SET NULL,
     approved_at TIMESTAMPTZ
 );
 
 -- 9. Urgent Replacements
-CREATE TABLE IF NOT EXISTS public.replacement_requests (
+CREATE TABLE IF NOT EXISTS crewlink.replacement_requests (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    assignment_id UUID NOT NULL REFERENCES public.assignments(id) ON DELETE CASCADE,
-    shift_id UUID NOT NULL REFERENCES public.shifts(id) ON DELETE CASCADE,
+    assignment_id UUID NOT NULL REFERENCES crewlink.assignments(id) ON DELETE CASCADE,
+    shift_id UUID NOT NULL REFERENCES crewlink.shifts(id) ON DELETE CASCADE,
     reason TEXT NOT NULL,
     urgency_level TEXT NOT NULL DEFAULT 'standard' CHECK (urgency_level IN ('standard', 'urgent_t30')),
     status TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'matched', 'closed')),
-    matched_crew_person_id UUID REFERENCES public.people(id) ON DELETE SET NULL,
+    matched_crew_person_id UUID REFERENCES crewlink.people(id) ON DELETE SET NULL,
     version INT NOT NULL DEFAULT 1,
     requested_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS public.replacement_offers (
+CREATE TABLE IF NOT EXISTS crewlink.replacement_offers (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    request_id UUID NOT NULL REFERENCES public.replacement_requests(id) ON DELETE CASCADE,
-    candidate_person_id UUID NOT NULL REFERENCES public.people(id) ON DELETE CASCADE,
+    request_id UUID NOT NULL REFERENCES crewlink.replacement_requests(id) ON DELETE CASCADE,
+    candidate_person_id UUID NOT NULL REFERENCES crewlink.people(id) ON DELETE CASCADE,
     offered_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     expires_at TIMESTAMPTZ NOT NULL,
     status TEXT NOT NULL DEFAULT 'offered' CHECK (status IN ('offered', 'accepted', 'declined', 'expired')),
@@ -280,20 +292,20 @@ CREATE TABLE IF NOT EXISTS public.replacement_offers (
 );
 
 -- 10. Orders & Toss Payments
-CREATE TABLE IF NOT EXISTS public.orders (
+CREATE TABLE IF NOT EXISTS crewlink.orders (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    organization_id UUID NOT NULL REFERENCES public.organizations(id) ON DELETE RESTRICT,
-    project_id UUID NOT NULL REFERENCES public.projects(id) ON DELETE RESTRICT,
-    quote_id UUID REFERENCES public.quotes(id) ON DELETE SET NULL,
+    organization_id UUID NOT NULL REFERENCES crewlink.organizations(id) ON DELETE RESTRICT,
+    project_id UUID NOT NULL REFERENCES crewlink.projects(id) ON DELETE RESTRICT,
+    quote_id UUID REFERENCES crewlink.quotes(id) ON DELETE SET NULL,
     order_number TEXT NOT NULL UNIQUE,
     total_amount_won BIGINT NOT NULL CHECK (total_amount_won >= 0),
     status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'paid', 'cancelled', 'refunded')),
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS public.payments (
+CREATE TABLE IF NOT EXISTS crewlink.payments (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    order_id UUID NOT NULL REFERENCES public.orders(id) ON DELETE CASCADE,
+    order_id UUID NOT NULL REFERENCES crewlink.orders(id) ON DELETE CASCADE,
     payment_provider TEXT NOT NULL DEFAULT 'toss_payments',
     payment_key TEXT,
     amount_won BIGINT NOT NULL CHECK (amount_won >= 0),
@@ -302,10 +314,10 @@ CREATE TABLE IF NOT EXISTS public.payments (
 );
 
 -- 11. Settlements & Withholding Tax
-CREATE TABLE IF NOT EXISTS public.settlements (
+CREATE TABLE IF NOT EXISTS crewlink.settlements (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    project_id UUID NOT NULL REFERENCES public.projects(id) ON DELETE RESTRICT,
-    crew_person_id UUID NOT NULL REFERENCES public.people(id) ON DELETE RESTRICT,
+    project_id UUID NOT NULL REFERENCES crewlink.projects(id) ON DELETE RESTRICT,
+    crew_person_id UUID NOT NULL REFERENCES crewlink.people(id) ON DELETE RESTRICT,
     gross_won BIGINT NOT NULL CHECK (gross_won >= 0),
     income_tax_won BIGINT NOT NULL CHECK (income_tax_won >= 0),
     local_income_tax_won BIGINT NOT NULL CHECK (local_income_tax_won >= 0),
@@ -317,17 +329,17 @@ CREATE TABLE IF NOT EXISTS public.settlements (
     confirmed_at TIMESTAMPTZ
 );
 
-CREATE TABLE IF NOT EXISTS public.settlement_items (
+CREATE TABLE IF NOT EXISTS crewlink.settlement_items (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    settlement_id UUID NOT NULL REFERENCES public.settlements(id) ON DELETE CASCADE,
+    settlement_id UUID NOT NULL REFERENCES crewlink.settlements(id) ON DELETE CASCADE,
     item_type TEXT NOT NULL CHECK (item_type IN ('wage', 'transport', 'meal', 'bonus')),
     amount_won BIGINT NOT NULL CHECK (amount_won >= 0),
     description TEXT
 );
 
-CREATE TABLE IF NOT EXISTS public.payout_accounts (
+CREATE TABLE IF NOT EXISTS crewlink.payout_accounts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    person_id UUID NOT NULL UNIQUE REFERENCES public.people(id) ON DELETE CASCADE,
+    person_id UUID NOT NULL UNIQUE REFERENCES crewlink.people(id) ON DELETE CASCADE,
     bank_code TEXT NOT NULL,
     account_number_token TEXT NOT NULL,
     account_holder_name TEXT NOT NULL,
@@ -335,10 +347,10 @@ CREATE TABLE IF NOT EXISTS public.payout_accounts (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS public.payout_attempts (
+CREATE TABLE IF NOT EXISTS crewlink.payout_attempts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    settlement_id UUID NOT NULL REFERENCES public.settlements(id) ON DELETE CASCADE,
-    payout_account_id UUID NOT NULL REFERENCES public.payout_accounts(id) ON DELETE RESTRICT,
+    settlement_id UUID NOT NULL REFERENCES crewlink.settlements(id) ON DELETE CASCADE,
+    payout_account_id UUID NOT NULL REFERENCES crewlink.payout_accounts(id) ON DELETE RESTRICT,
     amount_won BIGINT NOT NULL CHECK (amount_won >= 0),
     status TEXT NOT NULL DEFAULT 'initiated' CHECK (status IN ('initiated', 'success', 'failed')),
     failure_reason TEXT,
@@ -346,9 +358,9 @@ CREATE TABLE IF NOT EXISTS public.payout_attempts (
 );
 
 -- 12. Audit & Outbox Events
-CREATE TABLE IF NOT EXISTS public.audit_events (
+CREATE TABLE IF NOT EXISTS crewlink.audit_events (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    actor_person_id UUID REFERENCES public.people(id) ON DELETE SET NULL,
+    actor_person_id UUID REFERENCES crewlink.people(id) ON DELETE SET NULL,
     entity_type TEXT NOT NULL,
     entity_id UUID NOT NULL,
     action TEXT NOT NULL,
@@ -357,7 +369,7 @@ CREATE TABLE IF NOT EXISTS public.audit_events (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS public.outbox_events (
+CREATE TABLE IF NOT EXISTS crewlink.outbox_events (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     event_type TEXT NOT NULL,
     payload JSONB NOT NULL,
@@ -366,3 +378,8 @@ CREATE TABLE IF NOT EXISTS public.outbox_events (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     processed_at TIMESTAMPTZ
 );
+
+
+-- Updatable view for persons alias
+CREATE OR REPLACE VIEW crewlink.persons AS
+SELECT * FROM crewlink.people;

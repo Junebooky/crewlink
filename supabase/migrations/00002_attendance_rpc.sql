@@ -3,28 +3,28 @@
 -- =====================================================================
 
 -- 1. Helper to find person_id from auth.uid()
-CREATE OR REPLACE FUNCTION public.current_person_id()
+CREATE OR REPLACE FUNCTION crewlink.current_person_id()
 RETURNS UUID
 LANGUAGE sql
 STABLE
 SECURITY DEFINER
-SET search_path = ''
+SET search_path = crewlink, public, auth
 AS $$
-    SELECT id FROM public.people WHERE auth_user_id = auth.uid() LIMIT 1;
+    SELECT id FROM crewlink.people WHERE auth_user_id = auth.uid() LIMIT 1;
 $$;
 
 -- 2. Helper to check if caller has ops or admin platform role
-CREATE OR REPLACE FUNCTION public.is_ops_or_admin()
+CREATE OR REPLACE FUNCTION crewlink.is_ops_or_admin()
 RETURNS BOOLEAN
 LANGUAGE sql
 STABLE
 SECURITY DEFINER
-SET search_path = ''
+SET search_path = crewlink, public, auth
 AS $$
     SELECT EXISTS (
         SELECT 1
-        FROM public.platform_roles pr
-        JOIN public.people p ON p.id = pr.person_id
+        FROM crewlink.platform_roles pr
+        JOIN crewlink.people p ON p.id = pr.person_id
         WHERE p.auth_user_id = auth.uid()
           AND pr.is_active = TRUE
           AND pr.role IN ('ops', 'admin')
@@ -32,7 +32,7 @@ AS $$
 $$;
 
 -- 3. Check-in RPC v2 (Supports Multi-scan dynamic QR and 1-person idempotent recording)
-CREATE OR REPLACE FUNCTION public.checkin_with_qr_v2(
+CREATE OR REPLACE FUNCTION crewlink.checkin_with_qr_v2(
     p_assignment_id UUID,
     p_token_hash VARCHAR(64),
     p_latitude NUMERIC DEFAULT NULL,
@@ -42,7 +42,7 @@ CREATE OR REPLACE FUNCTION public.checkin_with_qr_v2(
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = ''
+SET search_path = crewlink, public, auth
 AS $$
 DECLARE
     v_assignment RECORD;
@@ -53,7 +53,7 @@ BEGIN
     -- Concurrency Control: Row-level lock on assignments
     SELECT id, shift_id, crew_person_id, status, checked_in_at, version
     INTO v_assignment
-    FROM public.assignments
+    FROM crewlink.assignments
     WHERE id = p_assignment_id
     FOR UPDATE;
 
@@ -75,7 +75,7 @@ BEGIN
     -- Check shift details & time window
     SELECT id, checkin_opens_at, checkin_closes_at
     INTO v_shift
-    FROM public.shifts
+    FROM crewlink.shifts
     WHERE id = v_assignment.shift_id;
 
     IF NOT FOUND THEN
@@ -94,7 +94,7 @@ BEGIN
     -- Valid as long as expires_at > clock_timestamp() and not revoked
     SELECT id, shift_id, expires_at, revoked_at
     INTO v_challenge
-    FROM public.checkin_challenges
+    FROM crewlink.checkin_challenges
     WHERE token_hash = p_token_hash
       AND shift_id = v_assignment.shift_id;
 
@@ -111,14 +111,14 @@ BEGIN
     END IF;
 
     -- Update assignment status
-    UPDATE public.assignments
+    UPDATE crewlink.assignments
     SET status = 'checked_in',
         checked_in_at = v_now,
         version = v_assignment.version + 1
     WHERE id = v_assignment.id;
 
     -- Log attendance with unique constraint guarantee (1 log per assignment)
-    INSERT INTO public.attendance_logs (
+    INSERT INTO crewlink.attendance_logs (
         assignment_id,
         checkin_method,
         recorded_at,
@@ -135,7 +135,7 @@ BEGIN
     ) ON CONFLICT (assignment_id, checkin_method) DO NOTHING;
 
     -- Record Audit Event
-    INSERT INTO public.audit_events (
+    INSERT INTO crewlink.audit_events (
         actor_person_id,
         entity_type,
         entity_id,
@@ -164,7 +164,7 @@ END;
 $$;
 
 -- 4. Privacy-Preserving Function to query assigned crew for a project (For client live board)
-CREATE OR REPLACE FUNCTION public.get_assigned_crews(p_project_id UUID)
+CREATE OR REPLACE FUNCTION crewlink.get_assigned_crews(p_project_id UUID)
 RETURNS TABLE (
     assignment_id UUID,
     shift_id UUID,
@@ -180,7 +180,7 @@ RETURNS TABLE (
 LANGUAGE sql
 SECURITY DEFINER
 STABLE
-SET search_path = ''
+SET search_path = crewlink, public, auth
 AS $$
     SELECT 
         a.id AS assignment_id,
@@ -196,10 +196,10 @@ AS $$
         COALESCE(cp.rating_avg, 5.0) AS rating_avg,
         a.checked_in_at,
         a.departed_at
-    FROM public.assignments a
-    JOIN public.shifts s ON s.id = a.shift_id
-    JOIN public.people p ON p.id = a.crew_person_id
-    LEFT JOIN public.crew_profiles cp ON cp.person_id = p.id
-    LEFT JOIN public.shift_slots ss ON ss.id = a.shift_slot_id
+    FROM crewlink.assignments a
+    JOIN crewlink.shifts s ON s.id = a.shift_id
+    JOIN crewlink.people p ON p.id = a.crew_person_id
+    LEFT JOIN crewlink.crew_profiles cp ON cp.person_id = p.id
+    LEFT JOIN crewlink.shift_slots ss ON ss.id = a.shift_slot_id
     WHERE s.project_id = p_project_id;
 $$;
