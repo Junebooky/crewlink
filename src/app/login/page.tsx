@@ -44,7 +44,6 @@ export default function LoginPage() {
       }
 
       router.push('/crew');
-      router.refresh();
     } catch (err: unknown) {
       setErrorMessage((err as Error).message || '로그인 중 오류가 발생했습니다.');
     } finally {
@@ -73,7 +72,6 @@ export default function LoginPage() {
       });
 
       router.push('/crew');
-      router.refresh();
     } catch (err: unknown) {
       setErrorMessage((err as Error).message || '데모 로그인 중 오류가 발생했습니다.');
     } finally {

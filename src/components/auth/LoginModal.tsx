@@ -61,8 +61,11 @@ export function LoginModal({
       if (onSuccess) {
         onSuccess();
       }
-      router.push(redirectTo);
-      router.refresh();
+      if (typeof window !== 'undefined' && window.location.pathname === redirectTo) {
+        router.refresh();
+      } else {
+        router.push(redirectTo);
+      }
     } catch (err: unknown) {
       setErrorMessage((err as Error).message || '로그인 중 오류가 발생했습니다.');
     } finally {
@@ -98,8 +101,11 @@ export function LoginModal({
       if (onSuccess) {
         onSuccess();
       }
-      router.push(redirectTo);
-      router.refresh();
+      if (typeof window !== 'undefined' && window.location.pathname === redirectTo) {
+        router.refresh();
+      } else {
+        router.push(redirectTo);
+      }
     } catch (err: unknown) {
       setErrorMessage((err as Error).message || '데모 로그인 중 오류가 발생했습니다.');
     } finally {

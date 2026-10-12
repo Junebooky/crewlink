@@ -53,7 +53,7 @@ export function PublicHeader({ className }: PublicHeaderProps) {
     // Initial check
     syncAuth();
 
-    // Listen reactively to auth state changes (login, logout, token refresh)
+    // Listen reactively to auth state changes (explicit sign in, sign out)
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
@@ -61,7 +61,7 @@ export function PublicHeader({ className }: PublicHeaderProps) {
       if (event === 'SIGNED_OUT' || !session) {
         setSessionUser(null);
         setIsLoadingSession(false);
-      } else {
+      } else if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
         syncAuth();
       }
     });
