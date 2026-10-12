@@ -331,7 +331,7 @@ export function AppShell({ children, initialRole }: AppShellProps) {
       <main
         className={cn(
           'flex-1 flex flex-col min-w-0 max-w-full overflow-x-hidden',
-          !isKeyboardOpen ? 'pb-[76px] md:pb-6' : 'pb-6'
+          !isKeyboardOpen ? 'pb-[calc(76px+env(safe-area-inset-bottom,0px))] md:pb-6' : 'pb-6'
         )}
       >
         {children}
@@ -340,29 +340,31 @@ export function AppShell({ children, initialRole }: AppShellProps) {
       {/* Mobile: 4-Tab Bottom Fixed Navigation */}
       {!isKeyboardOpen && (
         <nav
-          className="md:hidden fixed bottom-0 left-0 right-0 h-[68px] bg-surface border-t border-border z-40 flex items-center justify-around px-2 pb-[env(safe-area-inset-bottom)] shadow-lg"
+          className="md:hidden fixed bottom-0 left-0 right-0 h-[calc(60px+env(safe-area-inset-bottom,0px))] bg-surface border-t border-border z-40 pb-[env(safe-area-inset-bottom,0px)] shadow-lg select-none"
           role="navigation"
           aria-label="주요 메뉴"
         >
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = pathname === item.href || (item.href !== `/${role}` && pathname.startsWith(item.href));
+          <div className="w-full h-full flex items-center justify-around px-1">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = pathname === item.href || (item.href !== `/${role}` && pathname.startsWith(item.href));
 
-            return (
-              <Link
-                key={item.id}
-                href={item.href}
-                className={cn(
-                  'flex flex-col items-center justify-center flex-1 h-full py-1 text-xs transition-colors',
-                  isActive ? 'text-brand font-semibold' : 'text-muted hover:text-ink'
-                )}
-                aria-current={isActive ? 'page' : undefined}
-              >
-                <Icon className={cn('w-5 h-5 mb-1', isActive ? 'text-brand' : 'text-muted')} />
-                <span>{item.label}</span>
-              </Link>
-            );
-          })}
+              return (
+                <Link
+                  key={item.id}
+                  href={item.href}
+                  className={cn(
+                    'flex flex-col items-center justify-center flex-1 h-full py-1 text-[11px] font-semibold transition-colors cursor-pointer',
+                    isActive ? 'text-brand font-bold' : 'text-muted hover:text-ink'
+                  )}
+                  aria-current={isActive ? 'page' : undefined}
+                >
+                  <Icon className={cn('w-5 h-5 mb-1 shrink-0', isActive ? 'text-brand' : 'text-muted')} />
+                  <span className="leading-none">{item.label}</span>
+                </Link>
+              );
+            })}
+          </div>
         </nav>
       )}
     </div>

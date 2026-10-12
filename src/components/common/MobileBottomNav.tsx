@@ -76,36 +76,38 @@ export function MobileBottomNav({ className }: MobileBottomNavProps) {
   return (
     <nav
       className={cn(
-        'md:hidden fixed bottom-0 left-0 right-0 h-[64px] bg-surface/98 backdrop-blur-md border-t border-border z-40 flex items-center justify-around px-2 pb-[env(safe-area-inset-bottom)] shadow-lg shadow-black/5',
+        'md:hidden fixed bottom-0 left-0 right-0 h-[calc(60px+env(safe-area-inset-bottom,0px))] bg-surface/98 backdrop-blur-md border-t border-border z-40 pb-[env(safe-area-inset-bottom,0px)] shadow-lg shadow-black/5 select-none',
         className
       )}
       role="navigation"
       aria-label="하단 탐색 메뉴"
     >
-      {tabs.map((tab) => {
-        const Icon = tab.icon;
-        return (
-          <Link
-            key={tab.id}
-            href={tab.href}
-            aria-current={tab.isActive ? 'page' : undefined}
-            className={cn(
-              'flex flex-col items-center justify-center flex-1 h-full py-1 min-h-[48px] text-[11px] font-semibold transition-colors',
-              tab.isActive
-                ? 'text-brand font-bold'
-                : 'text-muted hover:text-ink'
-            )}
-          >
-            <Icon
+      <div className="w-full h-full flex items-center justify-around px-1">
+        {tabs.map((tab) => {
+          const Icon = tab.icon;
+          return (
+            <Link
+              key={tab.id}
+              href={tab.href}
+              aria-current={tab.isActive ? 'page' : undefined}
               className={cn(
-                'w-5 h-5 mb-1 transition-transform',
-                tab.isActive ? 'text-brand scale-110' : 'text-muted'
+                'flex flex-col items-center justify-center flex-1 h-full py-1 text-[11px] font-semibold transition-colors cursor-pointer',
+                tab.isActive
+                  ? 'text-brand font-bold'
+                  : 'text-muted hover:text-ink'
               )}
-            />
-            <span>{tab.label}</span>
-          </Link>
-        );
-      })}
+            >
+              <Icon
+                className={cn(
+                  'w-5 h-5 mb-1 transition-transform shrink-0',
+                  tab.isActive ? 'text-brand scale-105' : 'text-muted'
+                )}
+              />
+              <span className="leading-none">{tab.label}</span>
+            </Link>
+          );
+        })}
+      </div>
     </nav>
   );
 }

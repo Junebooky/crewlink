@@ -8,7 +8,7 @@ import { MobileBottomNav } from '@/components/common/MobileBottomNav';
 
 export default function SavedEventsPage() {
   return (
-    <div className="min-h-screen bg-canvas text-ink flex flex-col pb-20 md:pb-12">
+    <div className="min-h-screen bg-canvas text-ink flex flex-col pb-[calc(76px+env(safe-area-inset-bottom,0px))] md:pb-12">
       <PublicHeader />
 
       <main className="max-w-3xl mx-auto px-4 sm:px-6 pt-10 flex-1 w-full text-center space-y-6">

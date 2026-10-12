@@ -130,7 +130,7 @@ export default function GuidePage() {
   const activeFaqs = activeTab === 'crew' ? crewFaqs : clientFaqs;
 
   return (
-    <div className="min-h-screen bg-canvas text-ink flex flex-col pb-20 md:pb-12">
+    <div className="min-h-screen bg-canvas text-ink flex flex-col pb-[calc(76px+env(safe-area-inset-bottom,0px))] md:pb-12">
       {/* 1. Header */}
       <PublicHeader />
 
