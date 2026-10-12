@@ -688,9 +688,9 @@ export default function CrewProfilePage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5 text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
                   <div>
-                    <label htmlFor="crew-fullname" className="block text-xs sm:text-sm font-bold text-ink mb-2 text-left">
+                    <label htmlFor="crew-fullname" className="block text-sm font-bold text-ink mb-2 text-left">
                       이름 <span className="text-brand">*</span>
                     </label>
                     <input
@@ -705,7 +705,7 @@ export default function CrewProfilePage() {
                   </div>
 
                   <div>
-                    <label htmlFor="crew-phone" className="block text-xs sm:text-sm font-bold text-ink mb-2 text-left">
+                    <label htmlFor="crew-phone" className="block text-sm font-bold text-ink mb-2 text-left">
                       연락처 <span className="text-brand">*</span>
                     </label>
                     <input
@@ -750,7 +750,7 @@ export default function CrewProfilePage() {
                 <div className="grid grid-cols-2 gap-4 sm:gap-5">
                   {/* 키 (cm) */}
                   <div>
-                    <label htmlFor="crew-height" className="block text-xs sm:text-sm font-bold text-ink mb-2 text-left">
+                    <label htmlFor="crew-height" className="block text-sm font-bold text-ink mb-2 text-left">
                       키 (cm)
                     </label>
                     <div className="relative">
@@ -772,7 +772,7 @@ export default function CrewProfilePage() {
 
                   {/* 상의 유니폼 사이즈 (Top Size 칩) */}
                   <div>
-                    <label className="block text-xs sm:text-sm font-bold text-ink mb-2 text-left">
+                    <label className="block text-sm font-bold text-ink mb-2 text-left">
                       상의 유니폼 사이즈
                     </label>
                     <div className="grid grid-cols-5 gap-1 sm:gap-1.5 h-12">
@@ -799,7 +799,7 @@ export default function CrewProfilePage() {
 
                   {/* 하의 사이즈 (CustomSelect 적용) */}
                   <div>
-                    <label htmlFor="crew-bottom" className="block text-xs sm:text-sm font-bold text-ink mb-2 text-left">
+                    <label htmlFor="crew-bottom" className="block text-sm font-bold text-ink mb-2 text-left">
                       하의 사이즈
                     </label>
                     <CustomSelect
@@ -812,7 +812,7 @@ export default function CrewProfilePage() {
 
                   {/* 신발 사이즈 (CustomSelect 적용) */}
                   <div>
-                    <label htmlFor="crew-shoes" className="block text-xs sm:text-sm font-bold text-ink mb-2 text-left">
+                    <label htmlFor="crew-shoes" className="block text-sm font-bold text-ink mb-2 text-left">
                       신발 사이즈 (mm)
                     </label>
                     <CustomSelect
@@ -846,7 +846,7 @@ export default function CrewProfilePage() {
                 <div className="space-y-4 sm:space-y-5">
                   {/* 행사 스태프 경력 (CustomSelect 적용) */}
                   <div>
-                    <label htmlFor="crew-exp" className="block text-xs sm:text-sm font-bold text-ink mb-2 text-left">
+                    <label htmlFor="crew-exp" className="block text-sm font-bold text-ink mb-2 text-left">
                       행사 스태프 경력
                     </label>
                     <CustomSelect
@@ -859,7 +859,7 @@ export default function CrewProfilePage() {
 
                   {/* 한 줄 소개 및 각오 (Bio) */}
                   <div>
-                    <label htmlFor="crew-bio" className="block text-xs sm:text-sm font-bold text-ink mb-2 text-left">
+                    <label htmlFor="crew-bio" className="block text-sm font-bold text-ink mb-2 text-left">
                       한 줄 소개 및 각오
                     </label>
                     <textarea
@@ -867,8 +867,8 @@ export default function CrewProfilePage() {
                       rows={3}
                       value={bio}
                       onChange={(e) => setBio(e.target.value)}
-                      placeholder="예: 밝은 미소와 신속한 응대로 행사의 품격을 높이는 크루입니다."
-                      className="w-full p-4 rounded-xl border border-border/80 bg-white text-ink text-sm leading-relaxed focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-colors resize-none"
+                      placeholder="예: 약속은 철저하게 지키며 불평 불만 없이 주도적인 마인드로 업무에 집중합니다."
+                      className="w-full p-4 rounded-xl border border-border/80 bg-white text-ink text-sm placeholder:text-sm leading-relaxed focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-colors resize-none"
                     />
                   </div>
                 </div>
