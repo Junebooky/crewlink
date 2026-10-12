@@ -15,7 +15,16 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "크루링크 | 행사와 크루를 잇다",
   description: "함께할 크루부터 현장 확인과 정산까지. 행사 운영을 한곳에서 이어가세요.",
+  icons: {
+    icon: [
+      { url: "/crewlink_favi.png", type: "image/png" },
+      { url: "/favicon.ico" },
+    ],
+    shortcut: "/crewlink_favi.png",
+    apple: "/crewlink_favi.png",
+  },
 };
+
 
 export default function RootLayout({
   children,

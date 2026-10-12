@@ -732,11 +732,11 @@ export default function HomePage() {
                       </div>
 
                       {/* 2단(상/하) 지원 마감 배지 컨테이너 */}
-                      <div className="flex flex-col items-end shrink-0 text-right bg-brand-soft border border-brand-border rounded-xl px-2.5 py-1 shadow-2xs">
-                        <span className="text-[11px] font-medium text-muted leading-tight">
+                      <div className="flex flex-col items-end shrink-0 text-right rounded-xl px-2.5 py-1">
+                        <span className="text-[12px] font-bold text-brand leading-tight">
                           {deadlineInfo.dateLabel}
                         </span>
-                        <span className="text-xs font-bold text-brand-strong leading-tight mt-0.5">
+                        <span className="text-xs font-bold text-brand leading-tight mt-0.5">
                           {deadlineInfo.dDayLabel}
                         </span>
                       </div>
