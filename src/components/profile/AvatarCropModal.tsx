@@ -34,6 +34,26 @@ export function AvatarCropModal({
   const isDragging = useRef(false);
   const dragStart = useRef({ x: 0, y: 0 });
 
+  // Mobile multi-touch pinch-to-zoom state refs
+  const isPinching = useRef(false);
+  const pinchStartDist = useRef(0);
+  const pinchStartZoom = useRef(1);
+  const pinchStartCenter = useRef({ x: 0, y: 0 });
+  const pinchStartPan = useRef({ x: 0, y: 0 });
+
+  // Helper to calculate distance between two touch points
+  const getTouchDistance = (t1: React.Touch, t2: React.Touch) => {
+    return Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+  };
+
+  // Helper to calculate midpoint between two touch points
+  const getTouchCenter = (t1: React.Touch, t2: React.Touch) => {
+    return {
+      x: (t1.clientX + t2.clientX) / 2,
+      y: (t1.clientY + t2.clientY) / 2,
+    };
+  };
+
   // Calculate base scale to fully cover CIRCLE_SIZE
   const baseScale =
     naturalDim.width > 0 && naturalDim.height > 0
@@ -46,6 +66,18 @@ export function AvatarCropModal({
   // Max pan bounds so the image always covers the circle
   const maxPanX = Math.max(0, (currentWidth - CIRCLE_SIZE) / 2);
   const maxPanY = Math.max(0, (currentHeight - CIRCLE_SIZE) / 2);
+
+  const getMaxPanForZoom = useCallback(
+    (targetZoom: number) => {
+      const w = naturalDim.width * baseScale * targetZoom;
+      const h = naturalDim.height * baseScale * targetZoom;
+      return {
+        maxX: Math.max(0, (w - CIRCLE_SIZE) / 2),
+        maxY: Math.max(0, (h - CIRCLE_SIZE) / 2),
+      };
+    },
+    [naturalDim.width, naturalDim.height, baseScale]
+  );
 
   const clampAndSetPan = useCallback(
     (newX: number, newY: number) => {
@@ -67,6 +99,8 @@ export function AvatarCropModal({
       setZoom(1);
       setPan({ x: 0, y: 0 });
       setImgLoaded(false);
+      isDragging.current = false;
+      isPinching.current = false;
     }
   }, [isOpen, imageSrc]);
 
@@ -99,9 +133,19 @@ export function AvatarCropModal({
     isDragging.current = false;
   };
 
-  // Touch drag handlers
+  // Touch drag & mobile pinch-to-zoom multi-touch handlers
   const handleTouchStart = (e: React.TouchEvent) => {
-    if (e.touches.length === 1) {
+    if (e.touches.length === 2) {
+      // 2 fingers: pinch-to-zoom & simultaneous two-finger repositioning
+      isDragging.current = false;
+      isPinching.current = true;
+      pinchStartDist.current = getTouchDistance(e.touches[0], e.touches[1]);
+      pinchStartZoom.current = zoom;
+      pinchStartCenter.current = getTouchCenter(e.touches[0], e.touches[1]);
+      pinchStartPan.current = { x: pan.x, y: pan.y };
+    } else if (e.touches.length === 1) {
+      // 1 finger: drag/pan
+      isPinching.current = false;
       isDragging.current = true;
       dragStart.current = {
         x: e.touches[0].clientX - pan.x,
@@ -111,15 +155,47 @@ export function AvatarCropModal({
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (isDragging.current && e.touches.length === 1) {
+    if (e.touches.length === 2 && isPinching.current) {
+      if (pinchStartDist.current <= 0) return;
+      const currentDist = getTouchDistance(e.touches[0], e.touches[1]);
+      const factor = currentDist / pinchStartDist.current;
+      const newZoom = Math.min(3, Math.max(1, Number((pinchStartZoom.current * factor).toFixed(3))));
+      setZoom(newZoom);
+
+      // Seamless two-finger pan while pinching
+      const currentCenter = getTouchCenter(e.touches[0], e.touches[1]);
+      const deltaX = currentCenter.x - pinchStartCenter.current.x;
+      const deltaY = currentCenter.y - pinchStartCenter.current.y;
+
+      const bounds = getMaxPanForZoom(newZoom);
+      const clampedX = Math.max(-bounds.maxX, Math.min(bounds.maxX, pinchStartPan.current.x + deltaX));
+      const clampedY = Math.max(-bounds.maxY, Math.min(bounds.maxY, pinchStartPan.current.y + deltaY));
+      setPan({ x: clampedX, y: clampedY });
+    } else if (e.touches.length === 1 && isDragging.current && !isPinching.current) {
       const newX = e.touches[0].clientX - dragStart.current.x;
       const newY = e.touches[0].clientY - dragStart.current.y;
       clampAndSetPan(newX, newY);
     }
   };
 
-  const handleTouchEnd = () => {
-    isDragging.current = false;
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (e.touches.length === 2) {
+      pinchStartDist.current = getTouchDistance(e.touches[0], e.touches[1]);
+      pinchStartZoom.current = zoom;
+      pinchStartCenter.current = getTouchCenter(e.touches[0], e.touches[1]);
+      pinchStartPan.current = { x: pan.x, y: pan.y };
+    } else if (e.touches.length === 1) {
+      // Seamless fallback to single-finger drag without jerking
+      isPinching.current = false;
+      isDragging.current = true;
+      dragStart.current = {
+        x: e.touches[0].clientX - pan.x,
+        y: e.touches[0].clientY - pan.y,
+      };
+    } else {
+      isDragging.current = false;
+      isPinching.current = false;
+    }
   };
 
   // Mouse wheel zoom
@@ -212,6 +288,7 @@ export function AvatarCropModal({
               onTouchStart={handleTouchStart}
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}
+              onTouchCancel={handleTouchEnd}
               onWheel={handleWheel}
               style={{ width: CONTAINER_SIZE, height: CONTAINER_SIZE }}
               className="relative overflow-hidden rounded-2xl bg-slate-950 select-none touch-none cursor-grab active:cursor-grabbing shadow-inner flex items-center justify-center"
@@ -235,7 +312,7 @@ export function AvatarCropModal({
                     maxWidth: 'none',
                     maxHeight: 'none',
                     opacity: imgLoaded ? 1 : 0,
-                    transition: isDragging.current ? 'none' : 'opacity 0.2s',
+                    transition: isDragging.current || isPinching.current ? 'none' : 'opacity 0.2s',
                   }}
                   className="pointer-events-none select-none"
                 />
@@ -257,7 +334,7 @@ export function AvatarCropModal({
             </div>
 
             <p className="text-[11px] text-muted text-center mt-2">
-              사진을 드래그하여 움직이고, 아래 바로 확대할 수 있어요.
+              사진을 드래그하거나 두 손가락으로 확대·축소할 수 있어요.
             </p>
 
             {/* Zoom Controls */}
