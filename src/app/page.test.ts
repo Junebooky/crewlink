@@ -54,7 +54,8 @@ describe('Home Page Revamp Verification', () => {
     expect(pageContent).toContain('방금 올라왔어요');
     expect(pageContent).toContain('/assets/clay/hero_white.png');
     expect(pageContent).toContain('/assets/clay/coin.png');
-    expect(pageContent).toContain('right-2 sm:right-4 md:right-8');
+    expect(pageContent).toContain('right-1 sm:right-3 md:right-6');
+    expect(pageContent).toContain('h-[145px] sm:h-[185px] md:h-[220px]');
     expect(pageContent).toContain('shadow-[0_8px_24px_rgba(15,23,42,0.08)]');
     expect(pageContent).toContain('shadow-[0_6px_20px_rgba(15,23,42,0.07)]');
     expect(pageContent).toContain('border-slate-200/80');

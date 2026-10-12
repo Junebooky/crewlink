@@ -261,9 +261,9 @@ export default function HomePage() {
       <section className="pt-2 sm:pt-4 pb-5 px-4 sm:px-6">
         <div className="max-w-4xl mx-auto space-y-5">
           {/* 히어로 배너: 16:9 투명 배경 에셋 (hero_white.png) 황금 분할 배치 */}
-          <section className="relative w-full overflow-hidden bg-white min-h-[220px] sm:min-h-[270px] md:min-h-[300px] flex items-center px-4 sm:px-6 lg:px-8 mb-6">
+          <section className="relative w-full overflow-hidden bg-white min-h-[200px] sm:min-h-[250px] md:min-h-[280px] flex items-center px-4 sm:px-6 lg:px-8 mb-6">
             {/* 좌측: 텍스트 영역 (여백 공간 활용) */}
-            <div className="relative z-10 max-w-[50%] py-4 text-left">
+            <div className="relative z-10 max-w-[48%] sm:max-w-[48%] md:max-w-[46%] py-4 text-left">
               <span className="text-xs sm:text-sm font-bold text-brand tracking-tight">
                 지금, 새로운 현장이 기다려요
               </span>
@@ -275,8 +275,8 @@ export default function HomePage() {
               </p>
             </div>
 
-            {/* 우측: 16:9 투명 배경 3D 일러스트 (우측 여백 확보로 잘림 원천 해결) */}
-            <div className="absolute right-2 sm:right-4 md:right-8 top-1/2 -translate-y-1/2 w-[48%] max-w-[460px] aspect-[16/9] pointer-events-none z-0">
+            {/* 우측: 16:9 투명 배경 3D 일러스트 (텍스트 높이와 1:1 매칭, 좌측/상하 확장) */}
+            <div className="absolute right-1 sm:right-3 md:right-6 top-1/2 -translate-y-1/2 h-[145px] sm:h-[185px] md:h-[220px] aspect-[16/9] w-auto pointer-events-none z-0">
               <Image
                 alt="CrewLink 3D Hero"
                 className="object-contain object-right"
