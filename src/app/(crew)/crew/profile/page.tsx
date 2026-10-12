@@ -560,9 +560,9 @@ export default function CrewProfilePage() {
                   <Image
                     src="/assets/clay/profile.png"
                     alt="프로필 사진"
-                    width={28}
-                    height={28}
-                    className="w-6 h-6 sm:w-7 sm:h-7 object-contain shrink-0"
+                    width={32}
+                    height={32}
+                    className="w-8 h-8 sm:w-8 sm:h-8 object-contain shrink-0"
                   />
                   <div>
                     <h2 className="text-base font-bold text-ink">프로필 사진</h2>
@@ -676,9 +676,9 @@ export default function CrewProfilePage() {
                   <Image
                     src="/assets/clay/phone.png"
                     alt="기본 정보"
-                    width={28}
-                    height={28}
-                    className="w-6 h-6 sm:w-7 sm:h-7 object-contain shrink-0"
+                    width={32}
+                    height={32}
+                    className="w-8 h-8 sm:w-8 sm:h-8 object-contain shrink-0"
                   />
                   <div>
                     <h2 className="text-base font-bold text-ink">기본 정보</h2>
@@ -735,9 +735,9 @@ export default function CrewProfilePage() {
                   <Image
                     src="/assets/clay/shirt.png"
                     alt="유니폼 규격"
-                    width={28}
-                    height={28}
-                    className="w-6 h-6 sm:w-7 sm:h-7 object-contain shrink-0"
+                    width={32}
+                    height={32}
+                    className="w-8 h-8 sm:w-8 sm:h-8 object-contain shrink-0"
                   />
                   <div>
                     <h2 className="text-base font-bold text-ink">유니폼 핏을 맞춰볼까요?</h2>
@@ -831,9 +831,9 @@ export default function CrewProfilePage() {
                   <Image
                     src="/assets/clay/quote.png"
                     alt="현장 경험"
-                    width={28}
-                    height={28}
-                    className="w-6 h-6 sm:w-7 sm:h-7 object-contain shrink-0"
+                    width={32}
+                    height={32}
+                    className="w-8 h-8 sm:w-8 sm:h-8 object-contain shrink-0"
                   />
                   <div>
                     <h2 className="text-base font-bold text-ink">현장 경험이 있다면 알려주세요</h2>
@@ -880,9 +880,9 @@ export default function CrewProfilePage() {
                   <Image
                     src="/assets/clay/language.png"
                     alt="외국어 능력"
-                    width={28}
-                    height={28}
-                    className="w-6 h-6 sm:w-7 sm:h-7 object-contain shrink-0"
+                    width={32}
+                    height={32}
+                    className="w-8 h-8 sm:w-8 sm:h-8 object-contain shrink-0"
                   />
                   <div>
                     <h2 className="text-base font-bold text-ink">외국어 응대가 가능한가요? (선택)</h2>
