@@ -145,8 +145,8 @@ export function PublicHeader({ className }: PublicHeaderProps) {
         className
       )}
     >
-      {/* 좌측: 로고 (CrewLink) + 현재 선택된 역할 라벨 + (데스크톱 네비게이션) */}
-      <div className="flex items-center gap-2 sm:gap-4 md:gap-6 min-w-0">
+      {/* 좌측: 로고 (CrewLink) + 데스크톱 네비게이션 */}
+      <div className="flex items-center gap-2 sm:gap-4 md:gap-6 shrink-0">
         <Link href="/" className="flex items-center gap-1.5 sm:gap-2 group shrink-0">
           <div className="w-8 h-8 rounded-xl overflow-hidden shadow-xs group-hover:scale-105 transition-transform shrink-0">
             <Image
@@ -160,9 +160,6 @@ export function PublicHeader({ className }: PublicHeaderProps) {
           </div>
           <span className="font-extrabold text-base sm:text-lg text-ink tracking-tight whitespace-nowrap">
             CrewLink
-          </span>
-          <span className="text-[11px] sm:text-xs px-2 py-0.5 rounded-full bg-brand-subtle text-brand font-bold whitespace-nowrap">
-            {activeRole === 'crew' ? '크루' : activeRole === 'client' ? '주최사' : '운영팀'}
           </span>
         </Link>
 
@@ -193,20 +190,19 @@ export function PublicHeader({ className }: PublicHeaderProps) {
         </nav>
       </div>
 
-      {/* 우측: [크루 | 주최사 | 운영팀] 상시 고정 세그먼트 탭 + 최우측 인증 슬롯 */}
-      <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
-        {/* 상시 고정 역할 세그먼트 탭 (세션 유무 상관없이 100% 항상 렌더링) */}
-        <div className="flex items-center bg-surface-muted/90 p-0.5 sm:p-1 rounded-xl border border-border/50 text-xs font-semibold shadow-2xs">
+      {/* 중앙: [크루 | 주최사 | 운영진] 3개 세그먼트 탭 상시 노출 */}
+      <div className="flex items-center justify-center shrink-0">
+        <div className="flex items-center bg-surface-muted/90 p-0.5 sm:p-1 rounded-xl border border-border/50 text-xs font-semibold shadow-2xs shrink-0">
           {(['crew', 'client', 'ops'] as const).map((r) => {
             const isSelected = activeRole === r;
-            const label = r === 'crew' ? '크루' : r === 'client' ? '주최사' : '운영팀';
+            const label = r === 'crew' ? '크루' : r === 'client' ? '주최사' : '운영진';
             return (
               <button
                 key={r}
                 type="button"
                 onClick={() => handleRoleSelect(r)}
                 className={cn(
-                  'px-2 sm:px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap',
+                  'px-2 sm:px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0',
                   isSelected
                     ? 'bg-surface text-brand shadow-xs font-extrabold'
                     : 'text-muted hover:text-ink'
@@ -217,37 +213,43 @@ export function PublicHeader({ className }: PublicHeaderProps) {
             );
           })}
         </div>
+      </div>
 
-        {/* 최우측: 로그인 상태일 때 아바타/계정메뉴, 비로그인 상태일 때 [로그인] 버튼 (스켈레톤 가드 유지) */}
-        <div className="flex items-center shrink-0">
-          {isAuthLoading ? (
-            <div
-              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-surface-muted/60 border border-border/40 animate-pulse shrink-0"
-              aria-hidden="true"
-            />
-          ) : sessionUser ? (
-            <AccountMenu
-              user={sessionUser}
-              activeRole={activeRole}
-              onLogout={async () => {
-                if (typeof window !== 'undefined') {
-                  localStorage.setItem('crewlink_logged_out', 'true');
-                }
-                const supabase = createClient();
-                await supabase.auth.signOut();
-                setSessionUser(null);
-              }}
-            />
-          ) : (
-            <button
-              type="button"
-              onClick={() => setIsLoginModalOpen(true)}
-              className="h-9 px-3 sm:px-4 rounded-xl bg-brand hover:bg-brand-hover text-inverse text-xs sm:text-sm font-bold transition-colors shadow-2xs flex items-center justify-center cursor-pointer whitespace-nowrap"
-            >
-              로그인
-            </button>
-          )}
-        </div>
+      {/* 우측: 계정/로그인 영역 */}
+      <div className="flex items-center justify-end shrink-0">
+        {isAuthLoading ? (
+          <div
+            className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-surface-muted/60 border border-border/40 animate-pulse shrink-0"
+            aria-hidden="true"
+          />
+        ) : sessionUser ? (
+          <AccountMenu
+            user={sessionUser}
+            activeRole={activeRole}
+            onLogout={async () => {
+              if (typeof window !== 'undefined') {
+                localStorage.setItem('crewlink_logged_out', 'true');
+              }
+              const supabase = createClient();
+              await supabase.auth.signOut();
+              setSessionUser(null);
+            }}
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={() => {
+              if (activeRole === 'client') {
+                window.location.href = '/client/login';
+              } else {
+                setIsLoginModalOpen(true);
+              }
+            }}
+            className="h-9 px-3 sm:px-4 rounded-xl bg-brand hover:bg-brand-hover text-inverse text-xs sm:text-sm font-bold transition-colors shadow-2xs flex items-center justify-center cursor-pointer whitespace-nowrap shrink-0"
+          >
+            로그인
+          </button>
+        )}
       </div>
 
       {/* 모바일 퍼스트 로그인 모달 */}

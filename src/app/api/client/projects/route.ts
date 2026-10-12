@@ -355,3 +355,124 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: (err as Error).message }, { status: 400 });
   }
 }
+
+export async function GET(request: Request) {
+  try {
+    const auth = await getAuthenticatedContext(request, 'client');
+    let effectiveAuthContext = auth.authContext;
+
+    if (!effectiveAuthContext && process.env.NODE_ENV !== 'production') {
+      effectiveAuthContext = {
+        userId: 'dev-demo-client-id',
+        personId: '33333333-3333-3333-3333-333333333333',
+        fullName: '박대표 (데모 주최사)',
+        roles: ['client'],
+      };
+    } else if (auth.errorResponse) {
+      return auth.errorResponse;
+    } else if (!effectiveAuthContext) {
+      return NextResponse.json({ message: '다시 로그인해 주세요.' }, { status: 401 });
+    }
+
+    const supabase = createAdminClient();
+
+    // Resolve organization
+    const { data: member } = await supabase
+      .from('organization_members')
+      .select('organization_id')
+      .eq('person_id', effectiveAuthContext.personId)
+      .maybeSingle();
+
+    let organizationId = member?.organization_id;
+    if (!organizationId) {
+      organizationId = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
+    }
+
+    // Query projects for organization
+    const { data: projects, error } = await supabase
+      .from('projects')
+      .select('*')
+      .eq('organization_id', organizationId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('[GET /api/client/projects] error:', error);
+      return NextResponse.json({ message: error.message }, { status: 500 });
+    }
+
+    const projectIds = (projects || []).map((p) => p.id);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let allShifts: any[] = [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let allApplications: any[] = [];
+
+    if (projectIds.length > 0) {
+      const [shiftsRes, appsRes] = await Promise.all([
+        supabase.from('shifts').select('*').in('project_id', projectIds),
+        supabase
+          .from('applications')
+          .select('id, project_id, shift_id, status, applied_at, crew_person_id')
+          .in('project_id', projectIds),
+      ]);
+      allShifts = shiftsRes.data || [];
+      allApplications = appsRes.data || [];
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const shiftsByProject = new Map<string, any[]>();
+    for (const s of allShifts) {
+      const list = shiftsByProject.get(s.project_id) || [];
+      list.push(s);
+      shiftsByProject.set(s.project_id, list);
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const appsByProject = new Map<string, any[]>();
+    for (const a of allApplications) {
+      const list = appsByProject.get(a.project_id) || [];
+      list.push(a);
+      appsByProject.set(a.project_id, list);
+    }
+
+    const formatted = (projects || []).map((p) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const sow = (p.sow_spec as Record<string, any>) || {};
+      const apps = appsByProject.get(p.id) || [];
+      const shifts = shiftsByProject.get(p.id) || [];
+      const requiredCount =
+        shifts.reduce((acc, s) => acc + (s.required_headcount || 0), 0) ||
+        (sow.headcount || 8);
+      const applicantCount = apps.length;
+      const approvedCount = apps.filter(
+        (a) => a.status === 'approved' || a.status === 'accepted'
+      ).length;
+
+      return {
+        id: p.id,
+        title: p.title,
+        venueName: p.venue_name,
+        roadAddress: p.road_address,
+        detailAddress: p.detail_address,
+        startDate: p.start_date || sow.startDate,
+        endDate: p.end_date || sow.endDate,
+        status: p.status,
+        createdAt: p.created_at,
+        requiredCount,
+        applicantCount,
+        approvedCount,
+        sowSpec: sow,
+        shifts,
+      };
+    });
+
+    return NextResponse.json({
+      success: true,
+      projects: formatted,
+    });
+  } catch (err: unknown) {
+    console.error('[GET /api/client/projects] error:', err);
+    return NextResponse.json({ message: (err as Error).message }, { status: 500 });
+  }
+}
+

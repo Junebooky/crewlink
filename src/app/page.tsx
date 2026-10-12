@@ -72,7 +72,24 @@ export const ROLLING_INTERVAL_MS = 3600;
 export const ROLLING_DURATION_MS = 450;
 
 export default function HomePage() {
-  const events = useMemo(() => getPublicEvents(), []);
+  const [events, setEvents] = useState<EventItem[]>(() => getPublicEvents());
+
+  useEffect(() => {
+    async function loadEvents() {
+      try {
+        const res = await fetch('/api/events');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.events && Array.isArray(data.events)) {
+            setEvents(data.events);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load events from DB:', err);
+      }
+    }
+    loadEvents();
+  }, []);
 
   // KST dynamic date state - initialized with stable base date during SSR, hydrated in useEffect
   const [currentKST, setCurrentKST] = useState<string>('2026-10-12');

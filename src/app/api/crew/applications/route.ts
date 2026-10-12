@@ -52,29 +52,45 @@ export async function POST(request: Request) {
     let targetProjectId: string | null = reqProjectId || null;
     let targetShiftId: string | null = reqShiftId || null;
 
-    // 2. Check Static Event Data if eventId provided
+    // 2. Resolve targetProjectId and targetShiftId
     if (eventId) {
-      const event = getEventById(eventId);
-      if (event) {
-        // Validation: Recruitment Status
-        if (event.recruitmentStatus === 'CLOSED') {
-          return NextResponse.json(
-            { message: '이미 모집이 마감된 공고예요.' },
-            { status: 400 }
-          );
-        }
-        // Validation: Deadline Date (deadlineDate >= CURRENT_DATE)
-        if (event.deadlineDate < todayStr) {
-          return NextResponse.json(
-            { message: '지원 마감일이 지난 공고예요.' },
-            { status: 400 }
-          );
-        }
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(eventId);
+      if (isUuid) {
+        targetProjectId = eventId;
+        const { data: firstShift } = await supabase
+          .from('shifts')
+          .select('id')
+          .eq('project_id', eventId)
+          .order('date', { ascending: true })
+          .limit(1)
+          .maybeSingle();
 
-        // Resolve mapped shift ID if static and not explicitly supplied
-        if (!targetProjectId && !targetShiftId && STATIC_EVENT_SHIFT_MAP[eventId]) {
-          targetProjectId = STATIC_EVENT_SHIFT_MAP[eventId].projectId;
-          targetShiftId = STATIC_EVENT_SHIFT_MAP[eventId].shiftId;
+        if (firstShift) {
+          targetShiftId = firstShift.id;
+        }
+      } else {
+        const event = getEventById(eventId);
+        if (event) {
+          // Validation: Recruitment Status
+          if (event.recruitmentStatus === 'CLOSED') {
+            return NextResponse.json(
+              { message: '이미 모집이 마감된 공고예요.' },
+              { status: 400 }
+            );
+          }
+          // Validation: Deadline Date (deadlineDate >= CURRENT_DATE)
+          if (event.deadlineDate < todayStr) {
+            return NextResponse.json(
+              { message: '지원 마감일이 지난 공고예요.' },
+              { status: 400 }
+            );
+          }
+
+          // Resolve mapped shift ID if static and not explicitly supplied
+          if (!targetProjectId && !targetShiftId && STATIC_EVENT_SHIFT_MAP[eventId]) {
+            targetProjectId = STATIC_EVENT_SHIFT_MAP[eventId].projectId;
+            targetShiftId = STATIC_EVENT_SHIFT_MAP[eventId].shiftId;
+          }
         }
       }
     }

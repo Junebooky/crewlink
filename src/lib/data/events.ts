@@ -314,6 +314,130 @@ export const EVENT_FEED_DATA: EventItem[] = [
 ];
 
 /**
+ * DB에 저장된 projects 행 데이터를 프론트엔드 EventItem 표준 규격으로 변환
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function transformProjectToEvent(project: any): EventItem {
+  const sow = project.sow_spec || {};
+  const shifts = project.shifts || [];
+  const firstShift = shifts[0] || {};
+
+  const startDate = project.start_date || sow.startDate || (firstShift.date) || '2026-10-15';
+  const endDate = project.end_date || sow.endDate || startDate;
+
+  // Format dateRangeLabel
+  const startParts = startDate.split('-');
+  const endParts = endDate.split('-');
+  const dateRangeLabel =
+    startDate === endDate
+      ? `${Number(startParts[1])}.${Number(startParts[2])} · 당일`
+      : `${Number(startParts[1])}.${Number(startParts[2])}–${Number(endParts[1])}.${Number(endParts[2])} · ${sow.totalDays || 2}일간`;
+
+  // Format work hours label
+  let workHoursLabel = '09:00 ~ 18:00';
+  if (firstShift.start_time && firstShift.end_time) {
+    try {
+      const s = new Date(firstShift.start_time);
+      const e = new Date(firstShift.end_time);
+      const sH = String(s.getUTCHours()).padStart(2, '0');
+      const sM = String(s.getUTCMinutes()).padStart(2, '0');
+      const eH = String(e.getUTCHours()).padStart(2, '0');
+      const eM = String(e.getUTCMinutes()).padStart(2, '0');
+      workHoursLabel = `${sH}:${sM} ~ ${eH}:${eM}`;
+    } catch {
+      // fallback
+    }
+  }
+
+  // Category
+  const catStr = (sow.category || '').toLowerCase();
+  const category: EventCategory =
+    catStr.includes('팝업') ? 'popup' :
+    catStr.includes('페스티벌') || catStr.includes('축제') ? 'festival' :
+    catStr.includes('브랜드') ? 'brand' : 'expo';
+
+  // Region
+  const addr = (project.road_address || project.venue_name || '').toLowerCase();
+  const regionId =
+    addr.includes('성수') ? 'seongsu' :
+    addr.includes('강남') || addr.includes('코엑스') ? 'gangnam' :
+    addr.includes('여의도') ? 'yeouido' :
+    addr.includes('킨텍스') || addr.includes('일산') ? 'kintex' : 'gangnam';
+
+  const regionLabel =
+    regionId === 'seongsu' ? '서울 성동구' :
+    regionId === 'gangnam' ? '서울 강남구' :
+    regionId === 'yeouido' ? '서울 영등포구' :
+    regionId === 'kintex' ? '경기 고양시' : '서울';
+
+  const scopes = Array.isArray(sow.scopes) && sow.scopes.length > 0
+    ? sow.scopes
+    : ['대기열 · 관람객 동선 관리', '현장 안내 및 운영 지원'];
+
+  const dayOfWeekNames = ['일', '월', '화', '수', '목', '금', '토'];
+  const datesList: string[] = Array.isArray(sow.dates) && sow.dates.length > 0 ? sow.dates : [startDate];
+  const dates = datesList.map((d: string, idx: number) => {
+    const dow = dayOfWeekNames[new Date(d).getDay()] || '평';
+    return {
+      id: `d-${idx + 1}`,
+      date: d,
+      dayOfWeek: dow,
+    };
+  });
+
+  const dailyWage = firstShift.daily_wage || 120000;
+  const reqCount = firstShift.required_headcount || sow.headcount || 8;
+
+  return {
+    id: project.id,
+    title: project.title,
+    displayTitle: project.title,
+    hostName: project.organizations?.name || '(주)네온패밀리',
+    hostVerified: true,
+    category,
+    categoryLabel: sow.category || '전시·컨벤션',
+    regionId,
+    regionLabel,
+    venueAddress: project.road_address || '서울 강남구 영동대로 513',
+    venueDetail: project.venue_name || project.detail_address || '',
+    stationInfo: project.venue_name || '행사장 인근',
+    latitude: project.latitude ? Number(project.latitude) : 37.511854,
+    longitude: project.longitude ? Number(project.longitude) : 127.059287,
+    startDate,
+    endDate,
+    dateRangeLabel,
+    workHoursLabel,
+    breakMinutesLabel: `${sow.breakMinutes || 60}분 휴게`,
+    breakMinutes: sow.breakMinutes || 60,
+    isMultiDayRequired: sow.isMultiDay || false,
+    dailyWageWon: dailyWage,
+    requiredCount: reqCount,
+    confirmedCount: 0,
+    deadlineDate: startDate,
+    deadlineDateLabel: formatRecruitmentDeadline(startDate),
+    recruitmentStatus: 'OPEN',
+    primaryRoles: scopes,
+    roles: scopes.map((sc: string) => ({
+      title: sc,
+      desc: `${sc} 담당 크루 및 현장 질서 정돈 안내`,
+    })),
+    dressCode: {
+      type: 'FORMAL',
+      title: sow.dressCode || '올블랙 정장·슬랙스',
+      desc: sow.dressCode || '깔끔하고 단정한 검정 계열 복장',
+    },
+    qualifications: [
+      '시간 약속을 철저히 지키시는 분',
+      '밝은 미소와 친절한 안내가 가능하신 분',
+      '행사 현장 인근 거주자 우대',
+    ],
+    description: project.description || `${project.title} 현장 크루를 모집합니다. 질서 있고 쾌적한 행사 운영을 함께 만들어가요!`,
+    dates,
+    createdAt: project.created_at || new Date().toISOString(),
+  };
+}
+
+/**
  * 전체 모집 공고 목록 반환 (SSOT)
  */
 export function getPublicEvents(): EventItem[] {
@@ -337,3 +461,4 @@ export function formatRecruitmentDeadline(deadlineStr: string): string {
   }
   return `${deadlineStr.slice(5).replace('-', '.')}까지 모집`;
 }
+

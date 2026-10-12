@@ -1,22 +1,39 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
 
-export async function POST() {
+export async function POST(request: Request) {
   try {
-    const adminClient = createAdminClient();
-    const email = 'crew@crewlink.kr';
+    const { searchParams } = new URL(request.url);
+    let role = searchParams.get('role');
+    if (!role) {
+      try {
+        const body = await request.clone().json();
+        role = body?.role;
+      } catch {
+        // no body
+      }
+    }
+
+    const isClient = role === 'client';
+    const email = isClient ? 'client@crewlink.kr' : 'crew@crewlink.kr';
     const password = 'crewlink2026!';
+    const fullName = isClient ? '박대표' : '김크루';
+    const personId = isClient
+      ? '33333333-3333-3333-3333-333333333333'
+      : '11111111-1111-1111-1111-111111111111';
+
+    const adminClient = createAdminClient();
 
     // 1. Check if user exists in auth.users
     const { data: userList } = await adminClient.auth.admin.listUsers();
-    let authUser = userList?.users.find((u) => u.email === email);
+    let authUser = userList?.users?.find((u) => u.email === email);
 
     if (!authUser) {
       const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
         email,
         password,
         email_confirm: true,
-        user_metadata: { full_name: '김크루', role: 'crew' },
+        user_metadata: { full_name: fullName, role: isClient ? 'client' : 'crew' },
       });
 
       if (createError || !newUser?.user) {
@@ -32,11 +49,11 @@ export async function POST() {
       });
     }
 
-    // 2. Link auth_user_id in crewlink.people for 김크루
+    // 2. Link auth_user_id in crewlink.people
     await adminClient
       .from('people')
       .update({ auth_user_id: authUser.id })
-      .eq('id', '11111111-1111-1111-1111-111111111111');
+      .eq('id', personId);
 
     // 3. Authenticate session and set cookies via createClient()
     const serverSupabase = await createClient();
@@ -55,8 +72,9 @@ export async function POST() {
       user: {
         id: authUser.id,
         email,
-        fullName: '김크루',
-        personId: '11111111-1111-1111-1111-111111111111',
+        fullName: isClient ? '(주)네온패밀리' : '김크루',
+        personId,
+        role: isClient ? 'client' : 'crew',
       },
       session: signInData.session,
     });

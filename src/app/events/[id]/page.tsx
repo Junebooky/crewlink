@@ -1,7 +1,9 @@
 import { Suspense } from 'react';
 import { notFound } from 'next/navigation';
-import { getPublicEvents, getEventById } from '@/lib/data/events';
+import { getPublicEvents, getEventById, transformProjectToEvent } from '@/lib/data/events';
+import { createAdminClient } from '@/lib/supabase/server';
 import EventDetailClient from './EventDetailClient';
+
 
 export function generateStaticParams() {
   return getPublicEvents().map((e) => ({
@@ -15,7 +17,21 @@ async function EventDetailContent({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const event = getEventById(id);
+  let event = getEventById(id);
+
+  if (!event) {
+    // Check Supabase projects table
+    const supabase = createAdminClient();
+    const { data: dbProject } = await supabase
+      .from('projects')
+      .select('*, organizations(name), shifts(*)')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (dbProject) {
+      event = transformProjectToEvent(dbProject);
+    }
+  }
 
   if (!event) {
     notFound();

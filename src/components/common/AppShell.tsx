@@ -295,15 +295,12 @@ export function AppShell({ children, initialRole }: AppShellProps) {
               priority
             />
           </div>
-          <span className="font-extrabold text-ink tracking-tight">CrewLink</span>
-          <span className="text-xs px-2 py-0.5 rounded-full bg-brand-subtle text-brand font-semibold ml-1">
-            {NAV_CONFIG[role].title}
-          </span>
+          <span className="font-extrabold text-ink tracking-tight whitespace-nowrap">CrewLink</span>
         </Link>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           {/* Role toggle (Always Visible) */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 shrink-0">
             {(['crew', 'client', 'ops'] as UserRole[]).map((r) => (
               <button
                 key={r}
@@ -315,7 +312,7 @@ export function AppShell({ children, initialRole }: AppShellProps) {
                   window.location.href = NAV_CONFIG[r].items[0].href;
                 }}
                 className={cn(
-                  'px-2 py-1 text-xs rounded font-medium transition-colors cursor-pointer',
+                  'px-2 py-1 text-xs rounded font-medium transition-colors cursor-pointer whitespace-nowrap shrink-0',
                   role === r ? 'bg-brand text-inverse' : 'text-muted hover:bg-surface-muted'
                 )}
               >
