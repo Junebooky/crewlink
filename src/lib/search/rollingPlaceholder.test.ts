@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { ROLLING_PLACEHOLDERS } from '@/app/page';
+import { ROLLING_PLACEHOLDERS, ROLLING_INTERVAL_MS, ROLLING_DURATION_MS } from '@/app/page';
 
 describe('Rolling Placeholder Tests (토스 스타일 롤링 플레이스홀더 검증)', () => {
   it('플레이스홀더 카피 세트가 정확히 3가지 대화 유도형 문구로 구성되어야 한다', () => {
@@ -29,5 +29,10 @@ describe('Rolling Placeholder Tests (토스 스타일 롤링 플레이스홀더 
     expect(isPlaceholderVisible('')).toBe(true);
     expect(isPlaceholderVisible('성')).toBe(false);
     expect(isPlaceholderVisible('성수')).toBe(false);
+  });
+
+  it('전환 시간(450ms) 및 롤링 인터벌(3600ms)이 부드럽고 여유롭게 설정되어야 한다', () => {
+    expect(ROLLING_INTERVAL_MS).toBe(3600);
+    expect(ROLLING_DURATION_MS).toBe(450);
   });
 });

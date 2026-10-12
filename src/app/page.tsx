@@ -68,6 +68,9 @@ export const ROLLING_PLACEHOLDERS = [
   '자신 있는 역할로 찾기 (예: 리셉션, 동선 안내, 운영)',
 ] as const;
 
+export const ROLLING_INTERVAL_MS = 3600;
+export const ROLLING_DURATION_MS = 450;
+
 export default function HomePage() {
   const events = useMemo(() => getPublicEvents(), []);
 
@@ -90,7 +93,7 @@ export default function HomePage() {
   const [searchKeyword, setSearchKeyword] = useState('');
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
 
-  // 토스 스타일 부드러운 롤링 플레이스홀더 (3초 주기 순환, 검색어 입력 시 중단)
+  // 토스 스타일 부드러운 슬라이드 다운 롤링 플레이스홀더 (3.6초 주기 순환, 450ms 감속 이징)
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
   const [prevPlaceholderIndex, setPrevPlaceholderIndex] = useState<number | null>(null);
 
@@ -105,18 +108,18 @@ export default function HomePage() {
         setPrevPlaceholderIndex(current);
         return (current + 1) % ROLLING_PLACEHOLDERS.length;
       });
-    }, 3000);
+    }, ROLLING_INTERVAL_MS);
 
     return () => clearInterval(interval);
   }, [searchKeyword]);
 
-  // 이전 문구 퇴장 애니메이션 완료 후(300ms) 정리
+  // 이전 문구 퇴장 애니메이션 완료 후(450ms) 정리
   useEffect(() => {
     if (prevPlaceholderIndex === null) return;
 
     const timer = setTimeout(() => {
       setPrevPlaceholderIndex(null);
-    }, 300);
+    }, ROLLING_DURATION_MS);
 
     return () => clearTimeout(timer);
   }, [prevPlaceholderIndex]);
@@ -255,24 +258,24 @@ export default function HomePage() {
               aria-label="행사, 지역, 업무 검색"
               className="w-full h-[52px] pl-11 pr-4 rounded-2xl border border-border bg-surface text-ink text-base focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-xs transition-colors"
             />
-            {/* 토스 스타일 부드러운 롤링 플레이스홀더 (검색창이 비어 있을 때만 렌더링) */}
+            {/* 토스 스타일 부드러운 슬라이드 다운 롤링 플레이스홀더 (검색창이 비어 있을 때만 렌더링) */}
             {searchKeyword.length === 0 && (
               <div
                 aria-hidden="true"
                 className="absolute left-11 right-4 top-0 bottom-0 pointer-events-none flex items-center overflow-hidden select-none"
               >
-                <div className="relative w-full h-5 sm:h-6 overflow-hidden flex items-center">
+                <div className="relative w-full h-6 sm:h-7 overflow-hidden flex items-center">
                   {prevPlaceholderIndex !== null && (
                     <span
                       key={`prev-${prevPlaceholderIndex}`}
-                      className="absolute inset-0 flex items-center text-xs sm:text-sm text-muted truncate pointer-events-none animate-rolling-out -translate-y-2 opacity-0 duration-300 ease-out"
+                      className="absolute inset-0 flex items-center text-sm sm:text-base text-muted truncate pointer-events-none animate-rolling-out translate-y-3 opacity-0 duration-[450ms]"
                     >
                       {ROLLING_PLACEHOLDERS[prevPlaceholderIndex]}
                     </span>
                   )}
                   <span
                     key={`curr-${placeholderIndex}`}
-                    className="absolute inset-0 flex items-center text-xs sm:text-sm text-muted truncate pointer-events-none animate-rolling-in translate-y-0 opacity-100 duration-300 ease-out"
+                    className="absolute inset-0 flex items-center text-sm sm:text-base text-muted truncate pointer-events-none animate-rolling-in translate-y-0 opacity-100 duration-[450ms]"
                   >
                     {ROLLING_PLACEHOLDERS[placeholderIndex]}
                   </span>
