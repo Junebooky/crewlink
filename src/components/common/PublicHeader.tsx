@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { AccountMenu } from './AccountMenu';
@@ -58,13 +59,21 @@ export function PublicHeader({ className }: PublicHeaderProps) {
       {/* Brand & Crew Navigation */}
       <div className="flex items-center gap-6 sm:gap-8">
         <Link href="/" className="flex items-center gap-2 group">
-          <div className="w-8 h-8 rounded-xl bg-brand text-inverse flex items-center justify-center font-black text-lg shadow-xs group-hover:scale-105 transition-transform">
-            C
+          <div className="w-8 h-8 rounded-xl overflow-hidden shadow-xs group-hover:scale-105 transition-transform shrink-0">
+            <Image
+              src="/crewlink_favicon.png"
+              alt="CrewLink Logo"
+              width={32}
+              height={32}
+              className="w-full h-full object-cover"
+              priority
+            />
           </div>
           <span className="font-extrabold text-base sm:text-lg text-ink tracking-tight">
             CrewLink
           </span>
         </Link>
+
 
         {/* Public Crew Links (NO client links in top header!) */}
         <nav className="flex items-center gap-1 sm:gap-2">
