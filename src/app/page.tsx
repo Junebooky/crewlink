@@ -77,12 +77,13 @@ const REGION_OPTIONS: { id: string; label: string }[] = [
   { id: 'kintex', label: '일산·킨텍스' },
 ];
 
-type SortOrder = 'latest' | 'deadline' | 'wage_desc';
+type SortOrder = 'recommend' | 'latest' | 'deadline' | 'wage_desc';
 
 const SORT_OPTIONS: { id: SortOrder; label: string }[] = [
+  { id: 'recommend', label: '추천순' },
   { id: 'latest', label: '최신순' },
-  { id: 'deadline', label: '마감 임박순' },
-  { id: 'wage_desc', label: '보수 높은순' },
+  { id: 'deadline', label: '마감임박순' },
+  { id: 'wage_desc', label: '보수 높은 순' },
 ];
 
 export default function HomePage() {
@@ -118,7 +119,7 @@ export default function HomePage() {
   const [customStartDate, setCustomStartDate] = useState<string>('');
   const [customEndDate, setCustomEndDate] = useState<string>('');
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
-  const [sortOrder, setSortOrder] = useState<SortOrder>('latest');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('recommend');
   const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false);
   const sortDropdownRef = useRef<HTMLDivElement>(null);
   const [searchKeyword, setSearchKeyword] = useState('');
@@ -247,6 +248,11 @@ export default function HomePage() {
         if (sortOrder === 'wage_desc') {
           return b.dailyWageWon - a.dailyWageWon;
         }
+        if (sortOrder === 'recommend') {
+          const wageDiff = b.dailyWageWon - a.dailyWageWon;
+          if (wageDiff !== 0) return wageDiff;
+          return b.createdAt.localeCompare(a.createdAt);
+        }
         return b.createdAt.localeCompare(a.createdAt);
       });
   }, [events, selectedCategory, selectedRegion, activeDateRange, sortOrder, searchKeyword]);
@@ -257,32 +263,53 @@ export default function HomePage() {
   }, [events]);
 
   const trendingScrollRef = useRef<HTMLDivElement>(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
 
-  const handleScroll = (direction: 'left' | 'right') => {
+  // 좌우 수동 스크롤
+  const scrollToIndex = (index: number) => {
     const container = trendingScrollRef.current;
     if (!container) return;
-    const amount = 260;
-    container.scrollBy({
-      left: direction === 'left' ? -amount : amount,
+    const clamped = Math.max(0, Math.min(index, hotEvents.length - 1));
+    const cardWidth = 260 + 12; // 카드 너비(260px) + gap(12px)
+    container.scrollTo({
+      left: clamped * cardWidth,
       behavior: 'smooth',
     });
+    setCurrentIndex(clamped);
   };
 
-  useEffect(() => {
-    const container = trendingScrollRef.current;
-    if (!container) return;
+  const handleScroll = (direction: 'left' | 'right') => {
+    const nextIndex = direction === 'left' ? currentIndex - 1 : currentIndex + 1;
+    if (nextIndex < 0) {
+      scrollToIndex(hotEvents.length - 1);
+    } else if (nextIndex >= hotEvents.length) {
+      scrollToIndex(0);
+    } else {
+      scrollToIndex(nextIndex);
+    }
+  };
 
-    const interval = setInterval(() => {
-      const maxScroll = container.scrollWidth - container.clientWidth;
-      if (container.scrollLeft >= maxScroll - 15) {
-        container.scrollTo({ left: 0, behavior: 'smooth' });
-      } else {
-        container.scrollBy({ left: 260, behavior: 'smooth' });
-      }
+  // 3초 자동 슬라이드
+  useEffect(() => {
+    if (hotEvents.length <= 1) return;
+
+    const timer = setInterval(() => {
+      setCurrentIndex((prev) => {
+        const next = prev >= hotEvents.length - 1 ? 0 : prev + 1;
+        const container = trendingScrollRef.current;
+        if (container) {
+          const cardWidth = 260 + 12;
+          container.scrollTo({
+            left: next * cardWidth,
+            behavior: 'smooth',
+          });
+        }
+        return next;
+      });
     }, 3000);
 
-    return () => clearInterval(interval);
-  }, []);
+    return () => clearInterval(timer);
+  }, [hotEvents.length]);
 
   const handleResetFilters = () => {
     setSelectedCategory('all');
@@ -290,11 +317,11 @@ export default function HomePage() {
     setDatePreset('all');
     setCustomStartDate('');
     setCustomEndDate('');
-    setSortOrder('latest');
+    setSortOrder('recommend');
     setSearchKeyword('');
   };
 
-  const currentSortLabel = SORT_OPTIONS.find((opt) => opt.id === sortOrder)?.label || '최신순';
+  const currentSortLabel = SORT_OPTIONS.find((opt) => opt.id === sortOrder)?.label || '추천순';
 
   return (
     <div className="min-h-screen bg-white text-ink flex flex-col pb-[calc(76px+env(safe-area-inset-bottom,0px))] md:pb-12">
@@ -550,10 +577,10 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* 가로 스크롤 스냅 카드 컨테이너 */}
+        {/* 가로 스크롤 카드 컨테이너 (스크롤바 숨김 및 부드러운 스크롤) */}
         <div
           ref={trendingScrollRef}
-          className="flex gap-3 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] snap-x pb-2 pt-1 -mx-4 px-4 sm:mx-0 sm:px-0"
+          className="flex gap-3 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] scroll-smooth pb-2 pt-1 -mx-4 px-4 sm:mx-0 sm:px-0"
         >
           {hotEvents.map((item, idx) => {
             const isFav = !!favorites[item.id];
@@ -564,7 +591,7 @@ export default function HomePage() {
               <Link
                 key={`hot-${item.id}`}
                 href={`/events/${item.id}`}
-                className="min-w-[240px] max-w-[260px] snap-start bg-white rounded-2xl border border-slate-200/80 shadow-[0_6px_20px_rgba(15,23,42,0.07)] overflow-hidden flex flex-col justify-between shrink-0 transition-all duration-200 hover:-translate-y-0.5 group"
+                className="min-w-[240px] max-w-[260px] bg-white rounded-2xl border border-slate-200/80 shadow-[0_6px_20px_rgba(15,23,42,0.07)] overflow-hidden flex flex-col justify-between shrink-0 transition-all duration-200 hover:-translate-y-0.5 group"
               >
                 {/* 상단 썸네일 */}
                 <div className="h-28 w-full relative overflow-hidden bg-slate-100">
@@ -637,18 +664,27 @@ export default function HomePage() {
 
         {/* 하단 페이지 인디케이터 도트 */}
         <div className="flex items-center justify-center gap-1.5 mt-2.5 mb-5">
-          <div className="w-1.5 h-1.5 rounded-full bg-brand" />
-          <div className="w-1.5 h-1.5 rounded-full bg-brand/30" />
-          <div className="w-1.5 h-1.5 rounded-full bg-brand/30" />
+          {hotEvents.map((_, idx) => (
+            <button
+              key={`dot-${idx}`}
+              type="button"
+              onClick={() => scrollToIndex(idx)}
+              className={cn(
+                "h-1.5 rounded-full transition-all duration-300 cursor-pointer",
+                idx === currentIndex ? "w-5 bg-brand" : "w-1.5 bg-brand/30 hover:bg-brand/50"
+              )}
+              aria-label={`${idx + 1}번째 공고 보기`}
+            />
+          ))}
         </div>
       </section>
 
       {/* 4. 섹션 2: 방금 올라왔어요 (헤더바 리팩토링) */}
       <section className="max-w-4xl w-full mx-auto px-4 sm:px-6 pt-2 pb-2">
-        <div className="flex items-center justify-between mb-3 px-1">
-          {/* 좌측: 타이틀 + 수치 뱃지 밀착 */}
-          <div className="flex items-center gap-1.5 min-w-0">
-            <span className="text-base sm:text-lg">✨</span>
+        <div className="w-full flex items-center justify-between mb-3 px-1 gap-2">
+          {/* 좌측: 타이틀 + 카운트 뱃지 (절대 축소되지 않도록 shrink-0 설정) */}
+          <div className="flex items-center gap-1.5 shrink-0 flex-wrap sm:flex-nowrap">
+            <span className="text-lg">✨</span>
             <h2 className="text-lg sm:text-xl font-bold text-ink tracking-tight whitespace-nowrap">
               방금 올라왔어요
             </h2>
@@ -685,52 +721,51 @@ export default function HomePage() {
             )}
           </div>
 
-          {/* 우측: [최신순 | 지도형] & [추천순 ∨] */}
-          <div className="flex items-center gap-1.5 shrink-0">
-            {/* [최신순 | 지도형] 세그먼트 */}
-            <div className="bg-slate-100 p-1 rounded-full flex items-center text-xs font-semibold">
+          {/* 우측: 슬라이딩 탭 + 정렬 드롭다운 (shrink-0 및 우측 정렬) */}
+          <div className="flex items-center gap-1.5 shrink-0 ml-auto">
+            {/* 뷰 모드 탭 (최신순 / 지도형) - 슬라이딩 인디케이터 */}
+            <div className="bg-slate-100 p-1 rounded-full flex items-center relative w-[140px] h-8 select-none">
+              {/* 슬라이딩 백그라운드 인디케이터 */}
+              <div
+                className={`absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] bg-brand rounded-full shadow-xs transition-transform duration-300 ease-out pointer-events-none ${
+                  viewMode === 'map' ? 'translate-x-[calc(100%+4px)]' : 'translate-x-0'
+                }`}
+              />
+
+              {/* 텍스트 버튼 1: 최신순 (또는 목록형) */}
               <button
                 type="button"
-                onClick={() => {
-                  setSortOrder('latest');
-                  setViewMode('list');
-                }}
-                className={cn(
-                  "rounded-full transition-all cursor-pointer",
-                  sortOrder === 'latest' && viewMode === 'list'
-                    ? "bg-brand text-white font-bold px-3 py-1 shadow-xs"
-                    : "text-muted hover:text-ink px-2.5 py-1"
-                )}
+                onClick={() => setViewMode('list')}
+                className={`relative z-10 w-1/2 text-center text-xs font-bold transition-colors duration-200 cursor-pointer ${
+                  viewMode === 'list' ? 'text-white' : 'text-slate-500 hover:text-ink'
+                }`}
               >
                 최신순
               </button>
+
+              {/* 텍스트 버튼 2: 지도형 */}
               <button
                 type="button"
-                onClick={() => setViewMode(viewMode === 'map' ? 'list' : 'map')}
-                className={cn(
-                  "rounded-full transition-all cursor-pointer",
-                  viewMode === 'map'
-                    ? "bg-brand text-white font-bold px-3 py-1 shadow-xs"
-                    : "text-muted hover:text-ink px-2.5 py-1"
-                )}
+                onClick={() => setViewMode('map')}
+                className={`relative z-10 w-1/2 text-center text-xs font-bold transition-colors duration-200 cursor-pointer ${
+                  viewMode === 'map' ? 'text-white' : 'text-slate-500 hover:text-ink'
+                }`}
               >
                 지도형
               </button>
             </div>
 
-            {/* [추천순 ∨] 별도 독립 버튼 */}
-            <div ref={sortDropdownRef} className="relative ml-1.5">
+            {/* 정렬 드롭다운 */}
+            <div ref={sortDropdownRef} className="relative ml-1">
               <button
                 type="button"
                 onClick={() => setIsSortDropdownOpen((prev) => !prev)}
                 className={cn(
-                  "bg-white border border-slate-200 px-3 py-1 rounded-full text-xs font-semibold text-muted hover:text-ink shadow-2xs flex items-center gap-1 transition-colors cursor-pointer",
-                  sortOrder !== 'latest' && viewMode === 'list' && "border-brand text-brand font-bold"
+                  "bg-white border border-slate-200 px-3 py-1.5 rounded-full text-xs font-semibold text-muted hover:text-ink shadow-2xs flex items-center gap-1 transition-colors cursor-pointer",
+                  sortOrder !== 'recommend' && viewMode === 'list' && "border-brand text-brand font-bold"
                 )}
               >
-                <span>
-                  {sortOrder === 'wage_desc' ? '보수순' : sortOrder === 'deadline' ? '마감순' : '추천순'}
-                </span>
+                <span>{currentSortLabel}</span>
                 <ChevronDown className={cn("w-3 h-3 transition-transform duration-200", isSortDropdownOpen && "rotate-180")} />
               </button>
 

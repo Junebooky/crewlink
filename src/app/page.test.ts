@@ -101,4 +101,26 @@ describe('Home Page Revamp Verification', () => {
     expect(pageContent).toContain('ChevronLeft');
     expect(pageContent).toContain('ChevronRight');
   });
+
+  it('홈 피드 4대 핵심 결함(수치 뱃지 분리, 슬라이딩 인디케이터, 정렬 동기화, 3초 자동 롤링)이 해결되어야 한다', () => {
+    const pageContent = fs.readFileSync(path.resolve(process.cwd(), 'src/app/page.tsx'), 'utf-8');
+    // 1. 수치 뱃지 가림 방지 레이아웃 분리
+    expect(pageContent).toContain('shrink-0');
+    expect(pageContent).toContain('ml-auto');
+    expect(pageContent).toContain('filteredAndSortedEvents.length');
+
+    // 2. 최신순-지도형 슬라이딩 인디케이터
+    expect(pageContent).toContain('w-[140px] h-8 select-none');
+    expect(pageContent).toContain('translate-x-[calc(100%+4px)]');
+    expect(pageContent).toContain('transition-transform duration-300');
+
+    // 3. 정렬 라벨 동기화
+    expect(pageContent).toContain('currentSortLabel');
+    expect(pageContent).toContain("opt.id === sortOrder)?.label || '추천순'");
+
+    // 4. 지금 핫한 공고 3초 자동 롤링 스냅 충돌 방지 및 인덱스 스크롤
+    expect(pageContent).toContain('scrollToIndex');
+    expect(pageContent).toContain('cardWidth');
+    expect(pageContent).toContain('scroll-smooth');
+  });
 });
