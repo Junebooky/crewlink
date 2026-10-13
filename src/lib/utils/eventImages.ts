@@ -48,3 +48,18 @@ export function getCategoryFallbackImage(category?: string | null, title?: strin
 
   return 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=500&auto=format&fit=crop&q=80';
 }
+
+/**
+ * 업무 태그를 최대 4글자 이내로 정갈하게 압축하는 함수
+ */
+export function formatJobTag(tag: string): string {
+  const raw = tag.trim().replace(/\s+/g, '');
+  if (raw.includes('부스') || raw.includes('체험')) return '부스지원';
+  if (raw.includes('동선') || raw.includes('대기열')) return '동선관리';
+  if (raw.includes('안내') || raw.includes('응대')) return '현장안내';
+  if (raw.includes('운영') || raw.includes('스태프')) return '행사운영';
+  if (raw.includes('설치') || raw.includes('무대')) return '무대설치';
+  if (raw.includes('티켓') || raw.includes('검표')) return '티켓검표';
+  if (raw.includes('주차') || raw.includes('차량')) return '주차안내';
+  return tag.length > 4 ? tag.slice(0, 4) : tag;
+}

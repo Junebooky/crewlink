@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
-import { getCategoryFallbackImage } from '@/lib/utils/eventImages';
+import { getCategoryFallbackImage, formatJobTag } from '@/lib/utils/eventImages';
 
 describe('Home Page Revamp Verification', () => {
   it('히어로 3D 투명 에셋 public/assets/clay/hero_white.png 파일이 실존해야 한다', () => {
@@ -78,5 +78,27 @@ describe('Home Page Revamp Verification', () => {
     expect(pageContent).toContain('최신순');
     expect(pageContent).toContain('지도형');
     expect(pageContent).toContain('추천순');
+  });
+
+  it('업무 태그가 formatJobTag 유틸로 4글자 이내로 정갈하게 압축되어야 한다', () => {
+    expect(formatJobTag('부스 체험 운영 지원')).toBe('부스지원');
+    expect(formatJobTag('대기열 동선 관리')).toBe('동선관리');
+    expect(formatJobTag('VIP 현장 안내')).toBe('현장안내');
+    expect(formatJobTag('행사 스태프 총괄')).toBe('행사운영');
+    expect(formatJobTag('무대 음향 설치')).toBe('무대설치');
+    expect(formatJobTag('입장 티켓 검표')).toBe('티켓검표');
+    expect(formatJobTag('지하 주차장 차량 관리')).toBe('주차안내');
+    expect(formatJobTag('단기알바')).toBe('단기알바');
+    expect(formatJobTag('초단기특수업무')).toBe('초단기특');
+  });
+
+  it('핫한 공고 캐러셀에 노박스 화살표, 스크롤바 숨김 및 자동 스크롤 로직이 포함되어야 한다', () => {
+    const pageContent = fs.readFileSync(path.resolve(process.cwd(), 'src/app/page.tsx'), 'utf-8');
+    expect(pageContent).toContain('[&::-webkit-scrollbar]:hidden');
+    expect(pageContent).toContain('trendingScrollRef');
+    expect(pageContent).toContain('handleScroll');
+    expect(pageContent).toContain('formatJobTag(tag)');
+    expect(pageContent).toContain('ChevronLeft');
+    expect(pageContent).toContain('ChevronRight');
   });
 });

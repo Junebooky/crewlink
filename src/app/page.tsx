@@ -8,6 +8,7 @@ import {
   Clock,
   Search,
   Check,
+  ChevronLeft,
   ChevronRight,
   ChevronDown,
   ShieldCheck,
@@ -44,6 +45,21 @@ import {
   ROLLING_DURATION_MS,
 } from '@/lib/search/rollingPlaceholder';
 import { getCategoryFallbackImage } from '@/lib/utils/eventImages';
+
+/**
+ * 업무 태그를 최대 4글자 이내로 정갈하게 압축하는 함수
+ */
+function formatJobTag(tag: string): string {
+  const raw = tag.trim().replace(/\s+/g, '');
+  if (raw.includes('부스') || raw.includes('체험')) return '부스지원';
+  if (raw.includes('동선') || raw.includes('대기열')) return '동선관리';
+  if (raw.includes('안내') || raw.includes('응대')) return '현장안내';
+  if (raw.includes('운영') || raw.includes('스태프')) return '행사운영';
+  if (raw.includes('설치') || raw.includes('무대')) return '무대설치';
+  if (raw.includes('티켓') || raw.includes('검표')) return '티켓검표';
+  if (raw.includes('주차') || raw.includes('차량')) return '주차안내';
+  return tag.length > 4 ? tag.slice(0, 4) : tag;
+}
 
 const CATEGORY_OPTIONS: { id: 'all' | EventCategory; label: string }[] = [
   { id: 'all', label: '전체 행사' },
@@ -239,6 +255,34 @@ export default function HomePage() {
   const hotEvents = useMemo(() => {
     return events.slice(0, 4);
   }, [events]);
+
+  const trendingScrollRef = useRef<HTMLDivElement>(null);
+
+  const handleScroll = (direction: 'left' | 'right') => {
+    const container = trendingScrollRef.current;
+    if (!container) return;
+    const amount = 260;
+    container.scrollBy({
+      left: direction === 'left' ? -amount : amount,
+      behavior: 'smooth',
+    });
+  };
+
+  useEffect(() => {
+    const container = trendingScrollRef.current;
+    if (!container) return;
+
+    const interval = setInterval(() => {
+      const maxScroll = container.scrollWidth - container.clientWidth;
+      if (container.scrollLeft >= maxScroll - 15) {
+        container.scrollTo({ left: 0, behavior: 'smooth' });
+      } else {
+        container.scrollBy({ left: 260, behavior: 'smooth' });
+      }
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const handleResetFilters = () => {
     setSelectedCategory('all');
@@ -479,21 +523,38 @@ export default function HomePage() {
       <section className="max-w-4xl w-full mx-auto px-4 sm:px-6 pt-4 pb-2">
         <div className="flex items-center justify-between mb-3 px-1">
           <div className="flex items-center gap-1.5">
-            <span className="text-xl">🔥</span>
-            <h2 className="text-lg font-extrabold text-ink tracking-tight">지금 핫한 공고</h2>
+            <span className="text-lg">🔥</span>
+            <h2 className="text-lg sm:text-xl font-bold text-ink tracking-tight">
+              지금 핫한 공고
+            </h2>
           </div>
-          <button
-            type="button"
-            onClick={handleResetFilters}
-            className="text-xs font-semibold text-muted hover:text-ink flex items-center gap-0.5 cursor-pointer"
-          >
-            <span>전체보기</span>
-            <ChevronRight className="w-3.5 h-3.5" />
-          </button>
+
+          {/* 박스 없는 미니멀 화살표 */}
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => handleScroll('left')}
+              className="p-1 text-slate-400 hover:text-ink active:scale-90 transition-all cursor-pointer"
+              aria-label="이전 공고 보기"
+            >
+              <ChevronLeft className="w-5 h-5 stroke-[2.5]" />
+            </button>
+            <button
+              type="button"
+              onClick={() => handleScroll('right')}
+              className="p-1 text-slate-400 hover:text-ink active:scale-90 transition-all cursor-pointer"
+              aria-label="다음 공고 보기"
+            >
+              <ChevronRight className="w-5 h-5 stroke-[2.5]" />
+            </button>
+          </div>
         </div>
 
         {/* 가로 스크롤 스냅 카드 컨테이너 */}
-        <div className="flex gap-3 overflow-x-auto no-scrollbar snap-x pb-2 pt-1 -mx-4 px-4 sm:mx-0 sm:px-0">
+        <div
+          ref={trendingScrollRef}
+          className="flex gap-3 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] snap-x pb-2 pt-1 -mx-4 px-4 sm:mx-0 sm:px-0"
+        >
           {hotEvents.map((item, idx) => {
             const isFav = !!favorites[item.id];
             const badgeText =
@@ -585,15 +646,13 @@ export default function HomePage() {
       {/* 4. 섹션 2: 방금 올라왔어요 (헤더바 리팩토링) */}
       <section className="max-w-4xl w-full mx-auto px-4 sm:px-6 pt-2 pb-2">
         <div className="flex items-center justify-between mb-3 px-1">
-          {/* 좌측: 타이틀 + 카운트 뱃지 */}
-          <div className="flex items-center gap-2 min-w-0">
-            <div className="flex items-center gap-1.5 whitespace-nowrap shrink-0">
-              <span className="text-base sm:text-lg">✨</span>
-              <h2 className="text-lg sm:text-xl font-bold text-ink tracking-tight whitespace-nowrap">
-                방금 올라왔어요
-              </h2>
-            </div>
-            <span className="bg-brand-soft/50 text-brand-strong text-xs font-bold px-2 py-0.5 rounded-full shrink-0">
+          {/* 좌측: 타이틀 + 수치 뱃지 밀착 */}
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="text-base sm:text-lg">✨</span>
+            <h2 className="text-lg sm:text-xl font-bold text-ink tracking-tight whitespace-nowrap">
+              방금 올라왔어요
+            </h2>
+            <span className="bg-brand-soft/60 text-brand-strong text-xs font-bold px-2 py-0.5 rounded-full whitespace-nowrap">
               {filteredAndSortedEvents.length}개
             </span>
             {/* 필터 활성화 시 리셋 버튼 */}
@@ -604,7 +663,7 @@ export default function HomePage() {
                 <button
                   type="button"
                   onClick={handleResetFilters}
-                  className="h-6 px-2 rounded-full bg-white text-muted hover:text-ink text-[11px] font-medium flex items-center gap-1 transition-colors cursor-pointer shadow-2xs shrink-0"
+                  className="h-6 px-2 rounded-full bg-white text-muted hover:text-ink text-[11px] font-medium flex items-center gap-1 transition-colors cursor-pointer shadow-2xs shrink-0 ml-1"
                 >
                   <RotateCcw className="w-3 h-3" />
                   <span>초기화</span>
@@ -612,7 +671,7 @@ export default function HomePage() {
               )}
             {/* 활성 날짜 뱃지 */}
             {activeDateRange && (
-              <span className="h-6 px-2 rounded-full bg-brand-soft text-brand-strong border border-brand-border text-[11px] font-semibold flex items-center gap-1 shrink-0">
+              <span className="h-6 px-2 rounded-full bg-brand-soft text-brand-strong border border-brand-border text-[11px] font-semibold flex items-center gap-1 shrink-0 ml-1">
                 <span>{activeDateRange.label}</span>
                 <button
                   type="button"
@@ -626,8 +685,8 @@ export default function HomePage() {
             )}
           </div>
 
-          {/* 우측: [최신순 | 지도형] 단일 세그먼트 + [추천순 ∨] 독립 버튼 */}
-          <div className="flex items-center shrink-0">
+          {/* 우측: [최신순 | 지도형] & [추천순 ∨] */}
+          <div className="flex items-center gap-1.5 shrink-0">
             {/* [최신순 | 지도형] 세그먼트 */}
             <div className="bg-slate-100 p-1 rounded-full flex items-center text-xs font-semibold">
               <button
@@ -808,7 +867,7 @@ export default function HomePage() {
                             key={tag}
                             className="bg-brand-soft/40 text-brand-strong text-[11px] font-semibold px-2.5 py-1 rounded-lg shrink-0 whitespace-nowrap"
                           >
-                            {tag}
+                            {formatJobTag(tag)}
                           </span>
                         ))}
                       </div>
