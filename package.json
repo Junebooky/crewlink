@@ -9,7 +9,9 @@
     "lint": "eslint",
     "test": "vitest run",
     "seed:demo": "node scripts/seed-demo-data.mjs",
-    "seed:cleanup": "node scripts/cleanup-demo-data.mjs"
+    "seed:cleanup": "node scripts/cleanup-demo-data.mjs",
+    "mvp:rebuild": "node scripts/rebuild-mvp-data.mjs",
+    "mvp:verify": "node scripts/verify-mvp-data.mjs"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.2.0",

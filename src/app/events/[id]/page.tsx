@@ -1,15 +1,10 @@
 import { Suspense } from 'react';
 import { notFound } from 'next/navigation';
-import { getPublicEvents, getEventById, transformProjectToEvent } from '@/lib/data/events';
+import { transformProjectToEvent } from '@/lib/data/events';
 import { createAdminClient } from '@/lib/supabase/server';
 import EventDetailClient from './EventDetailClient';
 
-
-export function generateStaticParams() {
-  return getPublicEvents().map((e) => ({
-    id: e.id,
-  }));
-}
+export const dynamic = 'force-dynamic';
 
 async function EventDetailContent({
   params,
@@ -17,26 +12,27 @@ async function EventDetailContent({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  let event = getEventById(id);
 
-  if (!event) {
-    // Check Supabase projects table
-    const supabase = createAdminClient();
-    const { data: dbProject } = await supabase
-      .from('projects')
-      .select('*, organizations(name), shifts(*)')
-      .eq('id', id)
-      .maybeSingle();
-
-    if (dbProject) {
-      event = transformProjectToEvent(dbProject);
-    }
-  }
-
-  if (!event) {
+  // Validate that id is a valid UUID format
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+  if (!isUuid) {
     notFound();
   }
 
+  // Check Supabase projects table exclusively
+  const supabase = createAdminClient();
+  const { data: dbProject, error } = await supabase
+    .from('projects')
+    .select('*, organizations(name, is_verified), shifts(*)')
+    .eq('id', id)
+    .in('status', ['published', 'in_progress'])
+    .maybeSingle();
+
+  if (error || !dbProject) {
+    notFound();
+  }
+
+  const event = transformProjectToEvent(dbProject);
   return <EventDetailClient id={id} event={event} />;
 }
 
@@ -49,7 +45,7 @@ export default function EventDetailPage({
     <Suspense
       fallback={
         <div className="min-h-screen bg-canvas flex items-center justify-center p-6 text-muted text-xs">
-          불러오는 중…
+          공고 정보를 불러오는 중…
         </div>
       }
     >

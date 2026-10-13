@@ -101,22 +101,8 @@ export function AppShell({ children, initialRole }: AppShellProps) {
         const isExplicitlyLoggedOut =
           typeof window !== 'undefined' && localStorage.getItem('crewlink_logged_out') === 'true';
 
-        const roleActorMap: Record<string, string> = {
-          crew: '11111111-1111-1111-1111-111111111111',
-          client: '33333333-3333-3333-3333-333333333333',
-          ops: '22222222-2222-2222-2222-222222222222',
-        };
-
-        const actorId = roleActorMap[role] || roleActorMap.crew;
-
-        const headers: Record<string, string> =
-          process.env.NODE_ENV !== 'production' && !isExplicitlyLoggedOut
-            ? { 'x-actor-person-id': actorId }
-            : {};
-
         const res = await fetch('/api/auth/me', {
           cache: 'no-store',
-          headers,
         });
 
         if (res.ok) {

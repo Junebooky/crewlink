@@ -143,13 +143,13 @@ describe('ApplicantAvatarStack & Social Proof Specification Verification', () =>
     // 필수 날짜 및 유효성 검증
     expect(routeContent).toContain('shifts');
     expect(routeContent).toContain('selectedDates');
-    expect(routeContent).toContain('existingApps');
-    // 중복 지원 방어
-    expect(routeContent).toContain('이미 지원한 일정이 포함되어 있습니다');
+    expect(routeContent).toContain('apply_shifts_atomic');
   });
 
-  it('시드 및 정리 스크립트가 scripts 디렉토리에 존재해야 한다', () => {
+  it('시드, 리빌드 및 검증 스크립트가 scripts 디렉토리에 존재해야 한다', () => {
     expect(fs.existsSync(path.resolve(process.cwd(), 'scripts/seed-demo-data.mjs'))).toBe(true);
     expect(fs.existsSync(path.resolve(process.cwd(), 'scripts/cleanup-demo-data.mjs'))).toBe(true);
+    expect(fs.existsSync(path.resolve(process.cwd(), 'scripts/rebuild-mvp-data.mjs'))).toBe(true);
+    expect(fs.existsSync(path.resolve(process.cwd(), 'scripts/verify-mvp-data.mjs'))).toBe(true);
   });
 });

@@ -24,7 +24,6 @@ import { MobileBottomNav } from '@/components/common/MobileBottomNav';
 import { EventMapExplorer } from '@/components/explore/EventMapExplorer';
 import { ApplicantAvatarStack } from '@/components/events/ApplicantAvatarStack';
 import {
-  getPublicEvents,
   type EventCategory,
   type EventItem,
 } from '@/lib/data/events';
@@ -86,7 +85,8 @@ const SORT_OPTIONS: { id: SortOrder; label: string }[] = [
 ];
 
 export default function HomePage() {
-  const [events, setEvents] = useState<EventItem[]>(() => getPublicEvents());
+  const [events, setEvents] = useState<EventItem[]>([]);
+  const [isEventsLoading, setIsEventsLoading] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
@@ -101,6 +101,8 @@ export default function HomePage() {
         }
       } catch (err) {
         console.error('Failed to load events from DB:', err);
+      } finally {
+        if (isMounted) setIsEventsLoading(false);
       }
     }
     loadEvents();
@@ -849,7 +851,22 @@ export default function HomePage() {
         </main>
       ) : (
         <main className="max-w-4xl w-full mx-auto px-4 sm:px-6 pt-1 flex-1">
-          {filteredAndSortedEvents.length === 0 ? (
+          {isEventsLoading ? (
+            <div className="space-y-3.5">
+              {[1, 2, 3].map((n) => (
+                <div
+                  key={n}
+                  className="w-full h-36 rounded-3xl bg-white border border-border/40 p-5 shadow-2xs animate-pulse flex flex-col justify-between"
+                >
+                  <div className="space-y-2">
+                    <div className="w-1/3 h-4 bg-slate-100 rounded-md" />
+                    <div className="w-2/3 h-5 bg-slate-100 rounded-md" />
+                  </div>
+                  <div className="w-1/2 h-4 bg-slate-100 rounded-md" />
+                </div>
+              ))}
+            </div>
+          ) : filteredAndSortedEvents.length === 0 ? (
             <div className="py-20 text-center rounded-3xl bg-white border border-border/40 space-y-3 shadow-[0_4px_16px_rgba(0,0,0,0.04)]">
               <p className="text-base font-bold text-ink">선택한 조건의 모집 공고가 없어요</p>
               <p className="text-xs text-muted break-keep">

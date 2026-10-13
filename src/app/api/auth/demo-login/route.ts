@@ -1,75 +1,101 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
+import fs from 'node:fs';
+import path from 'node:path';
 
-// Known registered demo accounts for MVP login helper
-const DEMO_ACCOUNTS: Record<string, { email: string; password: string; role: 'client' | 'crew' }> = {
-  'client_metaverse@crewlink.kr': {
-    email: 'client_metaverse@crewlink.kr',
-    password: 'CrewLink2026!client-nextwave',
-    role: 'client',
-  },
-  'client_exhibition@crewlink.kr': {
-    email: 'client_exhibition@crewlink.kr',
-    password: 'CrewLink2026!client-mice',
-    role: 'client',
-  },
-  'client_festival@crewlink.kr': {
-    email: 'client_festival@crewlink.kr',
-    password: 'CrewLink2026!client-liveculture',
-    role: 'client',
-  },
-  'crew_doyoon@crewlink.kr': {
-    email: 'crew_doyoon@crewlink.kr',
-    password: 'CrewLink2026!crew-1',
-    role: 'crew',
-  },
-  'crew_seojun@crewlink.kr': {
-    email: 'crew_seojun@crewlink.kr',
-    password: 'CrewLink2026!crew-2',
-    role: 'crew',
-  },
-  'crew_jiwon@crewlink.kr': {
-    email: 'crew_jiwon@crewlink.kr',
-    password: 'CrewLink2026!crew-3',
-    role: 'crew',
-  },
-  'crew_minho@crewlink.kr': {
-    email: 'crew_minho@crewlink.kr',
-    password: 'CrewLink2026!crew-4',
-    role: 'crew',
-  },
-};
+interface DemoAccountRecord {
+  email: string;
+  password?: string;
+  role: 'client' | 'crew';
+  name?: string;
+  personId?: string;
+}
+
+function loadRegisteredAccounts(): Map<string, DemoAccountRecord> {
+  const map = new Map<string, DemoAccountRecord>();
+  try {
+    const secretsPath = path.resolve(process.cwd(), '.secrets/demo_accounts.json');
+    if (fs.existsSync(secretsPath)) {
+      const data = JSON.parse(fs.readFileSync(secretsPath, 'utf-8'));
+      if (Array.isArray(data?.accounts)) {
+        for (const acc of data.accounts) {
+          map.set(acc.email, acc);
+          if (acc.personId) {
+            map.set(acc.personId, acc);
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('[demo-login] failed to read .secrets/demo_accounts.json:', err);
+  }
+  return map;
+}
 
 export async function POST(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    let requestedRole = searchParams.get('role');
     let requestedEmail = searchParams.get('email');
+    let requestedAccountId = searchParams.get('accountId');
+    let requestedRole = searchParams.get('role');
 
     try {
       const body = await request.clone().json();
-      if (body?.role) requestedRole = body.role;
       if (body?.email) requestedEmail = body.email;
+      if (body?.accountId) requestedAccountId = body.accountId;
+      if (body?.role) requestedRole = body.role;
     } catch {
-      // no body
+      // no json body
     }
 
-    // Select account from registered demo accounts
-    let targetAccount = requestedEmail ? DEMO_ACCOUNTS[requestedEmail] : null;
+    const accountsMap = loadRegisteredAccounts();
 
-    if (!targetAccount) {
-      if (requestedRole === 'client') {
-        targetAccount = DEMO_ACCOUNTS['client_metaverse@crewlink.kr'];
-      } else {
-        targetAccount = DEMO_ACCOUNTS['crew_doyoon@crewlink.kr'];
+    let targetAccount: DemoAccountRecord | null = null;
+    if (requestedAccountId && accountsMap.has(requestedAccountId)) {
+      targetAccount = accountsMap.get(requestedAccountId)!;
+    } else if (requestedEmail && accountsMap.has(requestedEmail)) {
+      targetAccount = accountsMap.get(requestedEmail)!;
+    } else if (requestedAccountId) {
+      // Lookup by person ID in Supabase directly
+      const adminClient = createAdminClient();
+      const { data: person } = await adminClient
+        .from('people')
+        .select('id, auth_user_id, full_name, display_name')
+        .eq('id', requestedAccountId)
+        .maybeSingle();
+
+      if (person?.auth_user_id) {
+        const { data: authUser } = await adminClient.auth.admin.getUserById(person.auth_user_id);
+        if (authUser?.user?.email && accountsMap.has(authUser.user.email)) {
+          targetAccount = accountsMap.get(authUser.user.email)!;
+        }
       }
     }
 
+    // Strict validation: No arbitrary fallback
     if (!targetAccount) {
-      return NextResponse.json({ message: '허용되지 않은 데모 계정입니다.' }, { status: 400 });
+      return NextResponse.json(
+        { message: '등록되지 않았거나 유효하지 않은 테스트 계정입니다.' },
+        { status: 400 }
+      );
     }
 
-    // 1. Authenticate session with Supabase Auth
+    // Role verification
+    if (requestedRole && targetAccount.role !== requestedRole) {
+      return NextResponse.json(
+        { message: '요청한 역할과 계정의 역할이 일치하지 않습니다.' },
+        { status: 403 }
+      );
+    }
+
+    if (!targetAccount.password) {
+      return NextResponse.json(
+        { message: '계정 로그인 정보를 찾을 수 없습니다.' },
+        { status: 500 }
+      );
+    }
+
+    // 1. Authenticate with Supabase Auth (server SSR client sets session cookies)
     const serverSupabase = await createClient();
     const { data: signInData, error: signInError } = await serverSupabase.auth.signInWithPassword({
       email: targetAccount.email,
@@ -88,19 +114,27 @@ export async function POST(request: Request) {
     const adminClient = createAdminClient();
     const { data: person } = await adminClient
       .from('people')
-      .select('id, full_name, display_name')
+      .select('id, full_name, display_name, crew_profiles(profile_image_url)')
       .eq('auth_user_id', signInData.user.id)
       .maybeSingle();
+
+    const profile = Array.isArray(person?.crew_profiles)
+      ? person?.crew_profiles[0]
+      : person?.crew_profiles;
+
+    const redirectUrl = targetAccount.role === 'client' ? '/client' : '/crew/schedule';
 
     return NextResponse.json({
       success: true,
       user: {
         id: signInData.user.id,
         email: targetAccount.email,
-        fullName: person?.full_name || person?.display_name || targetAccount.email,
+        fullName: person?.full_name || person?.display_name || targetAccount.name || targetAccount.email,
         personId: person?.id || null,
         role: targetAccount.role,
+        profileImageUrl: profile?.profile_image_url || null,
       },
+      redirectUrl,
       session: signInData.session,
     });
   } catch (err: unknown) {

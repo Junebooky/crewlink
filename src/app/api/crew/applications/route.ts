@@ -2,9 +2,171 @@ import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { getAuthenticatedContext } from '@/lib/auth/serverAuth';
 
+/**
+ * GET /api/crew/applications
+ * Returns authenticated crew member's real applications & assignments from DB
+ */
+export async function GET(request: Request) {
+  try {
+    const { authContext, errorResponse } = await getAuthenticatedContext(request, 'crew');
+    if (errorResponse) {
+      return errorResponse;
+    }
+    if (!authContext) {
+      return NextResponse.json({ message: '다시 로그인해 주세요.' }, { status: 401 });
+    }
+
+    const supabase = createAdminClient();
+
+    // 1. Fetch crew applications with projects and shifts
+    const { data: applications, error: appError } = await supabase
+      .from('applications')
+      .select(`
+        id,
+        project_id,
+        shift_id,
+        status,
+        applied_at,
+        projects (
+          id,
+          title,
+          venue_name,
+          road_address,
+          start_date,
+          end_date,
+          sow_spec,
+          organizations (name)
+        ),
+        shifts (
+          id,
+          date,
+          start_time,
+          end_time,
+          daily_wage,
+          hourly_rate_won
+        )
+      `)
+      .eq('crew_person_id', authContext.personId)
+      .order('applied_at', { ascending: false });
+
+    if (appError) {
+      console.error('[GET /api/crew/applications] appError:', appError);
+      return NextResponse.json({ message: appError.message }, { status: 500 });
+    }
+
+    // 2. Fetch assignments for this crew member
+    const { data: assignments, error: assignError } = await supabase
+      .from('assignments')
+      .select(`
+        id,
+        shift_id,
+        shift_slot_id,
+        status,
+        assigned_at,
+        departed_at,
+        checked_in_at,
+        shifts (
+          id,
+          project_id,
+          date,
+          start_time,
+          end_time,
+          daily_wage,
+          hourly_rate_won,
+          projects (
+            id,
+            title,
+            venue_name,
+            road_address,
+            organizations (name)
+          )
+        )
+      `)
+      .eq('crew_person_id', authContext.personId)
+      .not('status', 'in', '("cancelled","released")')
+      .order('assigned_at', { ascending: false });
+
+    if (assignError) {
+      console.error('[GET /api/crew/applications] assignError:', assignError);
+    }
+
+    // Map applications
+    const formattedApps = (applications || []).map((app) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const project = app.projects as any;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const shift = app.shifts as any;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const sow = (project?.sow_spec as Record<string, any>) || {};
+
+      return {
+        id: app.id,
+        projectId: app.project_id,
+        projectTitle: project?.title || '행사',
+        hostName: project?.organizations?.name || '주최사',
+        venueName: project?.venue_name || '행사장',
+        roadAddress: project?.road_address || '',
+        shiftId: app.shift_id,
+        date: shift?.date || '',
+        startTime: shift?.start_time || '09:00',
+        endTime: shift?.end_time || '18:00',
+        dailyWage: shift?.daily_wage || sow?.dailyWage || 130000,
+        status: app.status, // 'applied', 'approved', 'rejected', 'withdrawn'
+        appliedAt: app.applied_at,
+      };
+    });
+
+    // Map assignments (confirmed work schedules)
+    const formattedAssignments = (assignments || []).map((asgn) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const shift = asgn.shifts as any;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const project = shift?.projects as any;
+
+      return {
+        id: asgn.id,
+        shiftId: asgn.shift_id,
+        projectId: shift?.project_id,
+        projectTitle: project?.title || '배정 행사',
+        hostName: project?.organizations?.name || '주최사',
+        venueName: project?.venue_name || '행사장',
+        roadAddress: project?.road_address || '',
+        date: shift?.date || '',
+        startTime: shift?.start_time || '09:00',
+        endTime: shift?.end_time || '18:00',
+        dailyWage: shift?.daily_wage || 130000,
+        status: asgn.status, // 'assigned', 'departed', 'checked_in', 'completed'
+        assignedAt: asgn.assigned_at,
+        departedAt: asgn.departed_at,
+        checkedInAt: asgn.checked_in_at,
+      };
+    });
+
+    return NextResponse.json({
+      success: true,
+      applications: formattedApps,
+      assignments: formattedAssignments,
+      counts: {
+        totalApplications: formattedApps.length,
+        applied: formattedApps.filter((a) => a.status === 'applied').length,
+        approved: formattedApps.filter((a) => a.status === 'approved').length,
+        rejected: formattedApps.filter((a) => a.status === 'rejected').length,
+        withdrawn: formattedApps.filter((a) => a.status === 'withdrawn').length,
+        activeAssignments: formattedAssignments.length,
+      },
+    });
+  } catch (err: unknown) {
+    console.error('[GET /api/crew/applications] error:', err);
+    return NextResponse.json({ message: (err as Error).message }, { status: 500 });
+  }
+}
+
+/**
+ * POST /api/crew/applications
+ * Atomic multi-shift application submission using DB RPC
+ */
 export async function POST(request: Request) {
   try {
-    // 1. Session user authentication & ownership guard
     const { authContext, errorResponse } = await getAuthenticatedContext(request, 'crew');
     if (errorResponse) {
       return errorResponse;
@@ -18,8 +180,6 @@ export async function POST(request: Request) {
       eventId,
       projectId: reqProjectId,
       shiftId: reqShiftId,
-      applicantName,
-      applicantPhone,
       selectedDates,
       agreeNotice,
       agreePrivacy,
@@ -33,9 +193,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const supabase = createAdminClient();
     const targetProjectId = reqProjectId || eventId;
-
     if (!targetProjectId) {
       return NextResponse.json(
         { message: '지원할 공고 ID가 누락되었습니다.' },
@@ -43,166 +201,127 @@ export async function POST(request: Request) {
       );
     }
 
-    // 2. Fetch project from DB
-    const { data: project, error: projError } = await supabase
-      .from('projects')
-      .select('id, title, status, start_date, end_date, sow_spec')
-      .eq('id', targetProjectId)
-      .maybeSingle();
+    const supabase = createAdminClient();
 
-    if (projError || !project) {
-      return NextResponse.json(
-        { message: '해당 공고를 찾을 수 없습니다.' },
-        { status: 404 }
-      );
-    }
-
-    if (project.status !== 'published' && project.status !== 'in_progress') {
-      return NextResponse.json(
-        { message: '모집이 종료되었거나 취소된 공고예요.' },
-        { status: 400 }
-      );
-    }
-
-    // 3. Fetch all shifts belonging to this project
+    // 1. Resolve target shifts
     const { data: projectShifts, error: shiftError } = await supabase
       .from('shifts')
-      .select('id, project_id, shift_name, date, start_time, end_time, daily_wage')
+      .select('id, date')
       .eq('project_id', targetProjectId)
       .order('date', { ascending: true });
 
     if (shiftError || !projectShifts || projectShifts.length === 0) {
       return NextResponse.json(
-        { message: '지원 가능한 일정이 등록되어 있지 않습니다.' },
+        { message: '공고의 근무 일정을 찾을 수 없습니다.' },
         { status: 404 }
       );
     }
 
-    const sow = (project.sow_spec as Record<string, unknown>) || {};
-    const isMultiDayRequired = Boolean(sow.isMultiDay || sow.isMultiDayRequired);
-
-    // Determine target shifts to apply
-    let targetShifts: typeof projectShifts = [];
+    let targetShiftIds: string[] = [];
 
     if (Array.isArray(selectedDates) && selectedDates.length > 0) {
-      // Validate all selectedDates belong to project shifts
-      const dateSet = new Set(selectedDates.map(String));
-      targetShifts = projectShifts.filter((s) => {
-        const sDate = s.date || (s.start_time ? s.start_time.slice(0, 10) : '');
-        return dateSet.has(sDate);
-      });
-
-      if (targetShifts.length !== dateSet.size) {
-        return NextResponse.json(
-          { message: '선택한 일정 중 존재하지 않는 날짜가 포함되어 있습니다.' },
-          { status: 400 }
-        );
-      }
-
-      // Check full schedule requirement if applicable
-      if (isMultiDayRequired && targetShifts.length < projectShifts.length) {
-        return NextResponse.json(
-          { message: '이 공고는 전체 일정 참여형 공고입니다. 모든 일정을 선택해 주세요.' },
-          { status: 400 }
-        );
-      }
+      const selectedSet = new Set(selectedDates);
+      targetShiftIds = projectShifts
+        .filter((s) => selectedSet.has(s.date) || selectedSet.has(s.id))
+        .map((s) => s.id);
     } else if (reqShiftId) {
-      const matchedShift = projectShifts.find((s) => s.id === reqShiftId);
-      if (!matchedShift) {
-        return NextResponse.json(
-          { message: '해당 공고에 속하지 않는 일정입니다.' },
-          { status: 400 }
-        );
-      }
-      targetShifts = [matchedShift];
+      const matched = projectShifts.find((s) => s.id === reqShiftId);
+      if (matched) targetShiftIds = [matched.id];
     } else if (projectShifts.length === 1) {
-      targetShifts = [projectShifts[0]];
-    } else {
+      targetShiftIds = [projectShifts[0].id];
+    }
+
+    if (targetShiftIds.length === 0) {
       return NextResponse.json(
-        { message: '지원할 일정을 선택해 주세요.' },
+        { message: '지원할 일정을 하나 이상 선택해 주세요.' },
         { status: 400 }
       );
     }
 
-    // 4. Duplicate application check for these shifts
-    const targetShiftIds = targetShifts.map((s) => s.id);
-    const { data: existingApps } = await supabase
-      .from('applications')
-      .select('id, shift_id, status')
-      .in('shift_id', targetShiftIds)
-      .eq('crew_person_id', authContext.personId);
+    // 2. Call atomic DB procedure
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: rpcResult, error: rpcErr } = await (supabase.rpc as any)('apply_shifts_atomic', {
+      p_project_id: targetProjectId,
+      p_shift_ids: targetShiftIds,
+      p_crew_person_id: authContext.personId,
+    });
 
-    if (existingApps && existingApps.length > 0) {
+    if (rpcErr) {
+      console.error('[POST /api/crew/applications] apply_shifts_atomic error:', rpcErr);
+      const isConflict = rpcErr.code === '23505';
+      const isNotFound = rpcErr.code === 'P0002';
+      const status = isConflict ? 409 : isNotFound ? 404 : 400;
+
       return NextResponse.json(
-        { message: '이미 지원한 일정이 포함되어 있습니다.' },
-        { status: 409 }
+        { message: rpcErr.message || '지원 접수에 실패했습니다.' },
+        { status }
       );
     }
-
-    // 5. Batch insert applications in a single atomic DB call
-    const nowIso = new Date().toISOString();
-    const rowsToInsert = targetShifts.map((s) => ({
-      project_id: targetProjectId,
-      shift_id: s.id,
-      crew_person_id: authContext.personId,
-      status: 'applied' as const,
-      applied_at: nowIso,
-    }));
-
-    const { data: insertedApps, error: insertError } = await supabase
-      .from('applications')
-      .insert(rowsToInsert)
-      .select('id, project_id, shift_id, status, applied_at');
-
-    if (insertError || !insertedApps || insertedApps.length !== rowsToInsert.length) {
-      console.error('[POST /api/crew/applications] Insert error:', insertError);
-      return NextResponse.json(
-        { message: '지원 신청을 접수하지 못했어요. 잠시 후 다시 시도해 주세요.' },
-        { status: 500 }
-      );
-    }
-
-    // 6. Update applicant profile contact details if provided
-    if (applicantName) {
-      await supabase
-        .from('people')
-        .update({
-          full_name: applicantName,
-          updated_at: nowIso,
-        })
-        .eq('id', authContext.personId);
-    }
-
-    if (applicantPhone) {
-      await supabase
-        .from('private_contact_details')
-        .upsert(
-          {
-            person_id: authContext.personId,
-            phone_number: applicantPhone,
-            updated_at: nowIso,
-          },
-          { onConflict: 'person_id' }
-        );
-    }
-
-    const appliedDates = targetShifts.map((s) => s.date || s.start_time.slice(0, 10));
 
     return NextResponse.json({
       success: true,
-      applications: insertedApps,
-      applicationCount: insertedApps.length,
-      shiftId: insertedApps[0]?.shift_id,
-      selectedDates: appliedDates,
-      status: 'applied',
-      appliedAt: nowIso,
-      message: '지원이 성공적으로 접수되었어요.',
+      result: rpcResult,
+      message: `성공적으로 ${targetShiftIds.length}개 일정에 지원했습니다.`,
     });
   } catch (err: unknown) {
-    console.error('[POST /api/crew/applications] Error:', err);
-    return NextResponse.json(
-      { message: (err as Error).message || '서버 오류가 발생했어요.' },
-      { status: 500 }
-    );
+    console.error('[POST /api/crew/applications] error:', err);
+    return NextResponse.json({ message: (err as Error).message }, { status: 500 });
+  }
+}
+
+/**
+ * DELETE /api/crew/applications
+ * Atomic application withdrawal by authenticated crew
+ */
+export async function DELETE(request: Request) {
+  try {
+    const { authContext, errorResponse } = await getAuthenticatedContext(request, 'crew');
+    if (errorResponse) {
+      return errorResponse;
+    }
+    if (!authContext) {
+      return NextResponse.json({ message: '다시 로그인해 주세요.' }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    let applicationId = searchParams.get('id');
+
+    if (!applicationId) {
+      const body = await request.json().catch(() => ({}));
+      applicationId = body?.applicationId || body?.id;
+    }
+
+    if (!applicationId) {
+      return NextResponse.json(
+        { message: '철회할 지원서 ID가 필요합니다.' },
+        { status: 400 }
+      );
+    }
+
+    const supabase = createAdminClient();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: result, error: rpcErr } = await (supabase.rpc as any)('withdraw_application', {
+      p_application_id: applicationId,
+      p_crew_person_id: authContext.personId,
+    });
+
+    if (rpcErr) {
+      console.error('[DELETE /api/crew/applications] withdraw_application error:', rpcErr);
+      const isForbidden = rpcErr.code === '42501';
+      const status = isForbidden ? 403 : 400;
+      return NextResponse.json(
+        { message: rpcErr.message || '지원을 철회하지 못했습니다.' },
+        { status }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      result,
+      message: '지원이 성공적으로 철회되었습니다.',
+    });
+  } catch (err: unknown) {
+    console.error('[DELETE /api/crew/applications] error:', err);
+    return NextResponse.json({ message: (err as Error).message }, { status: 500 });
   }
 }

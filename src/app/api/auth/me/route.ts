@@ -9,15 +9,12 @@ export async function GET(request: Request) {
       return NextResponse.json({ authenticated: false, roles: [] }, { status: 200 });
     }
 
-    // 크루 프로필 사진 조회 (크루 역할일 때만 프로필 사진 제공)
-    const isCrew =
-      authContext.roles.includes('crew') &&
-      !authContext.roles.includes('client') &&
-      !authContext.roles.includes('ops');
+    const adminClient = createAdminClient();
 
+    // 1. Crew profile image (if crew role)
+    const isCrew = authContext.roles.includes('crew');
     let profileImageUrl: string | null = null;
     if (isCrew) {
-      const adminClient = createAdminClient();
       const { data: profile } = await adminClient
         .from('crew_profiles')
         .select('profile_image_url, profile_photo_url')
@@ -25,6 +22,35 @@ export async function GET(request: Request) {
         .maybeSingle();
 
       profileImageUrl = profile?.profile_image_url || profile?.profile_photo_url || null;
+    }
+
+    // 2. Client organization details (if client role)
+    const isClient = authContext.roles.includes('client');
+    let organization: {
+      id: string;
+      name: string;
+      isVerified: boolean;
+      businessRegistrationNumber: string;
+    } | null = null;
+
+    if (isClient) {
+      const { data: member } = await adminClient
+        .from('organization_members')
+        .select('organization_id, role, organizations(id, name, is_verified, business_registration_number)')
+        .eq('person_id', authContext.personId)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const org = member?.organizations as any;
+      if (org) {
+        organization = {
+          id: org.id,
+          name: org.name,
+          isVerified: org.is_verified ?? true,
+          businessRegistrationNumber: org.business_registration_number || '120-88-12345',
+        };
+      }
     }
 
     return NextResponse.json({
@@ -36,6 +62,7 @@ export async function GET(request: Request) {
         email: authContext.email,
         roles: authContext.roles,
         profileImageUrl,
+        organization,
       },
     });
   } catch {

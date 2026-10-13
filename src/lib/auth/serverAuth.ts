@@ -19,14 +19,25 @@ export async function getAuthenticatedContext(
   authContext?: AuthContext;
   errorResponse?: NextResponse;
 }> {
-  const supabase = await createClient();
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  const adminClient = createAdminClient();
+  let user = null;
 
-  // Support development/test bypass header only in non-production environments
-  const isDevOrTest = process.env.NODE_ENV !== 'production';
-  const headerActorId = isDevOrTest ? request?.headers.get('x-actor-person-id') : null;
+  const authHeader = request?.headers?.get('authorization') || request?.headers?.get('Authorization');
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.slice(7).trim();
+    if (token) {
+      const { data: jwtData } = await adminClient.auth.getUser(token);
+      user = jwtData?.user || null;
+    }
+  }
 
-  if (!user && !headerActorId) {
+  if (!user) {
+    const supabase = await createClient();
+    const { data: sessionData } = await supabase.auth.getUser();
+    user = sessionData?.user || null;
+  }
+
+  if (!user) {
     return {
       errorResponse: NextResponse.json(
         { message: '다시 로그인해 주세요.' },
@@ -36,15 +47,12 @@ export async function getAuthenticatedContext(
   }
 
   // Lookup person in Supabase DB using adminClient to bypass RLS bootstrap restriction
-  const adminClient = createAdminClient();
-  let query = adminClient.from('people').select('id, full_name, auth_user_id, is_active');
-  if (isDevOrTest && headerActorId) {
-    query = query.eq('id', headerActorId);
-  } else if (user) {
-    query = query.or(`auth_user_id.eq.${user.id},id.eq.${user.id}`);
-  }
-
-  const { data: person, error: personError } = await query.limit(1).maybeSingle();
+  const { data: person } = await adminClient
+    .from('people')
+    .select('id, full_name, auth_user_id, is_active')
+    .or(`auth_user_id.eq.${user.id},id.eq.${user.id}`)
+    .limit(1)
+    .maybeSingle();
 
   if (!person || !person.is_active) {
     return {

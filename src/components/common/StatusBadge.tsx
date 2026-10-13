@@ -11,7 +11,13 @@ export type CrewLinkStatus =
   | 'OPS_REVIEW'          // 확인 대기
   | 'CONTRACT_PENDING'    // 서명 필요
   | 'ASSIGNMENT_CANCELLED'// 배정 취소
-  | 'SETTLED';            // 정산 완료
+  | 'SETTLED'             // 정산 완료
+  | 'APPLIED'             // 지원 완료
+  | 'ACCEPTED'            // 선발 완료
+  | 'CHECKED_IN'          // 출근 완료
+  | 'COMPLETED'           // 근무 완료
+  | 'REJECTED'            // 미선발
+  | 'CANCELLED';          // 취소/철회
 
 export interface StatusBadgeProps {
   status: CrewLinkStatus;
@@ -62,6 +68,36 @@ const statusConfig: Record<
     label: '정산 완료',
     icon: CheckCircle2,
     styleClasses: 'bg-brand-soft text-brand-strong border-brand-border',
+  },
+  APPLIED: {
+    label: '지원 완료',
+    icon: Clock,
+    styleClasses: 'bg-blue-50 text-blue-700 border-blue-200',
+  },
+  ACCEPTED: {
+    label: '선발 완료',
+    icon: CheckCircle2,
+    styleClasses: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  },
+  CHECKED_IN: {
+    label: '출근 완료',
+    icon: CheckCircle2,
+    styleClasses: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+  },
+  COMPLETED: {
+    label: '근무 완료',
+    icon: CheckCircle2,
+    styleClasses: 'bg-slate-100 text-slate-700 border-slate-200',
+  },
+  REJECTED: {
+    label: '미선발',
+    icon: Ban,
+    styleClasses: 'bg-rose-50 text-rose-700 border-rose-200',
+  },
+  CANCELLED: {
+    label: '지원 철회',
+    icon: Ban,
+    styleClasses: 'bg-gray-100 text-gray-500 border-gray-200',
   },
 };
 

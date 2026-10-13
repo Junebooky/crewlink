@@ -27,20 +27,12 @@ function getDatesInRange(startStr: string, endStr: string): string[] {
 
 export async function POST(request: Request) {
   try {
-    let auth = await getAuthenticatedContext(request, 'client');
-    let effectiveAuthContext = auth.authContext;
-
-    // 개발 모드(Dev Mock): 세션이 없는 경우 데모 주최사 정보로 자동 Fallback 지원
-    if (!effectiveAuthContext && process.env.NODE_ENV === 'development') {
-      effectiveAuthContext = {
-        userId: 'dev-demo-client-id',
-        personId: '33333333-3333-3333-3333-333333333333',
-        fullName: '박대표 (데모 주최사)',
-        roles: ['client'],
-      };
-    } else if (auth.errorResponse) {
+    const auth = await getAuthenticatedContext(request, 'client');
+    if (auth.errorResponse) {
       return auth.errorResponse;
-    } else if (!effectiveAuthContext) {
+    }
+    const effectiveAuthContext = auth.authContext;
+    if (!effectiveAuthContext) {
       return NextResponse.json({ message: '다시 로그인해 주세요.' }, { status: 401 });
     }
 
@@ -169,11 +161,13 @@ export async function POST(request: Request) {
           latitude: latitude ? Number(latitude) : null,
           longitude: longitude ? Number(longitude) : null,
           status: 'published',
+          is_demo: Boolean(body.is_demo),
           start_date: actualStartDate,
           end_date: actualEndDate,
           sow_spec: {
             category,
             isMultiDay,
+            participationMode: body.participationMode || (isMultiDay ? 'all_days' : '당일'),
             startDate: actualStartDate,
             endDate: actualEndDate,
             dates: dateList,
@@ -359,18 +353,11 @@ export async function POST(request: Request) {
 export async function GET(request: Request) {
   try {
     const auth = await getAuthenticatedContext(request, 'client');
-    let effectiveAuthContext = auth.authContext;
-
-    if (!effectiveAuthContext && process.env.NODE_ENV !== 'production') {
-      effectiveAuthContext = {
-        userId: 'dev-demo-client-id',
-        personId: '33333333-3333-3333-3333-333333333333',
-        fullName: '박대표 (데모 주최사)',
-        roles: ['client'],
-      };
-    } else if (auth.errorResponse) {
+    if (auth.errorResponse) {
       return auth.errorResponse;
-    } else if (!effectiveAuthContext) {
+    }
+    const effectiveAuthContext = auth.authContext;
+    if (!effectiveAuthContext) {
       return NextResponse.json({ message: '다시 로그인해 주세요.' }, { status: 401 });
     }
 
@@ -379,13 +366,18 @@ export async function GET(request: Request) {
     // Resolve organization
     const { data: member } = await supabase
       .from('organization_members')
-      .select('organization_id')
+      .select('organization_id, role, is_active')
       .eq('person_id', effectiveAuthContext.personId)
+      .eq('is_active', true)
       .maybeSingle();
 
-    let organizationId = member?.organization_id;
+    const organizationId = member?.organization_id;
     if (!organizationId) {
-      organizationId = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
+      return NextResponse.json({
+        success: true,
+        projects: [],
+        message: '소속된 주최사 조직이 없습니다.',
+      });
     }
 
     // Query projects for organization
@@ -440,11 +432,15 @@ export async function GET(request: Request) {
       const sow = (p.sow_spec as Record<string, any>) || {};
       const apps = appsByProject.get(p.id) || [];
       const shifts = shiftsByProject.get(p.id) || [];
-      const requiredCount =
-        shifts.reduce((acc, s) => acc + (s.required_headcount || 0), 0) ||
-        (sow.headcount || 8);
-      const applicantCount = apps.length;
-      const approvedCount = apps.filter(
+
+      const dailyRequiredCount = shifts[0]?.required_headcount || sow.headcount || 8;
+      const totalHeadcountSlot = shifts.reduce((acc, s) => acc + (s.required_headcount || 0), 0) || dailyRequiredCount;
+      const uniqueCrewCount = new Set(apps.map((a) => a.crew_person_id)).size;
+      const totalApplicationsCount = apps.length;
+      const approvedCrewCount = new Set(
+        apps.filter((a) => a.status === 'approved' || a.status === 'accepted').map((a) => a.crew_person_id)
+      ).size;
+      const approvedApplicationsCount = apps.filter(
         (a) => a.status === 'approved' || a.status === 'accepted'
       ).length;
 
@@ -458,9 +454,15 @@ export async function GET(request: Request) {
         endDate: p.end_date || sow.endDate,
         status: p.status,
         createdAt: p.created_at,
-        requiredCount,
-        applicantCount,
-        approvedCount,
+        requiredCount: dailyRequiredCount,
+        dailyRequiredCount,
+        totalHeadcountSlot,
+        applicantCount: uniqueCrewCount,
+        uniqueCrewCount,
+        totalApplicationsCount,
+        approvedCount: approvedCrewCount,
+        approvedCrewCount,
+        approvedApplicationsCount,
         sowSpec: sow,
         shifts,
       };

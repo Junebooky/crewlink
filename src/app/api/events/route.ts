@@ -23,11 +23,17 @@ export async function GET(request: Request) {
     const supabase = createAdminClient();
 
     // 1. Fetch published/in_progress projects from DB with organization and shifts
-    const { data: dbProjects, error } = await supabase
+    let projectsQuery = supabase
       .from('projects')
       .select('id, organization_id, title, description, venue_name, road_address, detail_address, status, sow_spec, latitude, longitude, start_date, end_date, is_demo, created_at, organizations(name, is_verified), shifts(id, shift_name, required_headcount, start_time, end_time, hourly_rate_won, daily_wage, date)')
       .in('status', ['published', 'in_progress'])
       .order('created_at', { ascending: false });
+
+    if (!isMvp) {
+      projectsQuery = projectsQuery.eq('is_demo', false);
+    }
+
+    const { data: dbProjects, error } = await projectsQuery;
 
     if (error) {
       console.error('[GET /api/events] Database error fetching projects:', error);
@@ -54,7 +60,11 @@ export async function GET(request: Request) {
     });
 
     if (proofError) {
-      console.warn('[GET /api/events] Notice: get_events_social_proof RPC error:', proofError);
+      console.error('[GET /api/events] Error: get_events_social_proof RPC error:', proofError);
+      return NextResponse.json(
+        { success: false, message: '지원 현황 집계 중 오류가 발생했습니다.' },
+        { status: 500 }
+      );
     }
 
     const proofMap = new Map<string, SocialProofRpcRow>();

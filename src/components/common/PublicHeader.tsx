@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 import { AccountMenu } from './AccountMenu';
 import { LoginModal } from '@/components/auth/LoginModal';
+import { AccountSwitcherModal } from '@/components/auth/AccountSwitcherModal';
 
 export interface PublicHeaderProps {
   className?: string;
@@ -24,6 +25,8 @@ export function PublicHeader({ className }: PublicHeaderProps) {
   const [activeRole, setActiveRole] = useState<'crew' | 'client' | 'ops'>('crew');
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+
+  const [switcherRole, setSwitcherRole] = useState<'crew' | 'client' | null>(null);
 
   // Reactive Supabase auth synchronization
   useEffect(() => {
@@ -43,35 +46,18 @@ export function PublicHeader({ className }: PublicHeaderProps) {
           return;
         }
 
-        // supabase.auth.getSession() 검사 완료 전까지는 버튼 노출 방지
-        await supabase.auth.getSession();
-
-        // In dev mode, resolve actor matching the active role (crew, client, ops)
-        const currentRole =
-          (typeof window !== 'undefined' &&
-            (localStorage.getItem('crewlink_active_role') as 'crew' | 'client' | 'ops')) ||
-          'crew';
-
-        if (isMounted) {
-          setActiveRole(currentRole);
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          if (isMounted) {
+            setSessionUser(null);
+            setIsAuthLoading(false);
+          }
+          return;
         }
 
-        const roleActorMap: Record<string, string> = {
-          crew: '11111111-1111-1111-1111-111111111111',
-          client: '33333333-3333-3333-3333-333333333333',
-          ops: '22222222-2222-2222-2222-222222222222',
-        };
-
-        const actorId = roleActorMap[currentRole] || roleActorMap.crew;
-
-        const headers: Record<string, string> =
-          process.env.NODE_ENV !== 'production'
-            ? { 'x-actor-person-id': actorId }
-            : {};
-
+        // Fetch real session user from /api/auth/me
         const res = await fetch('/api/auth/me', {
           cache: 'no-store',
-          headers,
         });
 
         if (res.ok) {
@@ -79,6 +65,13 @@ export function PublicHeader({ className }: PublicHeaderProps) {
           if (isMounted) {
             if (data.authenticated && data.user) {
               setSessionUser(data.user);
+              if (data.user.roles?.includes('client')) {
+                setActiveRole('client');
+              } else if (data.user.roles?.includes('ops') || data.user.roles?.includes('admin')) {
+                setActiveRole('ops');
+              } else {
+                setActiveRole('crew');
+              }
             } else {
               setSessionUser(null);
             }
@@ -96,14 +89,14 @@ export function PublicHeader({ className }: PublicHeaderProps) {
     // Initial check
     syncAuth();
 
-    // Listen to custom profile update event (e.g. when crew updates photo)
+    // Listen to custom profile update event
     const handleAuthChanged = () => syncAuth();
     window.addEventListener('crewlink:auth-changed', handleAuthChanged);
 
     // Listen reactively to explicit auth state changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
+    } = supabase.auth.onAuthStateChange((event) => {
       if (!isMounted) return;
       if (event === 'SIGNED_OUT') {
         setSessionUser(null);
@@ -129,13 +122,12 @@ export function PublicHeader({ className }: PublicHeaderProps) {
   };
 
   const handleRoleSelect = (r: 'crew' | 'client' | 'ops') => {
-    setActiveRole(r);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('crewlink_active_role', r);
-      window.dispatchEvent(new CustomEvent('crewlink:auth-changed'));
+    if (r === 'ops') {
+      window.location.href = '/ops';
+      return;
     }
-    const targetHref = r === 'crew' ? '/crew' : r === 'client' ? '/client' : '/ops';
-    window.location.href = targetHref;
+    // Open Account Switcher for crew or client
+    setSwitcherRole(r);
   };
 
   return (
@@ -239,11 +231,8 @@ export function PublicHeader({ className }: PublicHeaderProps) {
           <button
             type="button"
             onClick={() => {
-              if (activeRole === 'client') {
-                window.location.href = '/client/login';
-              } else {
-                setIsLoginModalOpen(true);
-              }
+              // Open account switcher for activeRole
+              setSwitcherRole(activeRole === 'client' ? 'client' : 'crew');
             }}
             className="h-9 px-3 sm:px-4 rounded-xl bg-brand hover:bg-brand-hover text-inverse text-xs sm:text-sm font-bold transition-colors shadow-2xs flex items-center justify-center cursor-pointer whitespace-nowrap shrink-0"
           >
@@ -251,6 +240,16 @@ export function PublicHeader({ className }: PublicHeaderProps) {
           </button>
         )}
       </div>
+
+      {/* 테스트 계정 선택기 (크루 / 주최사) */}
+      {switcherRole && (
+        <AccountSwitcherModal
+          isOpen={true}
+          onClose={() => setSwitcherRole(null)}
+          role={switcherRole}
+          currentEmail={sessionUser?.email}
+        />
+      )}
 
       {/* 모바일 퍼스트 로그인 모달 */}
       <LoginModal

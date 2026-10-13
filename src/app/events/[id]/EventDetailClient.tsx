@@ -26,9 +26,15 @@ interface EventDetailProps {
   event?: EventItem;
 }
 
-export default function EventDetailClient({ id, event: initialEvent }: EventDetailProps) {
+export default function EventDetailClient({ id, event }: EventDetailProps) {
   const router = useRouter();
-  const event = initialEvent || getEventById(id || 'evt-2026-001') || getEventById('evt-2026-001')!;
+  if (!event) {
+    return (
+      <div className="min-h-screen bg-canvas flex items-center justify-center p-6 text-muted text-xs">
+        공고 정보를 찾을 수 없습니다.
+      </div>
+    );
+  }
 
   const [selectedDateIds, setSelectedDateIds] = useState<string[]>(
     event.dates.map((d) => d.id)
@@ -56,25 +62,9 @@ export default function EventDetailClient({ id, event: initialEvent }: EventDeta
       try {
         const isExplicitlyLoggedOut =
           typeof window !== 'undefined' && localStorage.getItem('crewlink_logged_out') === 'true';
-        const currentRole =
-          (typeof window !== 'undefined' &&
-            (localStorage.getItem('crewlink_active_role') as 'crew' | 'client' | 'ops')) ||
-          'crew';
-        setActiveRole(currentRole);
+        if (isExplicitlyLoggedOut) return;
 
-        const roleActorMap: Record<string, string> = {
-          crew: '11111111-1111-1111-1111-111111111111',
-          client: '33333333-3333-3333-3333-333333333333',
-          ops: '22222222-2222-2222-2222-222222222222',
-        };
-
-        const actorId = roleActorMap[currentRole] || roleActorMap.crew;
-
-        const headers: Record<string, string> =
-          process.env.NODE_ENV !== 'production' && !isExplicitlyLoggedOut
-            ? { 'x-actor-person-id': actorId }
-            : {};
-        const res = await fetch('/api/auth/me', { cache: 'no-store', headers });
+        const res = await fetch('/api/auth/me', { cache: 'no-store' });
         if (res.ok) {
           const data = await res.json();
           if (data.authenticated && data.user) {

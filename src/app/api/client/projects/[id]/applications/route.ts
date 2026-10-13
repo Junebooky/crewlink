@@ -10,18 +10,11 @@ export async function GET(
     const { id: projectId } = await params;
 
     const auth = await getAuthenticatedContext(request, 'client');
-    let effectiveAuthContext = auth.authContext;
-
-    if (!effectiveAuthContext && process.env.NODE_ENV !== 'production') {
-      effectiveAuthContext = {
-        userId: 'dev-demo-client-id',
-        personId: '33333333-3333-3333-3333-333333333333',
-        fullName: '박대표 (데모 주최사)',
-        roles: ['client'],
-      };
-    } else if (auth.errorResponse) {
+    if (auth.errorResponse) {
       return auth.errorResponse;
-    } else if (!effectiveAuthContext) {
+    }
+    const effectiveAuthContext = auth.authContext;
+    if (!effectiveAuthContext) {
       return NextResponse.json({ message: '다시 로그인해 주세요.' }, { status: 401 });
     }
 
@@ -53,7 +46,15 @@ export async function GET(
       );
     }
 
-    // 1. Fetch applications for this project
+    // 1. Fetch shifts for date info
+    const { data: shifts } = await supabase
+      .from('shifts')
+      .select('id, date, start_time, end_time')
+      .eq('project_id', projectId);
+
+    const shiftMap = new Map((shifts || []).map((s) => [s.id, s]));
+
+    // 2. Fetch applications for this project
     const { data: applications, error: appError } = await supabase
       .from('applications')
       .select('id, project_id, shift_id, crew_person_id, status, applied_at')
@@ -66,10 +67,10 @@ export async function GET(
     }
 
     if (!applications || applications.length === 0) {
-      return NextResponse.json({ success: true, applications: [] });
+      return NextResponse.json({ success: true, applications: [], crewApplicants: [] });
     }
 
-    // 2. Fetch crew persons, visual profiles, and contacts
+    // 3. Fetch crew persons, visual profiles, and contacts
     const personIds = Array.from(new Set(applications.map((a) => a.crew_person_id)));
 
     const [{ data: people }, { data: profiles }, { data: contacts }] = await Promise.all([
@@ -91,10 +92,12 @@ export async function GET(
     const profileMap = new Map((profiles || []).map((p) => [p.person_id, p]));
     const contactMap = new Map((contacts || []).map((c) => [c.person_id, c]));
 
+    // Format individual applications
     const formatted = applications.map((app) => {
       const person = peopleMap.get(app.crew_person_id);
       const profile = profileMap.get(app.crew_person_id);
       const contact = contactMap.get(app.crew_person_id);
+      const shift = shiftMap.get(app.shift_id);
 
       const languages = Array.isArray(profile?.languages) ? profile.languages : [];
       const hasLanguages = languages.length > 0;
@@ -103,14 +106,14 @@ export async function GET(
         id: app.id,
         projectId: app.project_id,
         shiftId: app.shift_id,
+        shiftDate: shift?.date || '',
         status: app.status, // 'applied', 'approved', 'rejected', 'withdrawn'
         appliedAt: app.applied_at,
         crew: {
           personId: app.crew_person_id,
-          fullName: person?.full_name || person?.display_name || '김크루',
+          fullName: person?.full_name || person?.display_name || '크루',
           phone: contact?.phone_number || '010-0000-0000',
-          profileImageUrl:
-            profile?.profile_image_url || profile?.profile_photo_url || null,
+          profileImageUrl: profile?.profile_image_url || null,
           heightCm: profile?.height_cm || null,
           topSize: profile?.top_size || profile?.uniform_size || null,
           bottomSize: profile?.bottom_size || null,
@@ -125,9 +128,59 @@ export async function GET(
       };
     });
 
+    // Group by crew member for single-card display per person
+    const groupedMap = new Map<string, {
+      crew: unknown;
+      dates: Array<{
+        applicationId: string;
+        shiftId: string;
+        date: string;
+        status: string;
+        appliedAt: string;
+      }>;
+    }>();
+
+    for (const item of formatted) {
+      const existing = groupedMap.get(item.crew.personId);
+      const dateItem = {
+        applicationId: item.id,
+        shiftId: item.shiftId,
+        date: item.shiftDate,
+        status: item.status,
+        appliedAt: item.appliedAt,
+      };
+
+      if (!existing) {
+        groupedMap.set(item.crew.personId, {
+          crew: item.crew,
+          dates: [dateItem],
+        });
+      } else {
+        existing.dates.push(dateItem);
+      }
+    }
+
+    const crewApplicants = Array.from(groupedMap.values()).map((g) => {
+      // Sort dates chronologically
+      g.dates.sort((a, b) => a.date.localeCompare(b.date));
+      const totalApplied = g.dates.length;
+      const approvedCount = g.dates.filter((d) => d.status === 'approved').length;
+      const allApproved = approvedCount === totalApplied;
+      const partiallyApproved = approvedCount > 0 && !allApproved;
+
+      return {
+        ...g,
+        totalApplied,
+        approvedCount,
+        allApproved,
+        partiallyApproved,
+      };
+    });
+
     return NextResponse.json({
       success: true,
       applications: formatted,
+      crewApplicants,
     });
   } catch (err: unknown) {
     console.error('[GET /api/client/projects/[id]/applications] Error caught:', err);
