@@ -1,80 +1,105 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
 
+// Known registered demo accounts for MVP login helper
+const DEMO_ACCOUNTS: Record<string, { email: string; password: string; role: 'client' | 'crew' }> = {
+  'client_metaverse@crewlink.kr': {
+    email: 'client_metaverse@crewlink.kr',
+    password: 'CrewLink2026!client-nextwave',
+    role: 'client',
+  },
+  'client_exhibition@crewlink.kr': {
+    email: 'client_exhibition@crewlink.kr',
+    password: 'CrewLink2026!client-mice',
+    role: 'client',
+  },
+  'client_festival@crewlink.kr': {
+    email: 'client_festival@crewlink.kr',
+    password: 'CrewLink2026!client-liveculture',
+    role: 'client',
+  },
+  'crew_doyoon@crewlink.kr': {
+    email: 'crew_doyoon@crewlink.kr',
+    password: 'CrewLink2026!crew-1',
+    role: 'crew',
+  },
+  'crew_seojun@crewlink.kr': {
+    email: 'crew_seojun@crewlink.kr',
+    password: 'CrewLink2026!crew-2',
+    role: 'crew',
+  },
+  'crew_jiwon@crewlink.kr': {
+    email: 'crew_jiwon@crewlink.kr',
+    password: 'CrewLink2026!crew-3',
+    role: 'crew',
+  },
+  'crew_minho@crewlink.kr': {
+    email: 'crew_minho@crewlink.kr',
+    password: 'CrewLink2026!crew-4',
+    role: 'crew',
+  },
+};
+
 export async function POST(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    let role = searchParams.get('role');
-    if (!role) {
-      try {
-        const body = await request.clone().json();
-        role = body?.role;
-      } catch {
-        // no body
+    let requestedRole = searchParams.get('role');
+    let requestedEmail = searchParams.get('email');
+
+    try {
+      const body = await request.clone().json();
+      if (body?.role) requestedRole = body.role;
+      if (body?.email) requestedEmail = body.email;
+    } catch {
+      // no body
+    }
+
+    // Select account from registered demo accounts
+    let targetAccount = requestedEmail ? DEMO_ACCOUNTS[requestedEmail] : null;
+
+    if (!targetAccount) {
+      if (requestedRole === 'client') {
+        targetAccount = DEMO_ACCOUNTS['client_metaverse@crewlink.kr'];
+      } else {
+        targetAccount = DEMO_ACCOUNTS['crew_doyoon@crewlink.kr'];
       }
     }
 
-    const isClient = role === 'client';
-    const email = isClient ? 'client@crewlink.kr' : 'crew@crewlink.kr';
-    const password = 'crewlink2026!';
-    const fullName = isClient ? '박대표' : '김크루';
-    const personId = isClient
-      ? '33333333-3333-3333-3333-333333333333'
-      : '11111111-1111-1111-1111-111111111111';
-
-    const adminClient = createAdminClient();
-
-    // 1. Check if user exists in auth.users
-    const { data: userList } = await adminClient.auth.admin.listUsers();
-    let authUser = userList?.users?.find((u) => u.email === email);
-
-    if (!authUser) {
-      const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
-        email,
-        password,
-        email_confirm: true,
-        user_metadata: { full_name: fullName, role: isClient ? 'client' : 'crew' },
-      });
-
-      if (createError || !newUser?.user) {
-        console.error('[demo-login] createUser error:', createError);
-        return NextResponse.json({ message: createError?.message || '계정 생성 실패' }, { status: 500 });
-      }
-      authUser = newUser.user;
-    } else {
-      // Update password to ensure match
-      await adminClient.auth.admin.updateUserById(authUser.id, {
-        password,
-        email_confirm: true,
-      });
+    if (!targetAccount) {
+      return NextResponse.json({ message: '허용되지 않은 데모 계정입니다.' }, { status: 400 });
     }
 
-    // 2. Link auth_user_id in crewlink.people
-    await adminClient
-      .from('people')
-      .update({ auth_user_id: authUser.id })
-      .eq('id', personId);
-
-    // 3. Authenticate session and set cookies via createClient()
+    // 1. Authenticate session with Supabase Auth
     const serverSupabase = await createClient();
     const { data: signInData, error: signInError } = await serverSupabase.auth.signInWithPassword({
-      email,
-      password,
+      email: targetAccount.email,
+      password: targetAccount.password,
     });
 
-    if (signInError) {
+    if (signInError || !signInData.user) {
       console.error('[demo-login] signInWithPassword error:', signInError);
-      return NextResponse.json({ message: signInError.message }, { status: 400 });
+      return NextResponse.json(
+        { message: signInError?.message || '로그인에 실패했습니다.' },
+        { status: 400 }
+      );
     }
+
+    // 2. Lookup linked person in crewlink.people
+    const adminClient = createAdminClient();
+    const { data: person } = await adminClient
+      .from('people')
+      .select('id, full_name, display_name')
+      .eq('auth_user_id', signInData.user.id)
+      .maybeSingle();
 
     return NextResponse.json({
       success: true,
       user: {
-        id: authUser.id,
-        email,
-        fullName: isClient ? '(주)네온패밀리' : '김크루',
-        personId,
-        role: isClient ? 'client' : 'crew',
+        id: signInData.user.id,
+        email: targetAccount.email,
+        fullName: person?.full_name || person?.display_name || targetAccount.email,
+        personId: person?.id || null,
+        role: targetAccount.role,
       },
       session: signInData.session,
     });

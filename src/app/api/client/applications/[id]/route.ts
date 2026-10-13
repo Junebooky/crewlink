@@ -31,10 +31,10 @@ export async function PATCH(
 
     const supabase = createAdminClient();
 
-    // 1. Fetch target application
+    // 1. Fetch target application and project organization
     const { data: application, error: fetchError } = await supabase
       .from('applications')
-      .select('id, project_id, shift_id, crew_person_id, status')
+      .select('id, project_id, shift_id, crew_person_id, status, projects(id, organization_id)')
       .eq('id', applicationId)
       .maybeSingle();
 
@@ -43,6 +43,31 @@ export async function PATCH(
         { message: '지원 정보를 찾을 수 없습니다.' },
         { status: 404 }
       );
+    }
+
+    const project = application.projects as unknown as { organization_id: string } | null;
+    if (project?.organization_id) {
+      const { data: memberRecord } = await supabase
+        .from('organization_members')
+        .select('role, is_active')
+        .eq('organization_id', project.organization_id)
+        .eq('person_id', effectiveAuthContext.personId)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (!memberRecord) {
+        return NextResponse.json(
+          { message: '해당 지원서를 관리할 권한이 없습니다.' },
+          { status: 403 }
+        );
+      }
+
+      if (memberRecord.role === 'viewer') {
+        return NextResponse.json(
+          { message: '지원자 선발/상태 변경 권한이 없습니다. (조회 전용 권한)' },
+          { status: 403 }
+        );
+      }
     }
 
     // 2. Update application status to 'approved'

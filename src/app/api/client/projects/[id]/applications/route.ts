@@ -27,6 +27,32 @@ export async function GET(
 
     const supabase = createAdminClient();
 
+    // 0. Verify client belongs to project's organization
+    const { data: projectRecord, error: projErr } = await supabase
+      .from('projects')
+      .select('id, organization_id')
+      .eq('id', projectId)
+      .maybeSingle();
+
+    if (projErr || !projectRecord) {
+      return NextResponse.json({ message: '해당 공고를 찾을 수 없습니다.' }, { status: 404 });
+    }
+
+    const { data: memberRecord } = await supabase
+      .from('organization_members')
+      .select('role, is_active')
+      .eq('organization_id', projectRecord.organization_id)
+      .eq('person_id', effectiveAuthContext.personId)
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (!memberRecord) {
+      return NextResponse.json(
+        { message: '해당 공고의 지원자를 조회할 권한이 없습니다.' },
+        { status: 403 }
+      );
+    }
+
     // 1. Fetch applications for this project
     const { data: applications, error: appError } = await supabase
       .from('applications')

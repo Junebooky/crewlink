@@ -12,7 +12,6 @@ import {
   ChevronRight,
   ChevronDown,
   ShieldCheck,
-  ArrowUpDown,
   RotateCcw,
   X,
   CalendarRange,
@@ -23,10 +22,10 @@ import { cn } from '@/lib/utils';
 import { PublicHeader } from '@/components/common/PublicHeader';
 import { MobileBottomNav } from '@/components/common/MobileBottomNav';
 import { EventMapExplorer } from '@/components/explore/EventMapExplorer';
+import { ApplicantAvatarStack } from '@/components/events/ApplicantAvatarStack';
 import {
   getPublicEvents,
   type EventCategory,
-  type RecruitmentStatus,
   type EventItem,
 } from '@/lib/data/events';
 import {
@@ -90,12 +89,13 @@ export default function HomePage() {
   const [events, setEvents] = useState<EventItem[]>(() => getPublicEvents());
 
   useEffect(() => {
+    let isMounted = true;
     async function loadEvents() {
       try {
         const res = await fetch('/api/events');
         if (res.ok) {
           const data = await res.json();
-          if (data.events && Array.isArray(data.events)) {
+          if (isMounted && data.events && Array.isArray(data.events)) {
             setEvents(data.events);
           }
         }
@@ -104,6 +104,25 @@ export default function HomePage() {
       }
     }
     loadEvents();
+
+    const interval = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        loadEvents();
+      }
+    }, 30000);
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        loadEvents();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
   }, []);
 
   // KST dynamic date state
@@ -257,9 +276,17 @@ export default function HomePage() {
       });
   }, [events, selectedCategory, selectedRegion, activeDateRange, sortOrder, searchKeyword]);
 
-  // 1. 지금 핫한 공고 (상위 4개 슬라이스)
+  // 1. 지금 핫한 공고 (인기 지표 상위 4개)
   const hotEvents = useMemo(() => {
-    return events.slice(0, 4);
+    return [...events]
+      .sort((a, b) => {
+        const diff24h = (b.newApplicantCount24h || 0) - (a.newApplicantCount24h || 0);
+        if (diff24h !== 0) return diff24h;
+        const diffTotal = (b.applicantCount || 0) - (a.applicantCount || 0);
+        if (diffTotal !== 0) return diffTotal;
+        return b.createdAt.localeCompare(a.createdAt);
+      })
+      .slice(0, 4);
   }, [events]);
 
   const trendingScrollRef = useRef<HTMLDivElement>(null);
@@ -656,6 +683,17 @@ export default function HomePage() {
                     </span>
                     <span className="text-xs font-bold text-black">원</span>
                   </div>
+
+                  {/* 지원 크루 활동 행 (토스풍 아바타 스택) */}
+                  <div className="mt-2.5 pt-2 border-t border-slate-100">
+                    <ApplicantAvatarStack
+                      applicantCount={item.applicantCount}
+                      newApplicantCount24h={item.newApplicantCount24h}
+                      avatars={item.socialProof?.avatars}
+                      overflowCount={item.socialProof?.overflowCount}
+                      isDemo={item.isDemo}
+                    />
+                  </div>
                 </div>
               </Link>
             );
@@ -921,6 +959,19 @@ export default function HomePage() {
                         </span>
                       </div>
                     </div>
+
+                    {/* 지원 크루 활동 행 (토스풍 아바타 스택) */}
+                    {(item.applicantCount !== undefined && item.applicantCount > 0 || item.isDemo) && (
+                      <div className="pt-2 border-t border-slate-100">
+                        <ApplicantAvatarStack
+                          applicantCount={item.applicantCount}
+                          newApplicantCount24h={item.newApplicantCount24h}
+                          avatars={item.socialProof?.avatars}
+                          overflowCount={item.socialProof?.overflowCount}
+                          isDemo={item.isDemo}
+                        />
+                      </div>
+                    )}
                   </Link>
                 );
               })}

@@ -53,6 +53,15 @@ export interface EventItem {
   description?: string;
   dates: EventDateItem[];
   createdAt: string;
+  applicantCount?: number;
+  newApplicantCount24h?: number;
+  activityUpdatedAt?: string;
+  isDemo?: boolean;
+  socialProof?: {
+    mode: 'demo-photo' | 'anonymous' | 'none';
+    avatars: { avatarUrl?: string | null; isDemo?: boolean }[];
+    overflowCount: number;
+  };
 }
 
 // Backward compatibility aliases
@@ -317,7 +326,7 @@ export const EVENT_FEED_DATA: EventItem[] = [
  * DB에 저장된 projects 행 데이터를 프론트엔드 EventItem 표준 규격으로 변환
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function transformProjectToEvent(project: any): EventItem {
+export function transformProjectToEvent(project: any, socialProofData?: Partial<EventItem>): EventItem {
   const sow = project.sow_spec || {};
   const shifts = project.shifts || [];
   const firstShift = shifts[0] || {};
@@ -434,6 +443,11 @@ export function transformProjectToEvent(project: any): EventItem {
     description: project.description || `${project.title} 현장 크루를 모집합니다. 질서 있고 쾌적한 행사 운영을 함께 만들어가요!`,
     dates,
     createdAt: project.created_at || new Date().toISOString(),
+    applicantCount: socialProofData?.applicantCount ?? 0,
+    newApplicantCount24h: socialProofData?.newApplicantCount24h ?? 0,
+    activityUpdatedAt: socialProofData?.activityUpdatedAt,
+    isDemo: socialProofData?.isDemo ?? project.is_demo ?? false,
+    socialProof: socialProofData?.socialProof,
   };
 }
 

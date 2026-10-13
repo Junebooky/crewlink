@@ -1,19 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { getAuthenticatedContext } from '@/lib/auth/serverAuth';
-import { getEventById } from '@/lib/data/events';
-
-// Map static feed events to known shift UUIDs or resolve dynamically
-const STATIC_EVENT_SHIFT_MAP: Record<string, { projectId: string; shiftId: string }> = {
-  'evt-2026-001': {
-    projectId: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-    shiftId: 'bbbbbbbb-1111-2222-3333-cccccccccccc',
-  },
-  'evt-2026-002': {
-    projectId: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
-    shiftId: 'cccccccc-cccc-cccc-cccc-cccccccccccc',
-  },
-};
 
 export async function POST(request: Request) {
   try {
@@ -47,136 +34,141 @@ export async function POST(request: Request) {
     }
 
     const supabase = createAdminClient();
-    const todayStr = new Date().toISOString().slice(0, 10);
+    const targetProjectId = reqProjectId || eventId;
 
-    let targetProjectId: string | null = reqProjectId || null;
-    let targetShiftId: string | null = reqShiftId || null;
-
-    // 2. Resolve targetProjectId and targetShiftId
-    if (eventId) {
-      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(eventId);
-      if (isUuid) {
-        targetProjectId = eventId;
-        const { data: firstShift } = await supabase
-          .from('shifts')
-          .select('id')
-          .eq('project_id', eventId)
-          .order('date', { ascending: true })
-          .limit(1)
-          .maybeSingle();
-
-        if (firstShift) {
-          targetShiftId = firstShift.id;
-        }
-      } else {
-        const event = getEventById(eventId);
-        if (event) {
-          // Validation: Recruitment Status
-          if (event.recruitmentStatus === 'CLOSED') {
-            return NextResponse.json(
-              { message: '이미 모집이 마감된 공고예요.' },
-              { status: 400 }
-            );
-          }
-          // Validation: Deadline Date (deadlineDate >= CURRENT_DATE)
-          if (event.deadlineDate < todayStr) {
-            return NextResponse.json(
-              { message: '지원 마감일이 지난 공고예요.' },
-              { status: 400 }
-            );
-          }
-
-          // Resolve mapped shift ID if static and not explicitly supplied
-          if (!targetProjectId && !targetShiftId && STATIC_EVENT_SHIFT_MAP[eventId]) {
-            targetProjectId = STATIC_EVENT_SHIFT_MAP[eventId].projectId;
-            targetShiftId = STATIC_EVENT_SHIFT_MAP[eventId].shiftId;
-          }
-        }
-      }
+    if (!targetProjectId) {
+      return NextResponse.json(
+        { message: '지원할 공고 ID가 누락되었습니다.' },
+        { status: 400 }
+      );
     }
 
-    // If shiftId given directly or need to lookup shift in DB
-    if (targetShiftId) {
-      const { data: shiftRecord } = await supabase
-        .from('shifts')
-        .select('id, project_id, start_time, projects(id, status, title)')
-        .eq('id', targetShiftId)
-        .maybeSingle();
-
-      if (shiftRecord) {
-        targetProjectId = shiftRecord.project_id;
-        const project = shiftRecord.projects as unknown as { status: string } | null;
-        if (project && (project.status === 'cancelled' || project.status === 'completed')) {
-          return NextResponse.json(
-            { message: '모집이 종료되었거나 취소된 행사예요.' },
-            { status: 400 }
-          );
-        }
-      }
-    }
-
-    // Fallback: If no shift found in DB yet (for newly generated static event IDs), ensure a shift exists
-    if (!targetShiftId || !targetProjectId) {
-      const { data: defaultShift } = await supabase
-        .from('shifts')
-        .select('id, project_id')
-        .limit(1)
-        .maybeSingle();
-
-      if (defaultShift) {
-        targetShiftId = defaultShift.id;
-        targetProjectId = defaultShift.project_id;
-      } else {
-        return NextResponse.json(
-          { message: '지원 가능한 일정을 찾지 못했어요.' },
-          { status: 404 }
-        );
-      }
-    }
-
-    // 3. Duplicate check for same shift_id and applicant
-    const { data: existingApp } = await supabase
-      .from('applications')
-      .select('id, status, applied_at')
-      .eq('shift_id', targetShiftId)
-      .eq('crew_person_id', authContext.personId)
+    // 2. Fetch project from DB
+    const { data: project, error: projError } = await supabase
+      .from('projects')
+      .select('id, title, status, start_date, end_date, sow_spec')
+      .eq('id', targetProjectId)
       .maybeSingle();
 
-    if (existingApp) {
+    if (projError || !project) {
       return NextResponse.json(
-        { message: '이미 지원한 공고입니다.' },
+        { message: '해당 공고를 찾을 수 없습니다.' },
+        { status: 404 }
+      );
+    }
+
+    if (project.status !== 'published' && project.status !== 'in_progress') {
+      return NextResponse.json(
+        { message: '모집이 종료되었거나 취소된 공고예요.' },
+        { status: 400 }
+      );
+    }
+
+    // 3. Fetch all shifts belonging to this project
+    const { data: projectShifts, error: shiftError } = await supabase
+      .from('shifts')
+      .select('id, project_id, shift_name, date, start_time, end_time, daily_wage')
+      .eq('project_id', targetProjectId)
+      .order('date', { ascending: true });
+
+    if (shiftError || !projectShifts || projectShifts.length === 0) {
+      return NextResponse.json(
+        { message: '지원 가능한 일정이 등록되어 있지 않습니다.' },
+        { status: 404 }
+      );
+    }
+
+    const sow = (project.sow_spec as Record<string, unknown>) || {};
+    const isMultiDayRequired = Boolean(sow.isMultiDay || sow.isMultiDayRequired);
+
+    // Determine target shifts to apply
+    let targetShifts: typeof projectShifts = [];
+
+    if (Array.isArray(selectedDates) && selectedDates.length > 0) {
+      // Validate all selectedDates belong to project shifts
+      const dateSet = new Set(selectedDates.map(String));
+      targetShifts = projectShifts.filter((s) => {
+        const sDate = s.date || (s.start_time ? s.start_time.slice(0, 10) : '');
+        return dateSet.has(sDate);
+      });
+
+      if (targetShifts.length !== dateSet.size) {
+        return NextResponse.json(
+          { message: '선택한 일정 중 존재하지 않는 날짜가 포함되어 있습니다.' },
+          { status: 400 }
+        );
+      }
+
+      // Check full schedule requirement if applicable
+      if (isMultiDayRequired && targetShifts.length < projectShifts.length) {
+        return NextResponse.json(
+          { message: '이 공고는 전체 일정 참여형 공고입니다. 모든 일정을 선택해 주세요.' },
+          { status: 400 }
+        );
+      }
+    } else if (reqShiftId) {
+      const matchedShift = projectShifts.find((s) => s.id === reqShiftId);
+      if (!matchedShift) {
+        return NextResponse.json(
+          { message: '해당 공고에 속하지 않는 일정입니다.' },
+          { status: 400 }
+        );
+      }
+      targetShifts = [matchedShift];
+    } else if (projectShifts.length === 1) {
+      targetShifts = [projectShifts[0]];
+    } else {
+      return NextResponse.json(
+        { message: '지원할 일정을 선택해 주세요.' },
+        { status: 400 }
+      );
+    }
+
+    // 4. Duplicate application check for these shifts
+    const targetShiftIds = targetShifts.map((s) => s.id);
+    const { data: existingApps } = await supabase
+      .from('applications')
+      .select('id, shift_id, status')
+      .in('shift_id', targetShiftIds)
+      .eq('crew_person_id', authContext.personId);
+
+    if (existingApps && existingApps.length > 0) {
+      return NextResponse.json(
+        { message: '이미 지원한 일정이 포함되어 있습니다.' },
         { status: 409 }
       );
     }
 
-    // 4. Insert into applications table with status = 'applied' (conforming to DB constraint)
-    const { data: application, error: insertError } = await supabase
-      .from('applications')
-      .insert({
-        project_id: targetProjectId,
-        shift_id: targetShiftId,
-        crew_person_id: authContext.personId,
-        status: 'applied',
-        applied_at: new Date().toISOString(),
-      })
-      .select('id, project_id, shift_id, crew_person_id, status, applied_at')
-      .single();
+    // 5. Batch insert applications in a single atomic DB call
+    const nowIso = new Date().toISOString();
+    const rowsToInsert = targetShifts.map((s) => ({
+      project_id: targetProjectId,
+      shift_id: s.id,
+      crew_person_id: authContext.personId,
+      status: 'applied' as const,
+      applied_at: nowIso,
+    }));
 
-    if (insertError || !application) {
-      console.error('[POST /api/crew/applications] insertError:', insertError);
+    const { data: insertedApps, error: insertError } = await supabase
+      .from('applications')
+      .insert(rowsToInsert)
+      .select('id, project_id, shift_id, status, applied_at');
+
+    if (insertError || !insertedApps || insertedApps.length !== rowsToInsert.length) {
+      console.error('[POST /api/crew/applications] Insert error:', insertError);
       return NextResponse.json(
         { message: '지원 신청을 접수하지 못했어요. 잠시 후 다시 시도해 주세요.' },
         { status: 500 }
       );
     }
 
-    // Update applicant profile contact details if provided
+    // 6. Update applicant profile contact details if provided
     if (applicantName) {
       await supabase
         .from('people')
         .update({
           full_name: applicantName,
-          updated_at: new Date().toISOString(),
+          updated_at: nowIso,
         })
         .eq('id', authContext.personId);
     }
@@ -188,19 +180,22 @@ export async function POST(request: Request) {
           {
             person_id: authContext.personId,
             phone_number: applicantPhone,
-            updated_at: new Date().toISOString(),
+            updated_at: nowIso,
           },
           { onConflict: 'person_id' }
         );
     }
 
+    const appliedDates = targetShifts.map((s) => s.date || s.start_time.slice(0, 10));
+
     return NextResponse.json({
       success: true,
-      applicationId: application.id,
-      shiftId: application.shift_id,
-      selectedDates: selectedDates || [],
-      status: application.status.toUpperCase(),
-      appliedAt: application.applied_at,
+      applications: insertedApps,
+      applicationCount: insertedApps.length,
+      shiftId: insertedApps[0]?.shift_id,
+      selectedDates: appliedDates,
+      status: 'applied',
+      appliedAt: nowIso,
       message: '지원이 성공적으로 접수되었어요.',
     });
   } catch (err: unknown) {

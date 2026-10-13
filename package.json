@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "vitest run"
+    "test": "vitest run",
+    "seed:demo": "node scripts/seed-demo-data.mjs",
+    "seed:cleanup": "node scripts/cleanup-demo-data.mjs"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.2.0",

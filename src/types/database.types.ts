@@ -166,15 +166,19 @@ export type CrewlinkSchema = {
         id: string;
         organization_id: string;
         person_id: string;
-        member_role: string;
+        role?: 'owner' | 'manager' | 'viewer';
+        member_role?: string;
+        is_active: boolean;
         created_at: string;
-        updated_at: string;
+        updated_at?: string;
       };
       Insert: {
         id?: string;
         organization_id: string;
         person_id: string;
+        role?: 'owner' | 'manager' | 'viewer';
         member_role?: string;
+        is_active?: boolean;
         created_at?: string;
         updated_at?: string;
       };
@@ -182,7 +186,9 @@ export type CrewlinkSchema = {
         id?: string;
         organization_id?: string;
         person_id?: string;
+        role?: 'owner' | 'manager' | 'viewer';
         member_role?: string;
+        is_active?: boolean;
         created_at?: string;
         updated_at?: string;
       };
@@ -263,6 +269,7 @@ export type CrewlinkSchema = {
         sow_spec: Json;
         start_date?: string | null;
         end_date?: string | null;
+        is_demo?: boolean;
         created_at: string;
         updated_at: string;
       };
@@ -280,6 +287,7 @@ export type CrewlinkSchema = {
         sow_spec?: Json;
         start_date?: string | null;
         end_date?: string | null;
+        is_demo?: boolean;
         created_at?: string;
         updated_at?: string;
       };
@@ -297,6 +305,7 @@ export type CrewlinkSchema = {
         sow_spec?: Json;
         start_date?: string | null;
         end_date?: string | null;
+        is_demo?: boolean;
         created_at?: string;
         updated_at?: string;
       };
@@ -837,6 +846,20 @@ export type CrewlinkSchema = {
         max_lng: number;
       };
       Returns: CrewlinkSchema['Tables']['projects']['Row'][];
+    };
+    get_events_social_proof: {
+      Args: {
+        p_project_ids: string[];
+        p_reference_time?: string;
+        p_is_mvp?: boolean;
+      };
+      Returns: {
+        project_id: string;
+        applicant_count: number;
+        new_applicant_count_24h: number;
+        latest_applied_at: string | null;
+        avatars: Json;
+      }[];
     };
   };
   Enums: {
